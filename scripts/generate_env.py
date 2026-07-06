@@ -43,8 +43,8 @@ COMPOSE_FILES = {
 
 # variables prompted per mode; everything else keeps its default/current value
 PROMPTED = {
-    "local": (),
-    "dev": ("DATA_DIR", "INSTALLED_APPS"),
+    "local": ("POSTGRES_PASSWORD",),
+    "dev": ("DATA_DIR", "INSTALLED_APPS", "POSTGRES_PASSWORD"),
     "prod": (
         "APP_NAME",
         "APP_LANG",
@@ -55,6 +55,7 @@ PROMPTED = {
         "PROD_API_URL",
         "POSTGRES_DB",
         "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
         "EMAIL_HOST",
         "EMAIL_HOST_USER",
         "EMAIL_HOST_PASSWORD",
@@ -95,7 +96,7 @@ def next_free_port(port: str) -> int:
 
 
 def prompt(key: str, default: str, desc: str) -> str:
-    hint = f" — {desc}" if desc else ""
+    hint = f" | {desc}" if desc else ""
     val = input(f"{key}{hint}\n  [{default or 'empty'}]: ").strip()
     return default if not val else "" if val == "x" else val
 
@@ -110,6 +111,8 @@ def resolve_values(mode: str, assume_yes: bool) -> dict:
 
     for key, (default, desc) in template.items():
         val = current.get(key, default)
+        if key == "DATA_DIR":
+            val = str(Path(val or ROOT / "data").resolve())
         if key in AUTOGEN and not val:
             val = secrets.token_urlsafe(40)
         if key in PROMPTED[mode] and not assume_yes:
@@ -121,7 +124,6 @@ def resolve_values(mode: str, assume_yes: bool) -> dict:
                 val = free
         v[key] = str(val)
 
-    v["DATA_DIR"] = str(Path(v["DATA_DIR"] or ROOT / "data").resolve())
     v["MODE"] = mode
 
     invalid = [a for a in v["INSTALLED_APPS"].split(",") if a and a not in FRONT_APPS]

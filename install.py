@@ -12,10 +12,8 @@ prod  = everything in Docker, full prompts, app running at the end
 import argparse
 import os
 import shutil
-import socket
 import subprocess
 import sys
-import time
 from pathlib import Path
 
 ROOT = Path(__file__).resolve().parent
@@ -55,15 +53,28 @@ def check_docker() -> None:
         sys.exit("docker daemon not reachable — start it (Docker Desktop, `colima start`, `orbstack`, ...) and retry")
 
 
-def wait_port(port: str, service: str, timeout: int = 90) -> None:
-    print(f"waiting for {service} on localhost:{port}...")
-    deadline = time.time() + timeout
-    while time.time() < deadline:
-        with socket.socket() as s:
-            if s.connect_ex(("127.0.0.1", int(port))) == 0:
-                return
-        time.sleep(1)
-    sys.exit(f"{service} did not come up on port {port} within {timeout}s")
+def db_password_ok(v: dict) -> bool:
+    return not subprocess.run(
+        ["docker", "compose", "exec", "-T",
+         "-e", f"PGPASSWORD={v['POSTGRES_PASSWORD']}", "db",
+         "psql", "-U", v["POSTGRES_USER"], "-d", v["POSTGRES_DB"], "-c", "\\q"],
+        cwd=DOCKER_DIR, capture_output=True,
+    ).returncode
+
+
+def ensure_db_credentials(v: dict) -> None:
+    # Postgres bakes credentials into its volume on first init and ignores the
+    # env afterwards; a regenerated password then fails to authenticate.
+    if db_password_ok(v):
+        return
+    if v["MODE"] != "dev":
+        sys.exit(
+            f"✗ Postgres rejects the .env password (stale volume) and MODE={v['MODE']} "
+            "forbids auto-wipe. Fix manually: docker compose down -v (DESTROYS DATA)."
+        )
+    print("⚠ stale Postgres volume (password mismatch) — wiping volumes (dev)")
+    sh(["docker", "compose", "down", "-v"], cwd=DOCKER_DIR)
+    sh(["docker", "compose", "up", "-d", "--build", "--wait"], cwd=DOCKER_DIR)
 
 
 def setup_dev(v: dict) -> None:
@@ -71,15 +82,16 @@ def setup_dev(v: dict) -> None:
     sh([uv, "sync", "--group=dev"], cwd=FRONT_APP)
     sh([npm, "install"], cwd=SVELTE_DIR)
     sh([npm, "run", "build"], cwd=SVELTE_DIR)
-    sh(["docker", "compose", "up", "-d", "--build"], cwd=DOCKER_DIR)
-    wait_port(v["DB_PORT"], "postgres")
+    sh(["docker", "compose", "up", "-d", "--build", "--wait"], cwd=DOCKER_DIR)
+    ensure_db_credentials(v)
     sh([uv, "run", "manage.py", "migrate"], cwd=FRONT_APP)
     sh([uv, "run", "manage.py", "create_superuser_check"], cwd=FRONT_APP)
     print("\n✅ dev setup complete. Start everything with:  python run.py")
 
 
 def setup_docker(v: dict) -> None:
-    sh(["docker", "compose", "up", "-d", "--build"], cwd=DOCKER_DIR)
+    sh(["docker", "compose", "up", "-d", "--build", "--wait"], cwd=DOCKER_DIR)
+    ensure_db_credentials(v)
     url = (
         f"https://{v['PROD_URL']}"
         if v["MODE"] == "prod"

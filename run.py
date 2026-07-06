@@ -169,6 +169,14 @@ def doctor() -> None:
             f"docker compose logs {c['Service']} --tail 30",
         )
 
+    print("database")
+    check(
+        "postgres accepts the .env password",
+        db_password_ok(),
+        "stale volume — dev: `python install.py --mode dev` auto-wipes; "
+        "else `docker compose down -v` (DESTROYS DATA)",
+    )
+
     print("ports")
     host_ports = {
         "django (host)": "FRONT_PORT",
@@ -189,6 +197,15 @@ def doctor() -> None:
 
 def docker_ok() -> bool:
     return not subprocess.run(["docker", "info"], capture_output=True).returncode
+
+
+def db_password_ok() -> bool:
+    return not subprocess.run(
+        ["docker", "compose", "exec", "-T",
+         "-e", f"PGPASSWORD={ENV['POSTGRES_PASSWORD']}", "db",
+         "psql", "-U", ENV["POSTGRES_USER"], "-d", ENV["POSTGRES_DB"], "-c", "\\q"],
+        cwd=DOCKER_DIR, capture_output=True,
+    ).returncode
 
 
 def port_open(port: str) -> bool:

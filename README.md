@@ -8,6 +8,7 @@ Both can be deployed together or separately.
 
 ## Requirements
 
+- [Python](https://www.python.org/downloads/) >= 3.10
 - [Docker](https://docs.docker.com/engine/install/) with Compose v2
 - `dev` mode only: [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/)
 
