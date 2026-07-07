@@ -20,7 +20,6 @@ import json
 import socket
 import time
 from pathlib import Path
-from syslog import LOG_KERN
 
 ROOT = Path(__file__).resolve().parent
 FRONT = ROOT / "front"
@@ -104,8 +103,17 @@ def spawn(name: str, cmd: list, cwd: Path, env: dict = None) -> subprocess.Popen
         if WIN
         else {"start_new_session": True}
     )
-    log(f"starting {name}: {' '.join(cmd)}", **LOG_KWARGS)
+    log(f"starting {name}: {' '.join(cmd)}", **{**LOG_KWARGS, "msg_type": "white"})
     return subprocess.Popen(cmd, cwd=cwd, env={**os.environ, **(env or {})}, **kwargs)
+
+
+def kill_stale(*patterns: str) -> None:
+    if WIN:
+        return
+    for p in patterns:
+        if not subprocess.run(["pkill", "-f", p], capture_output=True).returncode:
+            log(f"killed stale '{p}'", **{**LOG_KWARGS, "msg_type": "white"})
+    time.sleep(1)
 
 
 def stop(name: str, proc: subprocess.Popen) -> None:
@@ -117,12 +125,16 @@ def stop(name: str, proc: subprocess.Popen) -> None:
         else:
             os.killpg(proc.pid, signal.SIGTERM)
         proc.wait(timeout=10)
-    except (subprocess.TimeoutExpired, ProcessLookupError):
-        proc.kill()
+    except subprocess.TimeoutExpired:
+        os.killpg(proc.pid, signal.SIGKILL) if not WIN else proc.kill()
+        proc.wait()
+    except ProcessLookupError:
+        pass
     log(f"stopped {name}", **LOG_KWARGS)
 
 
 def run_dev() -> None:
+    kill_stale("celery -A app.config.celery", "manage.py runserver")
     procs_def = [(n, c, cwd, None) for n, c, cwd in DEV_PROCS]
     if (ROOT / "api/run.py").exists():
         procs_def += api_dev_procs()
@@ -234,6 +246,7 @@ def port_open(port: str) -> bool:
 
 
 def api_dev_procs() -> list:
+    kill_stale("dramatiq app.main", "flask --app app.main")
     api_env = read_env(ROOT / "api/.env")
     port = api_env.get("API_PORT", "5001")
     device = api_env.get("DEVICE_NB", "") or "0"
