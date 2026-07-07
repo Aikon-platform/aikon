@@ -126,7 +126,7 @@ def stop(name: str, proc: subprocess.Popen) -> None:
             os.killpg(proc.pid, signal.SIGTERM)
         proc.wait(timeout=10)
     except subprocess.TimeoutExpired:
-        os.killpg(proc.pid, signal.SIGKILL) if not WIN else proc.kill()
+        proc.kill() if WIN else os.killpg(proc.pid, signal.SIGKILL)
         proc.wait()
     except ProcessLookupError:
         pass
@@ -151,14 +151,17 @@ def run_dev() -> None:
         pass
     finally:
         log("\nstopping host processes (hit Ctrl+C again to also stop docker services)", **LOG_KWARGS)
-        teardown_compose = False
-        try:
-            for name, p in procs.items():
-                stop(name, p)
-        except KeyboardInterrupt:
-            teardown_compose = True
+        teardown = False
+
+        def on_sigint(*_):
+            nonlocal teardown
+            teardown = True
+
+        signal.signal(signal.SIGINT, on_sigint)
+        for name, p in procs.items():
+            stop(name, p)
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        if teardown_compose:
+        if teardown:
             compose("down")
         else:
             log("docker services still running: run `python run.py down` to stop them", **LOG_KWARGS)
@@ -285,6 +288,6 @@ if __name__ == "__main__":
                 if ENV["MODE"] == "prod"
                 else f"http://localhost:{port}"
             )
-            log(f"→ {url}", msg_type="magenta", with_time=False)
+            log(f"→ {url}", **{**LOG_KWARGS, "compact": False})
     else:
         sys.exit(__doc__)
