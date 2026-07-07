@@ -84,7 +84,7 @@ def string_to_color(s: str, saturation=0.9, lightness=0.5) -> str:
 
 def format_annotation(region_extraction: RegionExtraction, canvas_nb, xywh, tags=None):
     # regions.get_manifest_url returns digitization manifest
-    base_url = region_extraction.get_manifest_url(only_base=True)
+    base_url = maybe_dockerize(region_extraction.get_manifest_url(only_base=True))
     x, y, w, h = xywh
 
     canvas_id = f"{base_url}/canvas/c{canvas_nb}.json"

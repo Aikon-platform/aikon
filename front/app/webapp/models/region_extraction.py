@@ -80,7 +80,7 @@ class RegionExtraction(AbstractSearchableModel):
         return digit.get_manifest_url(only_base=only_base)
 
     def get_manifest_json(self):
-        digit = self.get_digit()
+        digit: Digitization = self.get_digit()
         if not digit:
             return None
 
