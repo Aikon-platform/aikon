@@ -115,8 +115,11 @@ def resolve_values(mode: str, assume_yes: bool) -> dict:
             val = str(Path(val or ROOT / "data").resolve())
         if key in AUTOGEN and not val:
             val = secrets.token_urlsafe(40)
-        if key in PROMPTED[mode] and not assume_yes:
-            val = prompt(key, val, desc)
+        if key in PROMPTED[mode]:
+            if key == "POSTGRES_PASSWORD":
+                val = prompt(key, val, desc)
+            elif not assume_yes:
+                val = prompt(key, val, desc)
         if key.endswith("_PORT") and mode != "prod" and key not in current:
             free = next_free_port(val)
             if free != int(val):

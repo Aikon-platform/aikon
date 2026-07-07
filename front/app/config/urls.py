@@ -9,6 +9,7 @@ from app.config.settings import (
     ADDITIONAL_MODULES,
     DEBUG,
     APP_NAME,
+    INSTALLED_APPS
 )
 
 from django.contrib.admin import site as admin_site
@@ -46,8 +47,7 @@ if DEBUG:
     # Serve media files in development
     urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)
 
+if "debug_toolbar" in INSTALLED_APPS:
     import debug_toolbar
 
-    urlpatterns += [
-        path("__debug__/", include(debug_toolbar.urls)),
-    ]
+    urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]

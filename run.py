@@ -9,6 +9,7 @@ up   (default)  docker services up; in dev mode also runs the front on the
 down            stops everything (docker compose down + api if delegated)
 logs            follows the docker services logs
 doctor          summarize
+TODO : pyhton3 instead of python for linux distros
 """
 
 import os
@@ -284,10 +285,8 @@ if __name__ == "__main__":
         else:
             port = ENV.get("NGINX_PORT", "8080")
             url = (
-                f"https://{ENV['PROD_URL']}"
-                if ENV["MODE"] == "prod"
-                else f"http://localhost:{port}"
+                f"https://{ENV['PROD_URL']}" if ENV["MODE"] == "prod" else f"http://localhost:{port}"
             )
-            log(f"→ {url}", **{**LOG_KWARGS, "compact": False})
+            log(f"→ {url} (stop with `python run.py down`)", **{**LOG_KWARGS, "compact": False})
     else:
         sys.exit(__doc__)

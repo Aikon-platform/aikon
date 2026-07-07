@@ -1,6 +1,5 @@
 # Substituted at container startup by the nginx image's native envsubst
 # (values come from docker/.env). ${VAR} = substituted, $var = nginx runtime.
-# Replaces the old init.sh sed-based generation entirely.
 
 upstream django {
     server     web:8000;
