@@ -26,7 +26,8 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
-from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL
+
+from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL, APP_URL, APP_PORT, MODE
 from app.webapp.models.utils.constants import DATE_ERROR, IMG
 from app.webapp.utils.paths import IMG_PATH
 from app.vectorization.const import SVG_PATH
@@ -796,3 +797,13 @@ def ensure_legacy_regions(task_name: str) -> str:
     if task_name == "region_extraction":
         return "regions"
     return task_name
+
+def maybe_dockerize(url: str) -> str:
+    """
+    replace the app's default URL to Docker's host.docker.internal,
+    which resolves to the host's localhost. necessary for Docker
+    containers-to-Django HTTP requests.
+    """
+    if MODE == "dev":
+        return url.replace(APP_URL, f"http://host.docker.internal:{APP_PORT}")
+    return url
