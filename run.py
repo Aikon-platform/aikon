@@ -20,11 +20,22 @@ import json
 import socket
 import time
 from pathlib import Path
+from syslog import LOG_KERN
 
 ROOT = Path(__file__).resolve().parent
 FRONT = ROOT / "front"
 DOCKER_DIR = ROOT / "docker"
 WIN = os.name == "nt"
+
+if str(FRONT) not in sys.path:
+    sys.path.append(str(FRONT))
+from app.webapp.utils.logger import log
+
+LOG_KWARGS = {
+    "msg_type": "magenta",
+    "with_time": False,
+    "compact": True
+}
 
 # host processes started in dev mode: (name, command, cwd).
 # celery is called through the venv bin directly (`uv run celery` fails, cf. front/run.sh);
@@ -93,7 +104,7 @@ def spawn(name: str, cmd: list, cwd: Path, env: dict = None) -> subprocess.Popen
         if WIN
         else {"start_new_session": True}
     )
-    print(f"starting {name}: {' '.join(cmd)}")
+    log(f"starting {name}: {' '.join(cmd)}", **LOG_KWARGS)
     return subprocess.Popen(cmd, cwd=cwd, env={**os.environ, **(env or {})}, **kwargs)
 
 
@@ -108,7 +119,7 @@ def stop(name: str, proc: subprocess.Popen) -> None:
         proc.wait(timeout=10)
     except (subprocess.TimeoutExpired, ProcessLookupError):
         proc.kill()
-    print(f"stopped {name}")
+    log(f"stopped {name}", **LOG_KWARGS)
 
 
 def run_dev() -> None:
@@ -116,9 +127,7 @@ def run_dev() -> None:
     if (ROOT / "api/run.py").exists():
         procs_def += api_dev_procs()
     procs = {name: spawn(name, cmd, cwd, env) for name, cmd, cwd, env in procs_def}
-    print(
-        f"\n→ http://localhost:{ENV['FRONT_PORT']}  (Ctrl+C to stop)\n"
-    )
+    log(f"\n→ http://localhost:{ENV['FRONT_PORT']}  (Ctrl+C to stop, twice to also stop docker)\n", **LOG_KWARGS)
     try:
         while True:
             for name, p in procs.items():
@@ -129,12 +138,18 @@ def run_dev() -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        # ignore further Ctrl+C so teardown always completes
+        log("\nstopping host processes (hit Ctrl+C again to also stop docker services)", **LOG_KWARGS)
+        teardown_compose = False
+        try:
+            for name, p in procs.items():
+                stop(name, p)
+        except KeyboardInterrupt:
+            teardown_compose = True
         signal.signal(signal.SIGINT, signal.SIG_IGN)
-        print()
-        for name, p in procs.items():
-            stop(name, p)
-        compose("down")
+        if teardown_compose:
+            compose("down")
+        else:
+            log("docker services still running: run `python run.py down` to stop them", **LOG_KWARGS)
 
 
 def run_api(action: str) -> None:
@@ -146,18 +161,19 @@ def run_api(action: str) -> None:
 
 def doctor() -> None:
     ok = True
+    doctor_kwargs = {**LOG_KWARGS, "msg_type": "white"}
 
     def check(label: str, passed: bool, hint: str = "") -> None:
         nonlocal ok
         ok &= passed
-        print(f"  {'✓' if passed else '✗'} {label}" + (f" — {hint}" if not passed and hint else ""))
+        log(f"  {'✓' if passed else '✗'} {label}" + (f" — {hint}" if not passed and hint else ""), **{**LOG_KWARGS, "msg_type": "success" if passed else "error"})
 
-    print("docker")
+    log("docker", **doctor_kwargs)
     check("daemon reachable", docker_ok(), "start Docker Desktop: open -a Docker")
     if not ok:
         sys.exit(1)
 
-    print("containers")
+    log("containers", **doctor_kwargs)
     out = subprocess.run(
         ["docker", "compose", "ps", "--format", "json"],
         cwd=DOCKER_DIR, capture_output=True, text=True,
@@ -173,15 +189,15 @@ def doctor() -> None:
             f"docker compose logs {c['Service']} --tail 30",
         )
 
-    print("database")
+    log("database", **doctor_kwargs)
     check(
         "postgres accepts the .env password",
         db_password_ok(),
-        "stale volume — dev: `python install.py --mode dev` auto-wipes; "
+        "stale volume → dev: `python install.py --mode dev` auto-wipes; "
         "else `docker compose down -v` (DESTROYS DATA)",
     )
 
-    print("ports")
+    log("ports", **doctor_kwargs)
     host_ports = {
         "django (host)": "FRONT_PORT",
         "aiiinotate": "AIIINOTATE_PORT",
@@ -256,6 +272,6 @@ if __name__ == "__main__":
                 if ENV["MODE"] == "prod"
                 else f"http://localhost:{port}"
             )
-            print(f"→ {url}")
+            log(f"→ {url}", msg_type="magenta", with_time=False)
     else:
         sys.exit(__doc__)

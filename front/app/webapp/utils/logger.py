@@ -116,16 +116,16 @@ class Logger:
         """Get the ANSI color code for a message type."""
         return self.COLORS.get(color, "")
 
-    def format_message(self, *msg: Any, msg_type: str = "info") -> str:
+    def format_message(self, *msg: Any, **kwargs) -> str:
         """Format a message with timestamp and colors."""
-        color = self.get_color(msg_type)
-        timestamp = self._get_timestamp()
+        color = self.get_color(kwargs.get("msg_type", "white"))
+        timestamp = f"\n{self._get_timestamp()}" if kwargs.get("with_time", True) else ""
 
         formatted = "\n".join([f"{color}{self.COLORS['bold']}{pprint(m)}" for m in msg])
-        if self.compact:
-            return f"\n{timestamp}{color}{formatted}{self.COLORS['end']}"
+        if self.compact or kwargs.get("compact", False):
+            return f"{timestamp}{color}{formatted}{self.COLORS['end']}"
 
-        return f"\n\n{timestamp}\n{color}{formatted}{self.COLORS['end']}\n\n"
+        return f"\n{timestamp}\n{color}{formatted}{self.COLORS['end']}\n\n"
 
     @staticmethod
     def format_exception(exception: Exception) -> str:
@@ -151,9 +151,9 @@ class Logger:
 
         self.logger.error(error_msg)
 
-    def log(self, *msg: Any, msg_type: Optional[str] = "white"):
+    def log(self, *msg: Any, **kwargs):
         """Log a message with a given type."""
-        self.logger.info(self.format_message(*msg, msg_type=msg_type))
+        self.logger.info(self.format_message(*msg, **kwargs))
 
     def warning(self, *msg: Any):
         """⚠️ Log a warning message."""
@@ -240,12 +240,12 @@ def get_logger():
 logger = get_logger()
 
 
-def log(msg, exception: Exception | None = None, msg_type: str | None = None):
+def log(msg, exception: Exception | None = None, **kwargs):
     current_logger = get_logger()
     if exception:
         current_logger.error(msg, exception=exception)
         return
-    current_logger.log(msg, msg_type=msg_type)
+    current_logger.log(msg, **kwargs)
 
 
 def console(msg="🚨🚨🚨", msg_type=None):

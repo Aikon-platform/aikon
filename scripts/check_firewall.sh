@@ -21,7 +21,7 @@ ENV_FILE="$CUR_DIR/../front/app/config/.env"
 
 source $ENV_FILE
 
-# jq is a JSON parser in basj
+# jq is a JSON parser in bash
 if ! command -v jq &> /dev/null;
 then sudo apt install jq;
 fi;
