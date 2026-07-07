@@ -3,12 +3,9 @@ import logging
 import os
 import traceback
 import time
-from pathlib import Path
 from html.parser import HTMLParser
 
 from typing import Any, Iterable, Optional, Union
-
-from app.webapp.utils.paths import BASE_DIR, LOG_DIR
 
 
 class MLStripper(HTMLParser):
@@ -114,14 +111,18 @@ class Logger:
         "end": "\033[0m",
     }
 
-    def __init__(self, log_dir: Union[str, Path]):
-        self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, log_dir: str = None):
+        self.log_dir = log_dir
+        if self.log_dir:
+            os.makedirs(self.log_dir, exist_ok=True)
+            self.error_log = os.path.join(self.log_dir, "error.log")
+            self.download_log = os.path.join(self.log_dir, "download.log")
+            for log_file in [self.error_log, self.download_log]:
+                if not os.path.exists(log_file):
+                    with open(log_file, "x") as _:
+                        pass
 
         self.compact = False
-        self.error_log = self.log_dir / "error.log"
-        self.download_log = self.log_dir / "download.log"
-
         self.logger = logging.getLogger("aikon")
 
         if self.logger.handlers:
@@ -129,17 +130,13 @@ class Logger:
         self.logger.setLevel(logging.INFO)
         self.logger.propagate = False
 
-        for log_file in [self.error_log, self.download_log]:
-            if not os.path.exists(log_file):
-                with open(log_file, "x") as _:
-                    pass
-
         # File handler for errors
-        fh = logging.FileHandler(self.error_log)
-        fh.setLevel(logging.ERROR)
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
+        if self.log_dir:
+            fh = logging.FileHandler(self.error_log)
+            fh.setLevel(logging.ERROR)
+            formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+            fh.setFormatter(formatter)
+            self.logger.addHandler(fh)
 
         # Console handler for info
         ch = logging.StreamHandler()
@@ -244,16 +241,6 @@ class Logger:
         #     bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
         # )
 
-    def log_failed_download(self, img_path: str, img_url: str):
-        """
-        Log a failed download attempt
-
-        Args:
-            img_path: Path of the image that should have been downloaded
-            img_url: URL that failed to be downloaded
-        """
-        self.add_to_file(self.download_log, f"{img_path} {img_url}\n", mode="a")
-
     @staticmethod
     def add_to_file(log_file, content, mode="w"):
         """Add a message to the log file."""
@@ -272,7 +259,7 @@ _logger_instance = None
 def get_logger():
     global _logger_instance
     if _logger_instance is None:
-        _logger_instance = Logger(f"{BASE_DIR}/{LOG_DIR}")
+        _logger_instance = Logger()
     return _logger_instance
 
 
@@ -290,7 +277,3 @@ def log(msg, exception: Exception | None = None, **kwargs):
 def console(msg="🚨🚨🚨", msg_type=None):
     # print(pprint(msg))
     get_logger().log(msg, msg_type=msg_type)
-
-
-def download_log(img_name, img_url):
-    get_logger().log_failed_download(img_name, img_url)
