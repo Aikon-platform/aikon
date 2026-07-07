@@ -35,8 +35,7 @@ IIIF_PRESENTATION_VERSION = 2
 
 
 def dockerize(url: str) -> str:
-    # return url.replace(APP_URL, APP_URL_FROM_DOCKER)
-    return url.replace(APP_URL, " http://host.docker.internal:8000")
+    return url.replace(APP_URL, APP_URL_FROM_DOCKER)
 
 
 def update_params(urlstr: str, q_params: Dict) -> str:
@@ -894,7 +893,6 @@ def index_manifest(manifest_url, reindex=False):
         return False
 
     try:
-        # manifest_content["uri"] = dockerize(manifest_url)
         # Index the manifest into aiiinotate
         r = requests.post(
             f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create",

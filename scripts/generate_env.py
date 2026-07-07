@@ -175,9 +175,7 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
         "MEDIA_DIR": "/data/mediafiles" if in_docker else f"{v['DATA_DIR']}/mediafiles",
         "BASE_URL": base,
         "APP_URL_FROM_DOCKER": (
-            base if prod
-            else f"http://web:8000" if in_docker
-            else f"http://host.docker.internal:{v['FRONT_PORT']}"
+            base if prod else f"http://web:8000" if in_docker else f"http://host.docker.internal:{v['FRONT_PORT']}"
         ),
         "API_URL": v["PROD_API_URL"] if prod else f"http://{'api' if in_docker else 'localhost'}:{v['API_PORT']}",
         "CANTALOUPE_BASE_URI": base if nginx else f"http://localhost:{v['CANTALOUPE_PORT']}",
