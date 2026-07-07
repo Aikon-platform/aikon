@@ -21,7 +21,7 @@ from app.config.settings import (
     APP_URL,
     APP_URL_FROM_DOCKER
 )
-from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref
+from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, maybe_dockerize
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.region_extraction import get_file_region_extraction
@@ -32,11 +32,6 @@ from app.webapp.utils.region_extraction import get_file_region_extraction
 IIIF_CONTEXT = "http://iiif.io/api/presentation/2/context.json"
 IIIF_SEARCH_VERSION = 1
 IIIF_PRESENTATION_VERSION = 2
-
-
-def dockerize(url: str) -> str:
-    # return url.replace(APP_URL, APP_URL_FROM_DOCKER)
-    return url.replace(APP_URL, " http://host.docker.internal:8000")
 
 
 def update_params(urlstr: str, q_params: Dict) -> str:
@@ -148,7 +143,7 @@ def split_ref(ref: str) -> Tuple[str, str | None]:
     return ref, None
 
 
-# TODO : use aiiinotate search-api.
+# NOTE unused
 def filter_annotations_by_tag(annotations: List[Dict], tag: str) -> List[Dict]:
     """Filter annotations that contain the specified tag in their resources."""
     if not tag:
@@ -463,6 +458,7 @@ def get_manifest_annotations(
             q_params["canvasMax"] = c_range[1]
 
     q_url = update_params(q_url, q_params)
+    print("****************************************", q_url)
     r = get_and_parse(q_url) if only_ids else get_paginated_annotations(q_url)
 
     # sanity check to preserve type consistency if there's been an error in `get_and_parse`
@@ -836,7 +832,7 @@ def index_annotations_on_canvas(regions: RegionExtraction, canvas_nb):
     # POST request that index the annotations
     response = requests.post(
         f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",
-        json={"uri": dockerize(f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json")},
+        json={"uri": maybe_dockerize(f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json")},
     )
 
     if not response.ok:
