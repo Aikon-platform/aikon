@@ -890,7 +890,6 @@ def index_manifest(manifest_url, reindex=False):
         return False
 
     try:
-        # manifest_content["uri"] = dockerize(manifest_url)
         # Index the manifest into aiiinotate
         r = requests.post(
             f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create",

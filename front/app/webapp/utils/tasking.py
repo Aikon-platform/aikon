@@ -5,7 +5,7 @@ from typing import List, Tuple
 import requests
 from django.contrib.auth.models import User
 
-from app.config.settings import APP_URL, APP_NAME, API_URL, APP_LANG
+from app.config.settings import APP_URL_FROM_DOCKER, APP_NAME, API_URL, APP_LANG
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.region_extraction import RegionExtraction
@@ -253,7 +253,7 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
                 "experiment_id": str(treatment_id),
                 "documents": documents,
                 # URL to which results and task notifications are sent back
-                "notify_url": f"{APP_URL}/{APP_NAME}/{ensure_legacy_regions(task_name)}/notify",
+                "notify_url": f"{APP_URL_FROM_DOCKER}/{APP_NAME}/{ensure_legacy_regions(task_name)}/notify",
                 **parameters,
             }
 

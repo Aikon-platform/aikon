@@ -130,12 +130,14 @@ def detect_firewall() -> None:
         "Run the following script to add Docker's network to firewall:\n"
         f">>> {script_path}\n"
     )
-    _sh = lambda cmd: sh(cmd, cwd=ROOT, shell=True, capture_output=True, text=True)
+    _sh = lambda cmd: subprocess.run(
+        cmd, cwd=ROOT, shell=True, capture_output=True, text=True
+    )
     # 1. ubuntu/debian
-    if which("ufw") and "Status: active" in _sh("sudo ufw status").stdout:
+    if shutil.which("ufw") and "Status: active" in _sh("sudo ufw status").stdout:
         msg("ufw")
     # 2. fedora
-    elif which("firewall-cmd") and "running" in _sh("firewall-cmd --state").stdout:
+    elif shutil.which("firewall-cmd") and "running" in _sh("firewall-cmd --state").stdout:
         msg("firewalld")
 
 

@@ -357,9 +357,10 @@ class Treatment(AbstractSearchableModel):
         """
         err = data.get("error", "Unknown error")
         log(
-            f"[on_task_error] Task #{self.id} failed because of:\n{err}",
+            f"[on_task_error] Task #{self.id} failed because of:\n{err}\n\nPayload",
             exception=exception,
         )
+        log(data, msg_type="error", compact=True, with_time=False)
 
         if completed:
             self.terminate_task(

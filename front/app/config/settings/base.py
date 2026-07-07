@@ -58,9 +58,8 @@ wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
 
 # https remote access config:
 ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
-CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
-
+CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts + [ENV.str("BASE_URL", default="")]
 if DEBUG:
     CSRF_TRUSTED_ORIGINS += [f"http://{host}" for host in hosts]
 

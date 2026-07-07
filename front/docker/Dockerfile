@@ -58,7 +58,7 @@ WORKDIR /home/${USER}
 
 # Copy app files
 COPY --chown=${USER} app /home/${USER}/app
-COPY --chown=${USER} gunicorn /home/${USER}/gunicorn
+# COPY --chown=${USER} gunicorn /home/${USER}/gunicorn
 COPY --chown=${USER} celery /home/${USER}/celery
 COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
 

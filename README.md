@@ -30,13 +30,13 @@ The script will ask you about the install mode, generate every configuration fil
 ## Run
 
 ```bash
-python run.py         # start; in dev: Django + Celery + vite --watch, Ctrl+C to stop
+python run.py         # start, Ctrl+C to stop processes, Ctrl+C again to stop Docker
 python run.py down    # stop everything
 python run.py logs    # follow the docker services logs
 ```
 
 - `local`: app at `http://localhost:<NGINX_PORT>` (default 8080)
-- `dev`: app at `http://localhost:<FRONT_PORT>` (default 8000); start the api separately with `python api/run.py`
+- `dev`: app at `http://localhost:<FRONT_PORT>` (default 8000)
 - `prod`: served behind the host nginx at `https://<PROD_URL>` (SSL termination on the host, see [docker/nginx_external.conf.template](docker/nginx_external.conf.template))
 
 ## Configuration

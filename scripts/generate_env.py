@@ -115,8 +115,11 @@ def resolve_values(mode: str, assume_yes: bool) -> dict:
             val = str(Path(val or ROOT / "data").resolve())
         if key in AUTOGEN and not val:
             val = secrets.token_urlsafe(40)
-        if key in PROMPTED[mode] and not assume_yes:
-            val = prompt(key, val, desc)
+        if key in PROMPTED[mode]:
+            if key == "POSTGRES_PASSWORD":
+                val = prompt(key, val, desc)
+            elif not assume_yes:
+                val = prompt(key, val, desc)
         if key.endswith("_PORT") and mode != "prod" and key not in current:
             free = next_free_port(val)
             if free != int(val):
@@ -172,9 +175,7 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
         "MEDIA_DIR": "/data/mediafiles" if in_docker else f"{v['DATA_DIR']}/mediafiles",
         "BASE_URL": base,
         "APP_URL_FROM_DOCKER": (
-            base if prod
-            else f"http://web:8000" if in_docker
-            else f"http://host.docker.internal:{v['FRONT_PORT']}"
+            base if prod else f"http://web:8000" if in_docker else f"http://host.docker.internal:{v['FRONT_PORT']}"
         ),
         "API_URL": v["PROD_API_URL"] if prod else f"http://{'api' if in_docker else 'localhost'}:{v['API_PORT']}",
         "CANTALOUPE_BASE_URI": base if nginx else f"http://localhost:{v['CANTALOUPE_PORT']}",

@@ -9,6 +9,7 @@ up   (default)  docker services up; in dev mode also runs the front on the
 down            stops everything (docker compose down + api if delegated)
 logs            follows the docker services logs
 doctor          summarize
+TODO : pyhton3 instead of python for linux distros
 """
 
 import os
@@ -25,6 +26,16 @@ ROOT = Path(__file__).resolve().parent
 FRONT = ROOT / "front"
 DOCKER_DIR = ROOT / "docker"
 WIN = os.name == "nt"
+
+if str(FRONT) not in sys.path:
+    sys.path.append(str(FRONT))
+from app.webapp.utils.logger import log
+
+LOG_KWARGS = {
+    "msg_type": "magenta",
+    "with_time": False,
+    "compact": True
+}
 
 # host processes started in dev mode: (name, command, cwd).
 # celery is called through the venv bin directly (`uv run celery` fails, cf. front/run.sh);
@@ -93,8 +104,17 @@ def spawn(name: str, cmd: list, cwd: Path, env: dict = None) -> subprocess.Popen
         if WIN
         else {"start_new_session": True}
     )
-    print(f"starting {name}: {' '.join(cmd)}")
+    log(f"starting {name}: {' '.join(cmd)}", **{**LOG_KWARGS, "msg_type": "white"})
     return subprocess.Popen(cmd, cwd=cwd, env={**os.environ, **(env or {})}, **kwargs)
+
+
+def kill_stale(*patterns: str) -> None:
+    if WIN:
+        return
+    for p in patterns:
+        if not subprocess.run(["pkill", "-f", p], capture_output=True).returncode:
+            log(f"killed stale '{p}'", **{**LOG_KWARGS, "msg_type": "white"})
+    time.sleep(1)
 
 
 def stop(name: str, proc: subprocess.Popen) -> None:
@@ -106,19 +126,21 @@ def stop(name: str, proc: subprocess.Popen) -> None:
         else:
             os.killpg(proc.pid, signal.SIGTERM)
         proc.wait(timeout=10)
-    except (subprocess.TimeoutExpired, ProcessLookupError):
-        proc.kill()
-    print(f"stopped {name}")
+    except subprocess.TimeoutExpired:
+        proc.kill() if WIN else os.killpg(proc.pid, signal.SIGKILL)
+        proc.wait()
+    except ProcessLookupError:
+        pass
+    log(f"stopped {name}", **LOG_KWARGS)
 
 
 def run_dev() -> None:
+    kill_stale("celery -A app.config.celery", "manage.py runserver")
     procs_def = [(n, c, cwd, None) for n, c, cwd in DEV_PROCS]
     if (ROOT / "api/run.py").exists():
         procs_def += api_dev_procs()
     procs = {name: spawn(name, cmd, cwd, env) for name, cmd, cwd, env in procs_def}
-    print(
-        f"\n→ http://localhost:{ENV['FRONT_PORT']}  (Ctrl+C to stop)\n"
-    )
+    log(f"\n→ http://localhost:{ENV['FRONT_PORT']}  (Ctrl+C to stop, twice to also stop docker)\n", **LOG_KWARGS)
     try:
         while True:
             for name, p in procs.items():
@@ -129,12 +151,21 @@ def run_dev() -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        # ignore further Ctrl+C so teardown always completes
-        signal.signal(signal.SIGINT, signal.SIG_IGN)
-        print()
+        log("\nstopping host processes (hit Ctrl+C again to also stop docker services)", **LOG_KWARGS)
+        teardown = False
+
+        def on_sigint(*_):
+            nonlocal teardown
+            teardown = True
+
+        signal.signal(signal.SIGINT, on_sigint)
         for name, p in procs.items():
             stop(name, p)
-        compose("down")
+        signal.signal(signal.SIGINT, signal.SIG_IGN)
+        if teardown:
+            compose("down")
+        else:
+            log("docker services still running: run `python run.py down` to stop them", **LOG_KWARGS)
 
 
 def run_api(action: str) -> None:
@@ -146,18 +177,19 @@ def run_api(action: str) -> None:
 
 def doctor() -> None:
     ok = True
+    doctor_kwargs = {**LOG_KWARGS, "msg_type": "white"}
 
     def check(label: str, passed: bool, hint: str = "") -> None:
         nonlocal ok
         ok &= passed
-        print(f"  {'✓' if passed else '✗'} {label}" + (f" — {hint}" if not passed and hint else ""))
+        log(f"  {'✓' if passed else '✗'} {label}" + (f" — {hint}" if not passed and hint else ""), **{**LOG_KWARGS, "msg_type": "success" if passed else "error"})
 
-    print("docker")
+    log("docker", **doctor_kwargs)
     check("daemon reachable", docker_ok(), "start Docker Desktop: open -a Docker")
     if not ok:
         sys.exit(1)
 
-    print("containers")
+    log("containers", **doctor_kwargs)
     out = subprocess.run(
         ["docker", "compose", "ps", "--format", "json"],
         cwd=DOCKER_DIR, capture_output=True, text=True,
@@ -173,15 +205,15 @@ def doctor() -> None:
             f"docker compose logs {c['Service']} --tail 30",
         )
 
-    print("database")
+    log("database", **doctor_kwargs)
     check(
         "postgres accepts the .env password",
         db_password_ok(),
-        "stale volume — dev: `python install.py --mode dev` auto-wipes; "
+        "stale volume → dev: `python install.py --mode dev` auto-wipes; "
         "else `docker compose down -v` (DESTROYS DATA)",
     )
 
-    print("ports")
+    log("ports", **doctor_kwargs)
     host_ports = {
         "django (host)": "FRONT_PORT",
         "aiiinotate": "AIIINOTATE_PORT",
@@ -218,6 +250,7 @@ def port_open(port: str) -> bool:
 
 
 def api_dev_procs() -> list:
+    kill_stale("dramatiq app.main", "flask --app app.main")
     api_env = read_env(ROOT / "api/.env")
     port = api_env.get("API_PORT", "5001")
     device = api_env.get("DEVICE_NB", "") or "0"
@@ -252,10 +285,8 @@ if __name__ == "__main__":
         else:
             port = ENV.get("NGINX_PORT", "8080")
             url = (
-                f"https://{ENV['PROD_URL']}"
-                if ENV["MODE"] == "prod"
-                else f"http://localhost:{port}"
+                f"https://{ENV['PROD_URL']}" if ENV["MODE"] == "prod" else f"http://localhost:{port}"
             )
-            print(f"→ {url}")
+            log(f"→ {url} (stop with `python run.py down`)", **{**LOG_KWARGS, "compact": False})
     else:
         sys.exit(__doc__)
