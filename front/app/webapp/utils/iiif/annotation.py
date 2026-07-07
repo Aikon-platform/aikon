@@ -35,7 +35,8 @@ IIIF_PRESENTATION_VERSION = 2
 
 
 def dockerize(url: str) -> str:
-    return url.replace(APP_URL, APP_URL_FROM_DOCKER)
+    # return url.replace(APP_URL, APP_URL_FROM_DOCKER)
+    return url.replace(APP_URL, " http://host.docker.internal:8000")
 
 
 def update_params(urlstr: str, q_params: Dict) -> str:
