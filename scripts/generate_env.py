@@ -44,8 +44,9 @@ COMPOSE_FILES = {
 # variables prompted per mode; everything else keeps its default/current value
 PROMPTED = {
     "local": ("POSTGRES_PASSWORD",),
-    "dev": ("DATA_DIR", "INSTALLED_APPS", "POSTGRES_PASSWORD"),
+    "dev": ("POSTGRES_PASSWORD", "DATA_DIR", "INSTALLED_APPS"),
     "prod": (
+        "POSTGRES_PASSWORD",
         "APP_NAME",
         "APP_LANG",
         "DATA_DIR",
@@ -55,7 +56,6 @@ PROMPTED = {
         "PROD_API_URL",
         "POSTGRES_DB",
         "POSTGRES_USER",
-        "POSTGRES_PASSWORD",
         "EMAIL_HOST",
         "EMAIL_HOST_USER",
         "EMAIL_HOST_PASSWORD",
