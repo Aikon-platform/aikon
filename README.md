@@ -10,6 +10,7 @@ Both can be deployed together or separately.
 
 - [Python](https://www.python.org/downloads/) >= 3.10
 - [Docker](https://docs.docker.com/engine/install/) with Compose v2
+- [Github](https://github.com/Segolene-Albouy/GIT-M2TNAH/blob/a41ffd3fb5ff340d09bfcca6adc5079c1ab60462/02-GitHub/02-Github.md#authentifier-son-ordinateur-pour-github): having configured SSH keys for GitHub
 - `dev` mode only: [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/)
 
 ## Install
