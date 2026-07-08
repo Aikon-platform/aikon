@@ -11,7 +11,14 @@ Both can be deployed together or separately.
 - [Python](https://www.python.org/downloads/) >= 3.10
 - [Docker](https://docs.docker.com/engine/install/) with Compose v2
 - [Github](https://github.com/Segolene-Albouy/GIT-M2TNAH/blob/a41ffd3fb5ff340d09bfcca6adc5079c1ab60462/02-GitHub/02-Github.md#authentifier-son-ordinateur-pour-github): having configured SSH keys for GitHub
-- `dev` mode only: [uv](https://docs.astral.sh/uv/) and [Node.js](https://nodejs.org/)
+- `dev` mode only:
+  - [uv](https://docs.astral.sh/uv/): `curl -LsSf https://astral.sh/uv/install.sh | sh` (MacOS & Linux)
+  - [Node.js](https://nodejs.org/fr/download): MacOS & Linux
+    ```
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+    \. "$HOME/.nvm/nvm.sh"
+    nvm install 24
+    ```
 
 ## Install
 
