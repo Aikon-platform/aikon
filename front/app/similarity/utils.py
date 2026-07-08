@@ -361,7 +361,7 @@ def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
     params = {
         "algorithm": str(parameters.get("algorithm", "cosine")),
         "topk": int(parameters.get("cosine_n_filter", 20)),
-        "feat_net": str(parameters.get("feat_net", "dino_deitsmall16_pretrain")),
+        "feat_net": str(parameters.get("feat_net", "dinov2_vitb14")),
         "segswap_prefilter": bool(parameters.get("segswap_prefilter", True)),
         "segswap_n": int(parameters.get("segswap_n", 10)),
         "raw_transpositions": ["none"],
