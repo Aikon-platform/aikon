@@ -242,7 +242,7 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
             documents.extend(prepare_document(record, **parameters))
 
         if documents:
-            uids = [d.get("uid", "UID") for d in documents]
+            uids = [str(d.get("uid", "UID")) for d in documents]
             log(
                 f"[prepare_request] Found {len(documents)} documents to process: {', '.join(uids)}",
                 msg_type="info",

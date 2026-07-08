@@ -57,6 +57,11 @@ urlpatterns = [
         name="regions-list",
     ),
     path(
+        f"{APP_NAME}/witness/<int:wid>/list/",
+        get_witness_img_list,
+        name="witness-list",
+    ),
+    path(
         # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
         f"{APP_NAME}/iiif/<str:digit_ref>/manifest.json",
         manifest_digitization,

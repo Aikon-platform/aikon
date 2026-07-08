@@ -696,8 +696,13 @@ def get_training_regions(region_extraction: RegionExtraction):
     return filenames_contents
 
 
-def get_regions_urls(region_extraction: RegionExtraction):
+def get_regions_urls(
+    record: RegionExtraction | Digitization,
+    min_c: int | None = None,
+    max_c: int | None = None,
+) -> Dict[str, str]:
     """
+    Flat { region_ref: iiif_url } map for a RegionExtraction or a Digitization
     {
         "wit1_man191_0009_166,1325,578,516": ""https://eida.obspm.fr/iiif/2/wit1_man191_0009.jpg/166,1325,578,516/full/0/default.jpg"",
         "wit1_man191_0027_1143,2063,269,245": "https://eida.obspm.fr/iiif/2/wit1_man191_0027.jpg/1143,2063,269,245/full/0/default.jpg",
@@ -705,22 +710,14 @@ def get_regions_urls(region_extraction: RegionExtraction):
         "img_name": "..."
     }
     """
-    folio_regions = {}
-
-    _, canvas_annotations = formatted_annotations(region_extraction)
-
-    for canvas_nb, annotations, img_name in canvas_annotations:
-        if len(annotations):
-            folio_regions.update(
-                {
-                    gen_img_ref(img_name, a[0]): gen_iiif_url(
-                        img_name, 2, f"{a[0]}/full/0"
-                    )
-                    for a in annotations
-                }
-            )
-
-    return folio_regions
+    canvas_annos = get_record_annotations(
+        record, as_json=True, min_c=min_c, max_c=max_c
+    )
+    return {
+        anno["ref"]: anno["url"]
+        for annos in canvas_annos.values()
+        for anno in annos.values()
+    }
 
 
 def get_images_annotations(region_extraction: RegionExtraction):

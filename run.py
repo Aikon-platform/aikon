@@ -9,7 +9,8 @@ up   (default)  docker services up; in dev mode also runs the front on the
 down            stops everything (docker compose down + api if delegated)
 logs            follows the docker services logs
 doctor          summarize
-TODO : pyhton3 instead of python for linux distros
+
+TODO : python3 instead of python for linux distros + prod install only front or api
 """
 
 import os

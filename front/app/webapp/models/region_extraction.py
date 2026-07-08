@@ -9,6 +9,7 @@ from app.config.settings import (
     MIRADOR_BASE_URL,
 )
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.witness import Witness
 from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.utils.constants import REG
 from app.webapp.models.utils.functions import get_fieldname
@@ -187,3 +188,11 @@ class RegionExtraction(AbstractSearchableModel):
         )
 
         return mark_safe(btn)
+
+
+def get_witness_ids(document: Witness | Digitization | RegionExtraction) -> list[int]:
+    if isinstance(document, Witness):
+        return [document.id]
+    if isinstance(document, RegionExtraction):
+        return [document.get_digit().witness_id]
+    return [document.witness_id]

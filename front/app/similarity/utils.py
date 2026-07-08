@@ -4,7 +4,6 @@ import re
 from enum import IntEnum
 
 import numpy as np
-from typing import Set, List
 
 import orjson
 import requests
@@ -21,7 +20,6 @@ from app.similarity.models.region_pair import (
     RegionPair,
     RegionPairTuple,
     parse_img,
-    add_jpg,
 )
 from app.similarity.models.similarity_parameters import (
     SimilarityParameters,
@@ -29,7 +27,7 @@ from app.similarity.models.similarity_parameters import (
 )
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.region_extraction import RegionExtraction
+from app.webapp.models.region_extraction import RegionExtraction, get_witness_ids
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 from app.webapp.utils.functions import delete_path
@@ -221,23 +219,32 @@ def prepare_document(document: Witness | Digitization | RegionExtraction, **kwar
             for d in digits
         ]
 
-    # run similarity on extracted regions
-    region_extraction = (
-        document.get_region_extractions()
-        if hasattr(document, "get_region_extractions")
-        else [document]
-    )
-    if not region_extraction:
-        # TODO should task be canceled because one of the document has no extraction??
-        raise ValueError(
-            f"“{document}” has no extracted regions for which to calculate similarity scores"
-            if APP_LANG == "en"
-            else f"« {document} » n'a pas de régions extraites pour lesquelles calculer les scores de similarité"
-        )
     return [
-        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
-        for ref in [region.get_ref() for region in region_extraction]
+        {
+            "type": "url_list",
+            "src": f"{APP_URL}/{APP_NAME}/witness/{wid}/list/",
+            "uid": str(wid),
+        }
+        for wid in get_witness_ids(document)
     ]
+
+    # # run similarity on extracted regions
+    # region_extraction = (
+    #     document.get_region_extractions()
+    #     if hasattr(document, "get_region_extractions")
+    #     else [document]
+    # )
+    # if not region_extraction:
+    #     # TODO should task be canceled because one of the document has no extraction??
+    #     raise ValueError(
+    #         f"“{document}” has no extracted regions for which to calculate similarity scores"
+    #         if APP_LANG == "en"
+    #         else f"« {document} » n'a pas de régions extraites pour lesquelles calculer les scores de similarité"
+    #     )
+    # return [
+    #     {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
+    #     for ref in [region.get_ref() for region in region_extraction]
+    # ]
 
 
 def send_request(witnesses):

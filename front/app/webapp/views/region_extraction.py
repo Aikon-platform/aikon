@@ -25,13 +25,11 @@ from app.webapp.utils.iiif.annotation import (
     index_region_extraction,
     destroy_region_extraction,
     process_region_extraction,
-    formatted_annotations,
     reindex_file,
     get_regions_urls,
 )
 from app.webapp.utils.region_extraction import (
     get_region_extraction_img,
-    create_empty_region_extraction,
 )
 from app.webapp.views import check_ref
 from app.webapp.models.digitization import Digitization
@@ -192,8 +190,16 @@ def get_regions_img_list(request, region_extraction_ref):
     except Exception as e:
         error = f"[get_regions_img_list] Couldn't generate list of region images for {region_extraction_ref}"
         log(error, e)
-        return JsonResponse({"response": error, "reason": e}, safe=False)
+        return JsonResponse({"response": error, "reason": str(e)}, safe=False)
 
+    return JsonResponse(regions_dict, status=200, safe=False)
+
+
+def get_witness_img_list(request, wid):
+    witness = get_object_or_404(Witness, id=wid)
+    regions_dict = {}
+    for digit in witness.get_digits():
+        regions_dict.update(get_regions_urls(digit))
     return JsonResponse(regions_dict, status=200, safe=False)
 
 

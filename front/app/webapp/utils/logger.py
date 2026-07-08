@@ -5,7 +5,7 @@ import traceback
 import time
 from html.parser import HTMLParser
 
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable, Optional
 
 
 class MLStripper(HTMLParser):
@@ -61,7 +61,7 @@ def sanitize(v):
         return {str(k): sanitize(val) for k, val in v.items()}
     else:
         # For custom objects, include class name in representation
-        return f"{v.__class__.__name__}({str(v)})"
+        return f"{v.__class__.__name__} ({str(v)})"
 
 
 def pprint(o):
@@ -158,7 +158,7 @@ class Logger:
         timestamp = f"\n{self._get_timestamp()}" if kwargs.get("with_time", True) else ""
 
         formatted = "\n".join([f"{color}{self.COLORS['bold']}{pprint(m)}" for m in msg])
-        if self.compact or kwargs.get("compact", False):
+        if kwargs.get("compact", self.compact):
             return f"{timestamp}{color}{formatted}{self.COLORS['end']}"
 
         return f"\n{timestamp}\n{color}{formatted}{self.COLORS['end']}\n\n"
