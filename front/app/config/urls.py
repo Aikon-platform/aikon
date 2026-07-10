@@ -2,6 +2,7 @@ from django.urls import path, include, register_converter
 from django.conf.urls.static import static
 from django.conf.urls import handler404, handler500, handler403, handler400
 from django.contrib.auth import views as auth_views
+from django.urls.converters import get_converters
 
 from app.config.settings import (
     MEDIA_URL,
@@ -25,7 +26,8 @@ class ListConverter:
         return "+".join(value)
 
 
-register_converter(ListConverter, "list")
+if "list" not in get_converters():
+    register_converter(ListConverter, "list")
 
 # Custom error handlers
 handler404 = "webapp.views.error_404"

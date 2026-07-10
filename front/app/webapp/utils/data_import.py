@@ -13,7 +13,6 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.utils.constants import MAN_ABBR, MS_ABBR
 from app.webapp.utils.data_transfer import TRANSFER_MODELS, get_transfer_model
-from app.webapp.utils.logger import log
 from app.webapp.utils.paths import REGIONS_PATH
 
 TIMEOUT = 30
@@ -94,8 +93,9 @@ def import_record(url, ctx: ImportContext, parent=None, extra=None, data=None):
     for name, ref in (data.get("related") or {}).items():
         if name not in valid:
             continue
-        if name == conf.get("parent"):
-            fields[name] = parent
+        if name in conf.get("parents", ()):
+            f = model._meta.get_field(name)
+            fields[name] = parent if isinstance(parent, f.related_model) else None
         else:
             fields[name] = import_record(ref, ctx) if ref else None
     fields |= extra or {}
@@ -220,7 +220,11 @@ def import_similarity_pairs(ctx: ImportContext, similarity_url: str) -> int:
     Paginate the source similarity endpoint and recreate RegionPairs,
     rewriting image refs with the local witness/digitization ids.
     """
-    from app.similarity.models.region_pair import RegionPair, parse_img
+    from app.similarity.models.region_pair import (
+        RegionPair,
+        get_digit_region_extraction_id,
+        parse_img,
+    )
 
     wit_map, digit_map = ctx.mapping["witnesses"], ctx.mapping["digitizations"]
 
@@ -233,7 +237,7 @@ def import_similarity_pairs(ctx: ImportContext, similarity_url: str) -> int:
         # imported digitizations are always manifests
         return f"wit{wit}_{MAN_ABBR}{digit}_{ref.page}{suffix}.jpg"
 
-    pairs, after = [], 0
+    hashed, manual, after = [], [], 0
     while True:
         data = ctx.fetch(f"{similarity_url}?after={after}&limit=1000")
         for p in data.get("pairs") or []:
@@ -243,7 +247,7 @@ def import_similarity_pairs(ctx: ImportContext, similarity_url: str) -> int:
                 continue
             if not (img_1 and img_2):
                 continue
-            # anno_* and category_x are source-specific, thus dropped
+            # anno_* and regions_id_* are source-specific, category_x holds source user ids: dropped
             pair = RegionPair(
                 img_1=img_1,
                 img_2=img_2,
@@ -253,15 +257,35 @@ def import_similarity_pairs(ctx: ImportContext, similarity_url: str) -> int:
                 similarity_hash=p.get("similarity_hash"),
             )
             pair.clean()  # normalizes ordering + digit_1/digit_2
-            pairs.append(pair)
+            (hashed if pair.similarity_hash else manual).append(pair)
 
         after = data.get("next_cursor")
         if not after:
             break
 
     RegionPair.objects.bulk_update_or_create(
-        pairs,
+        hashed,
         update_fields=["digit_1", "digit_2", "score", "category", "similarity_type"],
         match_fields=["img_1", "img_2", "similarity_hash"],
     )
-    return len(pairs)
+    # NULL hashes are distinct for the unique constraint: ON CONFLICT never
+    # matches them, so manual pairs are upserted individually
+    for p in manual:
+        RegionPair.objects.get_or_create(
+            img_1=p.img_1,
+            img_2=p.img_2,
+            similarity_hash=None,
+            defaults={
+                "digit_1": p.digit_1,
+                "digit_2": p.digit_2,
+                "score": p.score,
+                "category": p.category,
+                "similarity_type": p.similarity_type,
+            },
+        )
+
+    # pairs are only listed in the UI if a RegionExtraction exists for their digitization
+    for digit_id in {d for p in hashed + manual for d in (p.digit_1, p.digit_2)}:
+        get_digit_region_extraction_id(digit_id, create_if_missing=True)
+
+    return len(hashed) + len(manual)
