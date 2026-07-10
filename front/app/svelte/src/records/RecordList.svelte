@@ -41,23 +41,20 @@
 
 <RecordSearch {recordsStore} {searchFields}/>
 
-{#if !modelTitle.includes("set")}
-    <!-- <span class="is-right">
-        <a href="{addUrl}" class="button is-rounded is-primary mb-4"
-        title='{appLang === "en" ? "Import" : "Importer"}'>
-            <i class="fa-solid fa-file-import"></i>
-            <span>{appLang === 'en' ? "Import" : "Importer"}</span>
-        </a>
-    </span> -->
-
-    <span class="is-right">
-        <a href="{addUrl}" class="button is-rounded is-primary mb-4"
+<span class="is-right">
+    {#if !modelTitle.includes("set")}
+        <a href="{addUrl}" class="button is-rounded is-link mb-4"
            title='{appLang === "en" ? "Add" : "Ajouter"}'>
-            <i class="fa-solid fa-plus"></i>
+            <i class="fa-solid fa-plus"/>
             <span>{appLang === "en" ? "Add" : "Ajouter"}</span>
         </a>
-    </span>
-{/if}
+    {/if}
+    <a href="{addUrl}" class="button is-rounded is-link mb-4 ml-4 is-dark"
+       title='{appLang === "en" ? "Import" : "Importer"}'>
+        <i class="fa-solid fa-file-import"/>
+        <span>{appLang === "en" ? "Import" : "Importer"}</span>
+    </a>
+</span>
 
 {#await resultPage}
     <div class="faded is-center">

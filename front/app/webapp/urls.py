@@ -1,5 +1,4 @@
 from django.urls import path, reverse_lazy
-from app.config.settings import APP_NAME
 from app.webapp.views import *
 from app.webapp.views.users import *
 from django.contrib.auth import views as auth_views
@@ -307,6 +306,13 @@ urlpatterns += [
         export_docset,
         name="export_docset",
     ),
+    path(
+        f"{APP_NAME}/document-set/<int:dsid>/json/similarity",
+        get_json_docset_simil,
+        name="get_json_document_set_similarity",
+    ),
+    path(f"{APP_NAME}/raw/<str:model_name>/<int:rid>", get_json_record, name="record-raw"),
+    path(f"{APP_NAME}/import", import_records, name="import-records"),
     path(
         f"{APP_NAME}/witness/select",
         witness_select_fields,

@@ -9,6 +9,7 @@
     import { regionsStore } from "./regionsStore.js";
     const { allRegions } = regionsStore;
     import { appName, appLang, regionsType, csrfToken } from "../constants";
+    import {derived} from "svelte/store";
 
     // /** @type {number?} ID of the currently selected region (if there is a currently selected region) */
     // export let currentRegionId;
@@ -22,7 +23,9 @@
 
     $: selectionLength = $nbSelected;
     // $selected = {"Regions" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
-    $: selectedRegions = Object.values($selected)[0] || {};
+    const selectedRegions = derived(regionsSelection.selected, $sel =>
+        Object.assign({}, ...Object.values($sel))
+    );
 
     // TODO here when there is not only one document selected, this assertion is erroneous
     $: areAllSelected = selectionLength >= Object.keys($allRegions).length;
@@ -40,7 +43,6 @@
         }
     }
 
-    // TODO add toggle button to switch in between select mode and view mode
     async function deleteSelectedRegions() {
         const confirmed = await showMessage(
             appLang === "en" ? "Are you sure you want to delete these regions?" : "Voulez-vous vraiment supprimer ces régions ?",
@@ -49,10 +51,10 @@
         );
 
         if (!confirmed) {
-            return; // User cancelled the deletion
+            return; // User canceled the deletion
         }
 
-        for (const [regionId, regionData] of Object.entries(selectedRegions)) {
+        for (const regionId of Object.keys($selectedRegions)) {
             try {
                 if (!$allRegions.hasOwnProperty(regionId)) {
                     // only delete regions that are displayed
@@ -61,7 +63,6 @@
                 await deleteRegion(regionId);
                 regionsStore.remove(regionId);
                 regionsSelection.remove(regionId, regionsType)
-
             } catch (error) {
                 await showMessage(`Failed to delete region ${regionId}: ${error.message}`, "Error");
             }
@@ -78,7 +79,7 @@
 
     async function downloadRegions(){
         // download only displayed regions?
-        const regionsRef = Object.values(selectedRegions).map(r => r.ref);
+        const regionsRef = Object.values($selectedRegions).map(r => r.ref);
         const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/regions/export`, {
             method: "POST",
             headers: { "X-CSRFToken": csrfToken },

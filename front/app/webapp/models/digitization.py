@@ -308,14 +308,16 @@ class Digitization(AbstractSearchableModel):
 
         prefix = f"temp_{self.get_wit_ref()}" if temp else f"{self.get_ref()}_"
         img_dir = TMP_PATH if temp else IMG_PATH
-        names = sorted(get_files_with_prefix(img_dir, prefix, "", only_one))
+        files = get_files_with_prefix(img_dir, prefix, "", only_one) or []
+        names = sorted(files if isinstance(files, list) else [files])
+        if only_one:
+            return names[0]
 
         if temp:
             path_prefix = f"{img_dir}/" if is_abs else ""
             return [f"{path_prefix}{n}" for n in names]
 
-        if not only_one:
-            self.update_imgs_json(names)
+        self.update_imgs_json(names)
 
         if with_meta:
             imgs = [e for e in (img_meta(n) for n in names) if e]
@@ -476,7 +478,7 @@ class Digitization(AbstractSearchableModel):
 
 @receiver(post_save, sender=Digitization)
 def digitization_post_save(sender, instance, created, **kwargs):
-    if created:
+    if created and not getattr(instance, "_skip_post_save", False):
         from app.webapp.tasks import convert_digitization
 
         transaction.on_commit(lambda: convert_digitization.delay(instance.id))
