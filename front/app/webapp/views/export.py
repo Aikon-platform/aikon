@@ -16,7 +16,7 @@ from app.config.settings import (
 )
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.region_extraction import RegionExtraction
+from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import (
     zip_img,
@@ -187,7 +187,7 @@ def get_region_data(wid, rid):
     result = {}
     witness = get_object_or_404(Witness, id=wid)
     if witness.is_public:
-        regions = get_object_or_404(RegionExtraction, id=rid)
+        regions = get_object_or_404(Regions, id=rid)
         result = {
             "manifest": regions.get_manifest_url(),
             "extracted_crops": get_record_annotations(record=regions, as_json=True),
@@ -226,7 +226,7 @@ def get_vecto_data(rid, include_svg=True):
     # Inspired from 'get_vectorized_images' in 'vectorization/views.py'
     from app.vectorization.const import SVG_PATH
 
-    q_r = get_object_or_404(RegionExtraction, pk=rid)
+    q_r = get_object_or_404(Regions, pk=rid)
     v_imgs = []
     # Mirroring what happens with vectorization view:
     # First look in folder named after regions_ref, then try with digit_ref
