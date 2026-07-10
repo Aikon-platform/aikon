@@ -194,7 +194,7 @@ TASK_TYPE = {
 
 TRMT_TYPE = ()
 
-for x in ADDITIONAL_MODULES:
+for x in ADDITIONAL_MODULES + ["import"]:
     trmt = (x, TASK_TYPE.get(x, x))
     TRMT_TYPE += (trmt,)
 

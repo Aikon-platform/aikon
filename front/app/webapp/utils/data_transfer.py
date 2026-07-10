@@ -46,8 +46,8 @@ TRANSFER_MODELS = {
     "edition": {},
     "series": {},
     "witness": {"owned": True, "extras": witness_extras},
-    "content": {"owned": True, "parent": "witness"},
-    "role": {"owned": True, "parent": "content"},
+    "content": {"owned": True, "parents": ("witness",)},
+    "role": {"owned": True, "parents": ("content", "series")},
 }
 
 EXCLUDED_FIELDS = {
@@ -114,7 +114,7 @@ def serialize_record(record) -> dict:
 
     for rel in meta.related_objects:
         conf = TRANSFER_MODELS.get(rel.related_model._meta.model_name, {})
-        if conf.get("owned") and conf.get("parent") == rel.field.name:
+        if conf.get("owned") and rel.field.name in conf.get("parents", ()):
             accessor = rel.get_accessor_name()
             data["children"][accessor] = [
                 record_raw_url(r) for r in getattr(record, accessor).all()

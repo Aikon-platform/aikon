@@ -33,6 +33,7 @@
     // TODO make result count appear + filter name
 
     const addUrl = modelName.includes("treatment") ? `/${appName}/${modelName}/add/` : `/${appName}-admin/${webappName}/${modelName}/add/`
+    const importUrl = `/${appName}/treatment/add/?task_type=import`
 </script>
 
 <Modal/>
@@ -49,7 +50,7 @@
             <span>{appLang === "en" ? "Add" : "Ajouter"}</span>
         </a>
     {/if}
-    <a href="{addUrl}" class="button is-rounded is-link mb-4 ml-4 is-dark"
+    <a href="{importUrl}" class="button is-rounded is-link mb-4 ml-4 is-dark"
        title='{appLang === "en" ? "Import" : "Importer"}'>
         <i class="fa-solid fa-file-import"/>
         <span>{appLang === "en" ? "Import" : "Importer"}</span>
