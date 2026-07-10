@@ -205,10 +205,9 @@ class Treatment(AbstractSearchableModel):
                 self.requested_by = user
 
             if not self.document_set:
-                log(
-                    f"[treatment_save] No document set for treatment {self.id}, aborting."
-                )
-                self.status = "ERROR"
+                if self.task_type != "import":
+                    log(f"[treatment_save] No document set for treatment {self.id}, aborting.")
+                    self.status = "ERROR"
                 super().save(*args, **kwargs)
                 return
 
@@ -235,7 +234,7 @@ class Treatment(AbstractSearchableModel):
 
     def start_task(self, witnesses):
         """Start the task"""
-        if self.task_type not in ADDITIONAL_MODULES:
+        if self.task_type not in ADDITIONAL_MODULES + ["import"]:
             log(f"[start_task] Uninstalled module: {self.task_type}")
             return
 

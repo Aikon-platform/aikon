@@ -1,5 +1,5 @@
 from celery.schedules import crontab
-from celery import chain
+from celery import chain, chord
 from app.config.celery import celery_app
 from django.apps import apps
 
@@ -84,6 +84,8 @@ def generate_all_json():
 
 @celery_app.task
 def launch_task(treatment):
+    if treatment.task_type == "import":
+        return start_import(str(treatment.id))
     try:
         witnesses = treatment.get_witnesses()
         treatment.start_task(witnesses)
@@ -97,6 +99,127 @@ def launch_task(treatment):
                 "notify": treatment.notify_email,
             },
         )
+
+
+@celery_app.task
+def start_import(treatment_id):
+    """
+    Orchestrator for cross-instance imports:
+    - fetch source, import witnesses + metadata cascade synchronously
+    - launch one chain per digitization (download imgs → update json → import regions)
+    - a chord callback finalizes the treatment (and imports similarities)
+    """
+    from app.webapp.models.treatment import Treatment
+    from app.webapp.utils.data_import import (
+        ImportContext, is_same_instance, resolve_source, import_witness,
+    )
+    from app.webapp.utils.tasking import create_doc_set_from_ids
+    from app.webapp.utils.logger import log
+
+    treatment = Treatment.objects.get(pk=treatment_id)
+    ctx = ImportContext(treatment)
+    source_url = ctx.opts.get("source_url", "")
+
+    if is_same_instance(source_url):
+        treatment.on_task_success(
+            {"notify": treatment.notify_email, "message": "Source is this instance, nothing to import"}
+        )
+        return
+
+    try:
+        wit_urls, similarity_url = resolve_source(source_url, ctx)
+        ctx.opts["similarity_url"] = similarity_url
+    except Exception as e:
+        treatment.on_task_error(
+            {"notify": treatment.notify_email, "error": f"Could not fetch source {source_url}: {e}"}
+        )
+        return
+
+    chains = []
+    for wit_url in wit_urls.values():
+        try:
+            witness, digits = import_witness(wit_url, ctx)
+        except Exception as e:
+            ctx.errors.append(f"{wit_url}: {e}")
+            log(f"[start_import] Failed to import witness {wit_url}", e)
+            continue
+        for digit, manifest_url, regions in digits:
+            sig = chain(
+                extract_images_from_iiif_manifest.s(manifest_url, digit.get_ref(), digit),
+                update_image_json.s(digit.id),
+            )
+            if regions and ctx.opts.get("import_regions"):
+                sig |= import_regions_task.s(digit.id, regions, treatment_id)
+            chains.append(sig)
+
+    if wit_ids := sorted(ctx.mapping["witnesses"].values()):
+        doc_set, _ = create_doc_set_from_ids({"wit_ids": wit_ids}, user=treatment.requested_by)
+        treatment.update(document_set=doc_set)
+    ctx.save()
+
+    if chains:
+        chord(chains)(finalize_import.s(treatment_id).on_error(import_failed.s(treatment_id)))
+    else:
+        finalize_import.delay(None, treatment_id)
+
+
+@celery_app.task
+def import_regions_task(img_list, digit_id, regions, treatment_id):
+    """
+    Chained after update_image_json.
+    regions: {src_regions_id: extracted-regions url}
+    """
+    from app.webapp.models.digitization import Digitization
+    from app.webapp.utils.data_import import import_region_extraction, update_mapping
+    from app.webapp.utils.logger import log
+
+    digit = Digitization.objects.get(id=digit_id)
+    if not digit.img_nb():
+        return f"No images for digit #{digit_id}, skipping regions import"
+
+    for src_rid, url in regions.items():
+        try:
+            if new_rid := import_region_extraction(digit, url):
+                update_mapping(treatment_id, "regions", src_rid, new_rid)
+        except Exception as e:
+            log(f"[import_regions_task] Failed to import regions {url} for digit #{digit_id}", e)
+    return True
+
+
+@celery_app.task
+def import_failed(request, exc, traceback, treatment_id):
+    from app.webapp.models.treatment import Treatment
+
+    treatment = Treatment.objects.get(pk=treatment_id)
+    treatment.on_task_error(
+        {"notify": treatment.notify_email, "error": f"Import chain failed: {exc}"}
+    )
+
+
+@celery_app.task
+def finalize_import(results, treatment_id):
+    from app.config.settings import ADDITIONAL_MODULES
+    from app.webapp.models.treatment import Treatment
+    from app.webapp.utils.data_import import ImportContext, import_similarity_pairs
+    from app.webapp.utils.logger import log
+
+    treatment = Treatment.objects.get(pk=treatment_id)
+    ctx = ImportContext(treatment)
+    msg = f"Imported {len(ctx.mapping['witnesses'])} witness(es)"
+
+    sim_url = ctx.opts.get("similarity_url")
+    if ctx.opts.get("import_similarities") and sim_url and "similarity" in ADDITIONAL_MODULES:
+        try:
+            msg += f", {import_similarity_pairs(ctx, sim_url)} region pair(s)"
+        except Exception as e:
+            ctx.errors.append(f"similarity: {e}")
+            log("[finalize_import] Failed to import similarity pairs", e)
+
+    ctx.save()
+    if ctx.errors:
+        treatment.on_task_error({"notify": treatment.notify_email, "error": f"{msg}. Errors: {ctx.errors}"})
+    else:
+        treatment.on_task_success({"notify": treatment.notify_email, "message": msg})
 
 
 @celery_app.task

@@ -85,7 +85,7 @@
         </div>
 
         <div class="grid">
-            {#each Object.entries(item.selection.selected) as [modelName, selectedRecords]}
+            {#each Object.entries(item.selection?.selected || {}) as [modelName, selectedRecords]}
                 {#if modelName !== "User"}
                     {#each Object.entries(selectedRecords) as [id, meta]}
                         <div>
