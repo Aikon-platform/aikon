@@ -273,11 +273,11 @@ urlpatterns += [
         delete_regions,
         name="delete_regions",
     ),
-    # path(
-    #     f"{APP_NAME}/regions/export",
-    #     export_regions,
-    #     name="export_regions",
-    # ),
+    path(
+        f"{APP_NAME}/regions/export",
+        export_region_extraction,
+        name="export_region_extraction",
+    ),
     path(
         f"{APP_NAME}/witness/<int:wid>/json", get_json_witness, name="get_json_witness"
     ),
