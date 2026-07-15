@@ -117,8 +117,10 @@ def start_import(treatment_id):
     from app.webapp.utils.logger import log
 
     treatment = Treatment.objects.get(pk=treatment_id)
+    treatment.update(status="IN PROGRESS")
     ctx = ImportContext(treatment)
     source_url = ctx.opts.get("source_url", "")
+    log(f"[start_import] Treatment #{treatment_id}: importing from {source_url}", msg_type="info")
 
     if is_same_instance(source_url):
         treatment.on_task_success(
@@ -143,6 +145,14 @@ def start_import(treatment_id):
             ctx.errors.append(f"{wit_url}: {e}")
             log(f"[start_import] Failed to import witness {wit_url}", e)
             continue
+
+        if witness:
+            log(
+                f"[start_import] {wit_url} → witness #{witness.id}, {len(digits)} digit(s), "
+                f"{sum(len(r) for _, _, r in digits)} region extraction(s) to import",
+                msg_type="info",
+            )
+
         for digit, manifest_url, regions in digits:
             sig = chain(
                 extract_images_from_iiif_manifest.s(manifest_url, digit.get_ref(), digit),
@@ -152,31 +162,41 @@ def start_import(treatment_id):
                 sig |= import_regions_task.s(digit.id, regions, treatment_id)
             chains.append(sig)
 
+    log(
+        f"[start_import] Treatment #{treatment_id}: {len(ctx.mapping['witnesses'])} witness(es) mapped, "
+        f"{len(chains)} digitization chain(s) launched, {len(ctx.errors)} error(s)",
+        msg_type="info",
+    )
+
     if wit_ids := sorted(ctx.mapping["witnesses"].values()):
         doc_set, _ = create_doc_set_from_ids({"wit_ids": wit_ids}, user=treatment.requested_by)
         treatment.update(document_set=doc_set)
     ctx.save()
 
     if chains:
-        chord(chains)(finalize_import.s(treatment_id).on_error(import_failed.s(treatment_id)))
+        chord(chains)(
+            finalize_import.s(treatment_id).on_error(
+                import_failed.s(treatment_id=treatment_id)
+            )
+        )
     else:
         finalize_import.delay(None, treatment_id)
 
 
 @celery_app.task
-def import_regions_task(img_list, digit_id, regions, treatment_id):
+def import_regions_task(prev, digit_id, regions, treatment_id):
     """
-    Chained after update_image_json.
+    Chained after update_image_json (prev = its return value).
     regions: {src_regions_id: extracted-regions url}
     """
     from app.webapp.models.digitization import Digitization
     from app.webapp.utils.data_import import import_region_extraction, update_mapping
     from app.webapp.utils.logger import log
 
-    digit = Digitization.objects.get(id=digit_id)
-    if not digit.img_nb():
-        return f"No images for digit #{digit_id}, skipping regions import"
+    if prev is not True:
+        return f"Image processing failed for digit #{digit_id}, skipping regions import: {prev}"
 
+    digit = Digitization.objects.get(id=digit_id)
     for src_rid, url in regions.items():
         try:
             if new_rid := import_region_extraction(digit, url):
@@ -187,12 +207,12 @@ def import_regions_task(img_list, digit_id, regions, treatment_id):
 
 
 @celery_app.task
-def import_failed(request, exc, traceback, treatment_id):
+def import_failed(*args, treatment_id):
     from app.webapp.models.treatment import Treatment
 
     treatment = Treatment.objects.get(pk=treatment_id)
     treatment.on_task_error(
-        {"notify": treatment.notify_email, "error": f"Import chain failed: {exc}"}
+        {"notify": treatment.notify_email, "error": f"Import chain failed: {args}"}
     )
 
 
