@@ -12,16 +12,16 @@ def witness_extras(witness) -> dict:
     from app.config.settings import ADDITIONAL_MODULES
 
     endpoints = {
-        "extracted_regions": ("region_extraction", "extracted-regions"),
-        "vectorizations": ("vectorization", "vectorized-images"),
+        "extracted_regions": ({"region_extraction", "regions"}, "extracted-regions"),
+        "vectorizations": ({"vectorization"}, "vectorized-images"),
     }
     regions = {
         r.id: {
             "digitization_id": r.digitization_id,
             "treatments": {
                 name: f"{APP_URL}/{APP_NAME}/witness/{witness.id}/regions/{r.id}/json/{suffix}"
-                for name, (module, suffix) in endpoints.items()
-                if module in ADDITIONAL_MODULES
+                for name, (modules, suffix) in endpoints.items()
+                if modules & set(ADDITIONAL_MODULES)
             },
         }
         for r in witness.get_regions()
