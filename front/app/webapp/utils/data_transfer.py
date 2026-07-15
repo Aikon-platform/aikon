@@ -24,7 +24,7 @@ def witness_extras(witness) -> dict:
                 if module in ADDITIONAL_MODULES
             },
         }
-        for r in witness.get_region_extractions()
+        for r in witness.get_regions()
     }
     return {
         "digitizations": {d.id: d.get_manifest_url() for d in witness.get_digits()},

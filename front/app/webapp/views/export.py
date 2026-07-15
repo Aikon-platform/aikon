@@ -99,7 +99,7 @@ def iter_docset_files(doc_set):
             for img in d.get_imgs():
                 yield f"{base}/digitizations/{img}", Path(f"{IMG_PATH}/{img}")
 
-        for regions in w.get_region_extractions():
+        for regions in w.get_regions():
             r_base = f"{base}/regions{regions.id}"
             if "region_extraction" in ADDITIONAL_MODULES:
                 r_json = get_region_data(w.id, regions.id)
