@@ -121,14 +121,13 @@ class TreatmentForm(forms.ModelForm):
         subform_data = None
         if data:
             subform_data = {
-                name.replace(f"{prefix}_", ""): value
+                name.removeprefix(f"{prefix}_"): value
                 for name, value in data.items()
                 if name.startswith(f"{prefix}_")
             }
 
         self.subforms[prefix] = form_class(
             data=subform_data,
-            prefix=prefix,
             files=files,
         )
         for name, field in self.subforms[prefix].fields.items():
@@ -137,9 +136,6 @@ class TreatmentForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-
-        if not cleaned_data.get("document_set"):
-            self.add_error("document_set", "A document set is required.")
 
         task_type = cleaned_data.get("task_type")
         if not task_type:
