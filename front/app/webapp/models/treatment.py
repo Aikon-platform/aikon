@@ -59,6 +59,7 @@ class Treatment(AbstractSearchableModel):
 
         if self.document_set:
             return f"{task} | {self.document_set.title}"
+        # TODO add source url for import treatments
         return task
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
