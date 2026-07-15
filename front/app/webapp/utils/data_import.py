@@ -14,6 +14,7 @@ from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.utils.constants import MAN_ABBR, MS_ABBR
 from app.webapp.utils.data_transfer import TRANSFER_MODELS, get_transfer_model
 from app.webapp.utils.paths import REGIONS_PATH
+from app.webapp.utils.logger import log
 
 TIMEOUT = 30
 
@@ -111,7 +112,11 @@ def import_record(url, ctx: ImportContext, parent=None, extra=None, data=None):
         getattr(record, name).set([import_record(r, ctx) for r in refs])
     for refs in (data.get("children") or {}).values():
         for r in refs:
-            import_record(r, ctx, parent=record)
+            try:
+                import_record(r, ctx, parent=record)
+            except Exception as e:
+                ctx.errors.append(f"{r}: {e}")
+                log(f"[import_record] Failed to import child record {r}", e)
     return record
 
 
@@ -151,16 +156,11 @@ def import_witness(wit_url, ctx: ImportContext):
         )
     ctx.mapping["witnesses"][src_wid] = witness.id
 
-    regions_by_digit = {}
-    for src_rid, regions in (data.get("regions_extraction") or data.get("regions") or {}).items():
-        if url := (regions.get("treatments") or {}).get("extracted_regions"):
-            regions_by_digit.setdefault(str(regions.get("digitization_id")), {})[
-                src_rid
-            ] = url
-
     digits = []
-    for src_did, manifest_url in (data.get("digitizations") or {}).items():
-        if not manifest_url:
+    for src_did, digit_data in (data.get("digitizations") or {}).items():
+        if isinstance(digit_data, str):  # legacy payload: manifest url only
+            digit_data = {"manifest": digit_data}
+        if not (manifest_url := digit_data.get("manifest")):
             continue
         digit = Digitization(
             witness=witness, digit_type=MAN_ABBR, manifest=manifest_url
@@ -168,7 +168,7 @@ def import_witness(wit_url, ctx: ImportContext):
         digit._skip_post_save = True  # conversion is chained explicitly by start_import
         digit.save()
         ctx.mapping["digitizations"][str(src_did)] = digit.id
-        digits.append((digit, manifest_url, regions_by_digit.get(str(src_did), {})))
+        digits.append((digit, manifest_url, digit_data.get("extracted_regions")))
 
     return witness, digits
 

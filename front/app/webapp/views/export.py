@@ -18,6 +18,7 @@ from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.regions import Regions
 from app.webapp.models.witness import Witness
+from app.webapp.models.digitization import Digitization
 from app.webapp.utils.functions import (
     zip_img,
     get_files_in_dir,
@@ -193,6 +194,20 @@ def get_region_data(wid, rid):
             "extracted_crops": get_record_annotations(record=regions, as_json=True),
         }
     return result
+
+
+def get_json_digit_regions(request, wid, did):
+    """All bbox annotations on a digitization's canvases, with or without RegionExtraction"""
+    witness = get_object_or_404(Witness, id=wid)
+    if not witness.is_public:
+        return JsonResponse({})
+    digit = get_object_or_404(Digitization, id=did, witness=witness)
+    return JsonResponse(
+        {
+            "manifest": digit.get_manifest_url(),
+            "extracted_crops": get_record_annotations(digit, as_json=True),
+        }
+    )
 
 
 def get_json_docset_simil(request, dsid):
