@@ -153,13 +153,13 @@ def start_import(treatment_id):
                 msg_type="info",
             )
 
-        for digit, manifest_url, regions in digits:
+        for digit, manifest_url, regions_url in digits:
             sig = chain(
                 extract_images_from_iiif_manifest.s(manifest_url, digit.get_ref(), digit),
                 update_image_json.s(digit.id),
             )
-            if regions and ctx.opts.get("import_regions"):
-                sig |= import_regions_task.s(digit.id, regions, treatment_id)
+            if regions_url and ctx.opts.get("import_regions"):
+                sig |= import_regions_task.s(digit.id, regions_url, treatment_id)
             chains.append(sig)
 
     log(
@@ -184,11 +184,8 @@ def start_import(treatment_id):
 
 
 @celery_app.task
-def import_regions_task(prev, digit_id, regions, treatment_id):
-    """
-    Chained after update_image_json (prev = its return value).
-    regions: {src_regions_id: extracted-regions url}
-    """
+def import_regions_task(prev, digit_id, regions_url, treatment_id):
+    """Chained after update_image_json (prev = its return value)"""
     from app.webapp.models.digitization import Digitization
     from app.webapp.utils.data_import import import_region_extraction, update_mapping
     from app.webapp.utils.logger import log
@@ -197,12 +194,11 @@ def import_regions_task(prev, digit_id, regions, treatment_id):
         return f"Image processing failed for digit #{digit_id}, skipping regions import: {prev}"
 
     digit = Digitization.objects.get(id=digit_id)
-    for src_rid, url in regions.items():
-        try:
-            if new_rid := import_region_extraction(digit, url):
-                update_mapping(treatment_id, "regions", src_rid, new_rid)
-        except Exception as e:
-            log(f"[import_regions_task] Failed to import regions {url} for digit #{digit_id}", e)
+    try:
+        if new_rid := import_region_extraction(digit, regions_url):
+            update_mapping(treatment_id, "regions", digit_id, new_rid)
+    except Exception as e:
+        log(f"[import_regions_task] Failed to import regions {regions_url} for digit #{digit_id}", e)
     return True
 
 

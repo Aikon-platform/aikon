@@ -290,9 +290,9 @@ urlpatterns += [
         f"{APP_NAME}/witness/<int:wid>/json", get_json_witness, name="get_json_witness"
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/extracted-regions",
-        get_json_regions,
-        name="get_json_regions",
+        f"{APP_NAME}/witness/<int:wid>/digitization/<int:did>/json/extracted-regions",
+        get_json_digit_regions,
+        name="get_json_digit_regions",
     ),
     path(
         f"{APP_NAME}/document-set/<int:dsid>/json/similarities",

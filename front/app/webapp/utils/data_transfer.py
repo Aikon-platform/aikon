@@ -9,26 +9,15 @@ from app.config.settings import APP_URL, APP_NAME
 
 def witness_extras(witness) -> dict:
     """Operational data needed to import a witness, alongside its raw metadata"""
-    from app.config.settings import ADDITIONAL_MODULES
-
-    endpoints = {
-        "extracted_regions": ("region_extraction", "extracted-regions"),
-        "vectorizations": ("vectorization", "vectorized-images"),
-    }
-    regions = {
-        r.id: {
-            "digitization_id": r.digitization_id,
-            "treatments": {
-                name: f"{APP_URL}/{APP_NAME}/witness/{witness.id}/regions/{r.id}/json/{suffix}"
-                for name, (module, suffix) in endpoints.items()
-                if module in ADDITIONAL_MODULES
-            },
-        }
-        for r in witness.get_region_extractions()
-    }
     return {
-        "digitizations": {d.id: d.get_manifest_url() for d in witness.get_digits()},
-        "regions_extraction": regions,
+        "digitizations": {
+            d.id: {
+                "manifest": d.get_manifest_url(),
+                "extracted_regions": f"{APP_URL}/{APP_NAME}/witness/{witness.id}"
+                f"/digitization/{d.id}/json/extracted-regions",
+            }
+            for d in witness.get_digits()
+        }
     }
 
 
