@@ -4,11 +4,12 @@ from app.config.celery import celery_app
 from django.apps import apps
 
 from app.webapp.models.searchable_models import AbstractSearchableModel
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.utils.constants import MAX_RES
 from app.webapp.utils.iiif.download import iiif_to_img
-from webapp.models.utils.constants import PDF_ABBR, IMG_ABBR, MAN_ABBR
-from webapp.utils.paths import MEDIA_PATH, IMG_PATH
-from webapp.utils.pdf import pdf_2_img
+from app.webapp.models.utils.constants import PDF_ABBR, IMG_ABBR, MAN_ABBR
+from app.webapp.utils.paths import MEDIA_PATH, IMG_PATH
+from app.webapp.utils.pdf import pdf_2_img
 
 
 @celery_app.task
@@ -113,11 +114,11 @@ def start_import(treatment_id):
     from app.webapp.utils.data_import import (
         ImportContext, is_same_instance, resolve_source, import_witness,
     )
-    from app.webapp.utils.tasking import create_doc_set_from_ids
     from app.webapp.utils.logger import log
 
     treatment = Treatment.objects.get(pk=treatment_id)
     treatment.update(status="IN PROGRESS")
+
     ctx = ImportContext(treatment)
     source_url = ctx.opts.get("source_url", "")
     log(f"[start_import] Treatment #{treatment_id}: importing from {source_url}", msg_type="info")
@@ -129,13 +130,18 @@ def start_import(treatment_id):
         return
 
     try:
-        wit_urls, similarity_url = resolve_source(source_url, ctx)
+        wit_urls, similarity_url, title = resolve_source(source_url, ctx)
         ctx.opts["similarity_url"] = similarity_url
     except Exception as e:
         treatment.on_task_error(
             {"notify": treatment.notify_email, "error": f"Could not fetch source {source_url}: {e}"}
         )
         return
+
+    doc_set = DocumentSet.objects.create(
+        title=title or source_url, user=treatment.requested_by
+    )
+    treatment.update(document_set=doc_set)
 
     chains = []
     for wit_url in wit_urls.values():
@@ -169,8 +175,8 @@ def start_import(treatment_id):
     )
 
     if wit_ids := sorted(ctx.mapping["witnesses"].values()):
-        doc_set, _ = create_doc_set_from_ids({"wit_ids": wit_ids}, user=treatment.requested_by)
-        treatment.update(document_set=doc_set)
+        doc_set.wit_ids = wit_ids
+        doc_set.save()
     ctx.save()
 
     if chains:

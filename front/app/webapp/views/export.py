@@ -290,9 +290,12 @@ def get_json_document_set(request, dsid):
     if request.method == "GET":
         doc_set = get_object_or_404(DocumentSet, id=dsid)
         ds_data = {
-            w.id: f"{APP_URL}/{APP_NAME}/witness/{w.id}/json"
-            for w in doc_set.all_witnesses()
-            if w.is_public
+            "title": doc_set.title,
+            **{
+                w.id: f"{APP_URL}/{APP_NAME}/witness/{w.id}/json"
+                for w in doc_set.all_witnesses()
+                if w.is_public
+            },
         }
         if "similarity" in ADDITIONAL_MODULES and ds_data:
             ds_data[

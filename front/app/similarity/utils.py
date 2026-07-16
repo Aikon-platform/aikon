@@ -683,6 +683,25 @@ def get_all_pairs():
     return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH)]
 
 
+def reset_digit_similarity(digit) -> bool:
+    """Delete all similarity data (score files, API data, RegionPairs) for a digitization"""
+    digit_ref = digit.get_ref()
+    for file in os.listdir(SCORES_PATH):
+        if digit_ref in file:
+            if not delete_path(Path(SCORES_PATH) / file):
+                log(f"[reset_digit_similarity] Failed to delete file {file}")
+
+    for regions in digit.region_extractions.all():
+        delete_api_similarity.delay(regions.get_ref(), algorithm=None, feat_net=None)
+
+    try:
+        delete_pairs_with_digit(digit.id)
+    except Exception as e:
+        log(f"[reset_digit_similarity] Error deleting pairs for digit #{digit.id}", e)
+        return False
+    return True
+
+
 def reset_similarity(region_extraction: RegionExtraction):
     region_extraction_id = region_extraction.id
     try:

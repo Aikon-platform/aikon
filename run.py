@@ -74,9 +74,6 @@ DEV_PROCS = [
             "--schedule",
             str(FRONT / "celery/celerybeat-schedule"),
             "--loglevel=INFO",
-            "--without-gossip",
-            "--without-mingle",
-            "--without-heartbeat",
         ],
         FRONT,
     ),
@@ -112,14 +109,9 @@ def spawn(name: str, cmd: list, cwd: Path, env: dict = None) -> subprocess.Popen
     return subprocess.Popen(cmd, cwd=cwd, env={**os.environ, **(env or {})}, **kwargs)
 
 
-def kill_stale_containers() -> None:
-    subprocess.run(["docker", "rm", "-f", "aikon-web-1", "aikon-nginx-1"], capture_output=True)
-
-
 def kill_stale(*patterns: str) -> None:
     if WIN:
         return
-    kill_stale_containers()
     for p in patterns:
         if not subprocess.run(["pkill", "-f", p], capture_output=True).returncode:
             log(f"killed stale '{p}'", **{**LOG_KWARGS, "msg_type": "white"})

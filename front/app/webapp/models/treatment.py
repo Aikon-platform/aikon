@@ -177,6 +177,7 @@ class Treatment(AbstractSearchableModel):
                     "user": user.__str__() if user else NO_USER,
                     "user_id": user.id if user else 0,
                     "status": self.status,
+                    "task_type": self.task_type,
                     "is_finished": self.is_finished,
                     "treated_objects": self.treated_objects,
                     "cancel_url": self.get_cancel_url(),

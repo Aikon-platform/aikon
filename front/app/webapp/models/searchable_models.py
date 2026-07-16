@@ -63,7 +63,11 @@ class AbstractSearchableModel(models.Model):
             return None
 
     def update(self, **kwargs):
-        type(self).objects.filter(pk=self.pk.__str__()).update(**kwargs)
+        type(self).objects.filter(pk=self.pk).update(**kwargs)
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        if "json" not in kwargs:
+            self.update_json(self.to_json(no_img=True))
 
     def update_json(self, new_json: Dict) -> Dict:
         self.update(json=new_json)

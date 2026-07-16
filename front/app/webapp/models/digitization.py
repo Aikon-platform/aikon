@@ -1,7 +1,6 @@
 import os
-from glob import glob
 from functools import partial
-from typing import Optional, List
+from glob import glob
 
 from iiif_prezi.factory import StructuralError
 from PIL import Image, UnidentifiedImageError
@@ -12,7 +11,7 @@ from django.db import models, transaction
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch.dispatcher import receiver
 
-from app.config.settings import APP_URL, APP_NAME
+from app.config.settings import APP_URL, APP_NAME, ADDITIONAL_MODULES
 from app.webapp.models.digitization_source import DigitizationSource
 from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.utils.functions import get_fieldname
@@ -496,22 +495,23 @@ def pre_delete_digit(sender, instance: Digitization, **kwargs):
     """
     - delete associated files (downloaded PDF)
     - delete IIIF manifest from aiiinotate
+    - delete RegionsPair on the digitization
     - delete all related Regions from db
     - delete all related annotations
     """
     from app.webapp.tasks import delete_digitization
-    from app.webapp.utils.iiif.annotation import (
-        destroy_region_extraction,
-        unindex_manifest,
-    )
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction, unindex_manifest
 
     other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
     delete_digitization.delay(instance.get_ref(), other_media)
 
-    manifest_url = instance.get_manifest_url()
-    # NOTE: order is important here !
-    r_destroy_regions = [
-        destroy_region_extraction(r) for r in instance.get_region_extractions()
-    ]
-    r_unindex_manifest = unindex_manifest(manifest_url)
-    return all([r_unindex_manifest, *r_destroy_regions])
+    try:
+        if "similarity" in ADDITIONAL_MODULES:
+            from app.similarity.utils import reset_digit_similarity
+            reset_digit_similarity(instance)
+
+        results = [destroy_region_extraction(r) for r in instance.get_region_extractions()]
+        if not (unindex_manifest(instance.get_manifest_url()) and all(results)):
+            log(f"[pre_delete_digit] Cleanup incomplete for digit #{instance.id}")
+    except Exception as e:
+        log(f"[pre_delete_digit] Cleanup error for digit #{instance.id}", e)
