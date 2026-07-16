@@ -170,6 +170,7 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
         "DB_PORT": port("DB_PORT"),
         "REDIS_HOST": host("redis"),
         "REDIS_PORT": port("REDIS_PORT"),
+        "REDIS_DB_INDEX": "2" if mode == "dev" else "0",
         "MONGODB_HOST": host("mongo"),
         "MONGODB_PORT": port("MONGODB_PORT"),
         "MEDIA_DIR": "/data/mediafiles" if in_docker else f"{v['DATA_DIR']}/mediafiles",
@@ -207,7 +208,7 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
 REQUIRED = {
     "front/app/config/.env": (
         "SECRET_KEY", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD",
-        "DB_HOST", "DB_PORT", "REDIS_HOST", "REDIS_PORT",
+        "DB_HOST", "DB_PORT", "REDIS_HOST", "REDIS_PORT", "REDIS_DB_INDEX",
         "API_URL", "BASE_URL", "MEDIA_DIR", "CANTALOUPE_BASE_URI",
         "AIIINOTATE_BASE_URL", "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
         "AIIINOTATE_STRICT_MODE", "MIRADOR_BASE_URL",

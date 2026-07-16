@@ -16,7 +16,7 @@ os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
 
 REDIS_HOST = ENV.str("REDIS_HOST", default="localhost")
 REDIS_PORT = ENV.str("REDIS_PORT", default="6379")
-REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/0"
+REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{ENV.str('REDIS_DB_INDEX', default='0')}"
 
 ADDITIONAL_MODULES = ENV.list("INSTALLED_APPS", default=[])
 
