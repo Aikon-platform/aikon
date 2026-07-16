@@ -86,7 +86,12 @@ function createTypedSelectionStore(config) {
     }
 
     const loadSet = (setData) => selection.update(() => {
-        const newSet = setData.selection.id ? setData.selection : {...setData.selection, id: setData.id};
+        const newSet = {
+            ...parseStoredSelection(setData.selection),
+            id: setData.selection?.id ?? setData.id,
+            title: setData.title ?? title,
+            is_public: setData.is_public ?? false
+        };
         store(newSet);
         return newSet;
     });
