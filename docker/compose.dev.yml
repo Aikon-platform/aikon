@@ -1,0 +1,21 @@
+# dev mode: the front (and api) run on the host, every service is reachable from localhost
+
+services:
+  db:
+    ports:
+      - "${DB_PORT}:5432"
+  redis:
+    ports:
+      - "${REDIS_PORT}:6379"
+  mongo:
+    ports:
+      - "${MONGODB_PORT}:27017"
+  cantaloupe:
+    ports:
+      - "${CANTALOUPE_PORT}:${CANTALOUPE_PORT}"
+  aiiinotate:
+    ports:
+      - "${AIIINOTATE_PORT}:${AIIINOTATE_PORT}"
+  mirador:
+    ports:
+      - "${MIRADOR_PORT}:${MIRADOR_PORT}"

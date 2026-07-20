@@ -53,11 +53,11 @@
                     {% endfor %}
                 </div>
 
-                <div id="regions" class="task-form is-contrasted p-4 my-4 box">
+                <div id="region_extraction" class="task-form is-contrasted p-4 my-4 box">
                     <h2 class="title is-spaced">
                         {% if APP_LANG == 'en' %}Extraction settings{% else %}Paramètres de l'extraction{% endif %}
                     </h2>
-                    {% include "includes/form/field_group.html" with included_fields="regions" %}
+                    {% include "includes/form/field_group.html" with included_fields="region_extraction" %}
                 </div>
 
                 <div id="vectorization" class="task-form is-contrasted p-4 my-4 box">

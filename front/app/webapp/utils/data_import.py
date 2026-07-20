@@ -121,12 +121,13 @@ def import_record(url, ctx: ImportContext, parent=None, extra=None, data=None):
 
 
 def resolve_source(source_url, ctx: ImportContext):
-    """Return ({src_wit_id: witness json url}, similarity url or None)"""
+    """Return ({src_wit_id: witness json url}, similarity url or None, title or None)"""
     data = ctx.fetch(source_url)
     if "/witness/" in source_url:
-        return ({str(data["id"]): source_url} if data else {}), None
-    similarity_url = data.pop("similarity", None) if data else None
-    return data or {}, similarity_url
+        return ({str(data["id"]): source_url} if data else {}), None, (data or {}).get("id_nb")
+    if not data:
+        return {}, None, None
+    return data, data.pop("similarity", None), data.pop("title", None)
 
 
 def import_witness(wit_url, ctx: ImportContext):
@@ -237,7 +238,7 @@ def import_similarity_pairs(ctx: ImportContext, similarity_url: str) -> int:
         # imported digitizations are always manifests
         return f"wit{wit}_{MAN_ABBR}{digit}_{ref.page}{suffix}.jpg"
 
-    hashed, manual, after = [], [], 0
+    hashed, manual, after, pages = [], [], 0, 0
     while True:
         data = ctx.fetch(f"{similarity_url}?after={after}&limit=1000")
         for p in data.get("pairs") or []:
@@ -260,8 +261,15 @@ def import_similarity_pairs(ctx: ImportContext, similarity_url: str) -> int:
             (hashed if pair.similarity_hash else manual).append(pair)
 
         after = data.get("next_cursor")
+        pages += 1
         if not after:
             break
+
+    log(
+        f"[import_similarity_pairs] {pages} page(s) fetched from {similarity_url}: "
+        f"{len(hashed)} hashed + {len(manual)} manual pair(s) to write",
+        msg_type="info",
+    )
 
     RegionPair.objects.bulk_update_or_create(
         hashed,
@@ -285,7 +293,13 @@ def import_similarity_pairs(ctx: ImportContext, similarity_url: str) -> int:
         )
 
     # pairs are only listed in the UI if a RegionExtraction exists for their digitization
-    for digit_id in {d for p in hashed + manual for d in (p.digit_1, p.digit_2)}:
+    digit_ids = {d for p in hashed + manual for d in (p.digit_1, p.digit_2)}
+    for digit_id in digit_ids:
         get_digit_region_extraction_id(digit_id, create_if_missing=True)
 
+    log(
+        f"[import_similarity_pairs] {len(hashed) + len(manual)} pair(s) imported "
+        f"over {len(digit_ids)} digitization(s)",
+        msg_type="info",
+    )
     return len(hashed) + len(manual)

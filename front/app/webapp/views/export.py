@@ -16,7 +16,7 @@ from app.config.settings import (
 )
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.functions import (
@@ -100,7 +100,7 @@ def iter_docset_files(doc_set):
             for img in d.get_imgs():
                 yield f"{base}/digitizations/{img}", Path(f"{IMG_PATH}/{img}")
 
-        for regions in w.get_regions():
+        for regions in w.get_region_extractions():
             r_base = f"{base}/regions{regions.id}"
             if "region_extraction" in ADDITIONAL_MODULES:
                 r_json = get_region_data(w.id, regions.id)
@@ -188,7 +188,7 @@ def get_region_data(wid, rid):
     result = {}
     witness = get_object_or_404(Witness, id=wid)
     if witness.is_public:
-        regions = get_object_or_404(Regions, id=rid)
+        regions = get_object_or_404(RegionExtraction, id=rid)
         result = {
             "manifest": regions.get_manifest_url(),
             "extracted_crops": get_record_annotations(record=regions, as_json=True),
@@ -241,7 +241,7 @@ def get_vecto_data(rid, include_svg=True):
     # Inspired from 'get_vectorized_images' in 'vectorization/views.py'
     from app.vectorization.const import SVG_PATH
 
-    q_r = get_object_or_404(Regions, pk=rid)
+    q_r = get_object_or_404(RegionExtraction, pk=rid)
     v_imgs = []
     # Mirroring what happens with vectorization view:
     # First look in folder named after regions_ref, then try with digit_ref
@@ -290,9 +290,12 @@ def get_json_document_set(request, dsid):
     if request.method == "GET":
         doc_set = get_object_or_404(DocumentSet, id=dsid)
         ds_data = {
-            w.id: f"{APP_URL}/{APP_NAME}/witness/{w.id}/json"
-            for w in doc_set.all_witnesses()
-            if w.is_public
+            "title": doc_set.title,
+            **{
+                w.id: f"{APP_URL}/{APP_NAME}/witness/{w.id}/json"
+                for w in doc_set.all_witnesses()
+                if w.is_public
+            },
         }
         if "similarity" in ADDITIONAL_MODULES and ds_data:
             ds_data[

@@ -1,0 +1,19 @@
+# prod mode: only nginx is exposed (SSL termination is handled by the nginx host -> nginx_external.conf)
+
+services:
+  db:
+    restart: always
+  redis:
+    restart: always
+  mongo:
+    restart: always
+  cantaloupe:
+    restart: always
+  aiiinotate:
+    restart: always
+  mirador:
+    restart: always
+  web:
+    restart: always
+  nginx:
+    restart: always

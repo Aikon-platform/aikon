@@ -4,11 +4,12 @@ from app.config.celery import celery_app
 from django.apps import apps
 
 from app.webapp.models.searchable_models import AbstractSearchableModel
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.utils.constants import MAX_RES
 from app.webapp.utils.iiif.download import iiif_to_img
-from webapp.models.utils.constants import PDF_ABBR, IMG_ABBR, MAN_ABBR
-from webapp.utils.paths import MEDIA_PATH, IMG_PATH
-from webapp.utils.pdf import pdf_2_img
+from app.webapp.models.utils.constants import PDF_ABBR, IMG_ABBR, MAN_ABBR
+from app.webapp.utils.paths import MEDIA_PATH, IMG_PATH
+from app.webapp.utils.pdf import pdf_2_img
 
 
 @celery_app.task
@@ -29,31 +30,31 @@ def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit):
 
 
 @celery_app.task
-def reindex_from_file(regions_id):
-    from app.webapp.models.regions import Regions
+def reindex_from_file(region_extraction_id):
+    from app.webapp.models.region_extraction import RegionExtraction
     from app.webapp.utils.iiif.annotation import check_indexation
 
-    # regions = Regions.objects.filter(pk=regions_id).first()
-    regions = Regions.objects.get(pk=regions_id)
-    return check_indexation(regions, True)
+    # region_extraction = RegionExtraction.objects.filter(pk=region_extraction_id).first()
+    region_extraction = RegionExtraction.objects.get(pk=region_extraction_id)
+    return check_indexation(region_extraction, True)
 
 
 # NOTE unused
 @celery_app.task
-def delete_regions_and_annotations(regions_id):
-    from app.webapp.models.regions import Regions
-    from app.webapp.utils.iiif.annotation import destroy_regions
+def delete_region_extraction_and_annotations(regions_id):
+    from app.webapp.models.region_extraction import RegionExtraction
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction
 
-    # regions = Regions.objects.filter(pk=regions_id).first()
-    regions = Regions.objects.get(pk=regions_id)
-    return destroy_regions(regions)
+    # region_extraction = RegionExtraction.objects.filter(pk=regions_id).first()
+    region_extraction = RegionExtraction.objects.get(pk=regions_id)
+    return destroy_region_extraction(region_extraction)
 
 
 @celery_app.task
 def delete_annotations(regions_ref, manifest_url):
-    from app.webapp.utils.iiif.annotation import unindex_regions
+    from app.webapp.utils.iiif.annotation import unindex_region_extraction
 
-    return unindex_regions(regions_ref, manifest_url)
+    return unindex_region_extraction(regions_ref, manifest_url)
 
 
 @celery_app.task
@@ -113,12 +114,14 @@ def start_import(treatment_id):
     from app.webapp.utils.data_import import (
         ImportContext, is_same_instance, resolve_source, import_witness,
     )
-    from app.webapp.utils.tasking import create_doc_set_from_ids
     from app.webapp.utils.logger import log
 
     treatment = Treatment.objects.get(pk=treatment_id)
+    treatment.update(status="IN PROGRESS")
+
     ctx = ImportContext(treatment)
     source_url = ctx.opts.get("source_url", "")
+    log(f"[start_import] Treatment #{treatment_id}: importing from {source_url}", msg_type="info")
 
     if is_same_instance(source_url):
         treatment.on_task_success(
@@ -127,13 +130,18 @@ def start_import(treatment_id):
         return
 
     try:
-        wit_urls, similarity_url = resolve_source(source_url, ctx)
+        wit_urls, similarity_url, title = resolve_source(source_url, ctx)
         ctx.opts["similarity_url"] = similarity_url
     except Exception as e:
         treatment.on_task_error(
             {"notify": treatment.notify_email, "error": f"Could not fetch source {source_url}: {e}"}
         )
         return
+
+    doc_set = DocumentSet.objects.create(
+        title=title or source_url, user=treatment.requested_by
+    )
+    treatment.update(document_set=doc_set)
 
     chains = []
     for wit_url in wit_urls.values():
@@ -160,13 +168,23 @@ def start_import(treatment_id):
                 sig |= import_regions_task.s(digit.id, regions_url, treatment_id)
             chains.append(sig)
 
+    log(
+        f"[start_import] Treatment #{treatment_id}: {len(ctx.mapping['witnesses'])} witness(es) mapped, "
+        f"{len(chains)} digitization chain(s) launched, {len(ctx.errors)} error(s)",
+        msg_type="info",
+    )
+
     if wit_ids := sorted(ctx.mapping["witnesses"].values()):
-        doc_set, _ = create_doc_set_from_ids({"wit_ids": wit_ids}, user=treatment.requested_by)
-        treatment.update(document_set=doc_set)
+        doc_set.wit_ids = wit_ids
+        doc_set.save()
     ctx.save()
 
     if chains:
-        chord(chains)(finalize_import.s(treatment_id).on_error(import_failed.s(treatment_id)))
+        chord(chains)(
+            finalize_import.s(treatment_id).on_error(
+                import_failed.s(treatment_id=treatment_id)
+            )
+        )
     else:
         finalize_import.delay(None, treatment_id)
 
@@ -178,6 +196,9 @@ def import_regions_task(prev, digit_id, regions_url, treatment_id):
     from app.webapp.utils.data_import import import_region_extraction, update_mapping
     from app.webapp.utils.logger import log
 
+    if prev is not True:
+        return f"Image processing failed for digit #{digit_id}, skipping regions import: {prev}"
+
     digit = Digitization.objects.get(id=digit_id)
     try:
         if new_rid := import_region_extraction(digit, regions_url):
@@ -188,12 +209,12 @@ def import_regions_task(prev, digit_id, regions_url, treatment_id):
 
 
 @celery_app.task
-def import_failed(request, exc, traceback, treatment_id):
+def import_failed(*args, treatment_id):
     from app.webapp.models.treatment import Treatment
 
     treatment = Treatment.objects.get(pk=treatment_id)
     treatment.on_task_error(
-        {"notify": treatment.notify_email, "error": f"Import chain failed: {exc}"}
+        {"notify": treatment.notify_email, "error": f"Import chain failed: {args}"}
     )
 
 
@@ -346,16 +367,16 @@ def delete_digitization(digit_ref, other_media):
 
 
 @celery_app.task
-def delete_regions(regions_ids):
-    from app.webapp.models.regions import Regions
-    from app.webapp.utils.iiif.annotation import destroy_regions
+def delete_region_extraction(regions_ids):
+    from app.webapp.models.region_extraction import RegionExtraction
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction
 
     for regions_id in regions_ids:
         try:
-            regions = Regions.objects.get(id=regions_id)
-            destroy_regions(regions)
-        except Regions.DoesNotExist:
-            return f"Error: Regions #{regions_ids} does not exist"
+            regions = RegionExtraction.objects.get(id=regions_id)
+            destroy_region_extraction(regions)
+        except RegionExtraction.DoesNotExist:
+            return f"Error: RegionExtraction #{regions_ids} does not exist"
         except Exception as e:
-            return f"Error deleting Regions {regions_ids}: {e}"
-    return f"Successfully deleted regions {regions_ids}"
+            return f"Error deleting RegionExtraction {regions_ids}: {e}"
+    return f"Successfully deleted region extraction {regions_ids}"

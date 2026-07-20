@@ -20,7 +20,7 @@ export const model2title = {
     "Digitization": {en: "Digitization", fr: "Numérisation"},
     "Work": {en: "Work", fr: "Œuvre"},
     "Series": {en: "Series", fr: "Série d'imprimés"},
-    "Regions": {en: "Region Extraction", fr: "Extraction d'illustrations"},
+    "RegionExtraction": appLang === "en"  ? "Region Extraction" : "Extraction d'illustrations",
     "User": {en: "User", fr: "Utilisateur"},
     "Manifest": {en: "Manifest", fr: "Manifeste"},
 }

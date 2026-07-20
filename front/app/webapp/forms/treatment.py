@@ -3,7 +3,7 @@ from django import forms
 
 from app.config.settings import ADDITIONAL_MODULES
 from app.similarity.forms import SimilarityForm
-from app.regions.forms import RegionsForm
+from app.region_extraction.forms import RegionExtractionForm
 from app.vectorization.forms import VectorizationForm
 from app.webapp.forms import SEARCH_MSG
 from app.webapp.models.treatment import Treatment
@@ -74,7 +74,7 @@ class TreatmentForm(forms.ModelForm):
         self.subforms = {}
         form_mapping = {
             "similarity": SimilarityForm,
-            "regions": RegionsForm,
+            "region_extraction": RegionExtractionForm,
             "vectorization": VectorizationForm,
             "import": ImportForm,
         }
@@ -121,14 +121,13 @@ class TreatmentForm(forms.ModelForm):
         subform_data = None
         if data:
             subform_data = {
-                name.replace(f"{prefix}_", ""): value
+                name.removeprefix(f"{prefix}_"): value
                 for name, value in data.items()
                 if name.startswith(f"{prefix}_")
             }
 
         self.subforms[prefix] = form_class(
             data=subform_data,
-            prefix=prefix,
             files=files,
         )
         for name, field in self.subforms[prefix].fields.items():
@@ -137,9 +136,6 @@ class TreatmentForm(forms.ModelForm):
 
     def clean(self):
         cleaned_data = super().clean()
-
-        if not cleaned_data.get("document_set"):
-            self.add_error("document_set", "A document set is required.")
 
         task_type = cleaned_data.get("task_type")
         if not task_type:
