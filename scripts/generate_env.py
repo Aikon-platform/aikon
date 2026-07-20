@@ -38,7 +38,7 @@ INTERNAL_PORTS = {"DB_PORT": "5432", "REDIS_PORT": "6379", "MONGODB_PORT": "2701
 COMPOSE_FILES = {
     "dev": "compose.yml:compose.dev.yml",
     "local": "compose.yml:compose.local.yml",
-    "prod": "compose.yml:compose.prod.yml",
+    "prod": "compose.yml:compose.prod.yml:compose.migrate.yml",
 }
 
 # variables prompted per mode; everything else keeps its default/current value
