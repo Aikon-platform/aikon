@@ -60,6 +60,8 @@ PROMPTED = {
         "EMAIL_HOST_USER",
         "EMAIL_HOST_PASSWORD",
         "APP_LOGO",
+        "SSL_CERTIFICATE",
+        "SSL_KEY",
         "HTTP_PROXY",
         "HTTPS_PROXY",
         "NGINX_PORT",
@@ -242,6 +244,19 @@ def write_env(path: Path, variables: dict) -> None:
     print(f"  wrote {path.relative_to(ROOT)}")
 
 
+def generate_nginx_conf(v: dict) -> None:
+    if v["MODE"] != "prod":
+        return
+    for template in (ROOT / "docker/web").glob("nginx_*.conf.template"):
+        text = template.read_text()
+        for key in ("PROD_URL", "NGINX_PORT", "NGINX_MAX_BODY_SIZE",
+                    "NGINX_TIMEOUT", "SSL_CERTIFICATE", "SSL_KEY"):
+            text = text.replace(key, v[key])
+        out = template.with_suffix("")  # nginx_external.conf.template → nginx_external.conf
+        out.write_text(text)
+        print(f"  wrote {out.relative_to(ROOT)}")
+
+
 def generate(mode: str, assume_yes: bool) -> None:
     v = resolve_values(mode, assume_yes)
     write_root_env(v)
@@ -281,6 +296,8 @@ def generate(mode: str, assume_yes: bool) -> None:
     )
 
     (Path(v["DATA_DIR"]) / "mediafiles/img").mkdir(parents=True, exist_ok=True)
+
+    generate_nginx_conf(v)
 
     print(f"✅ .env files generated (mode: {mode})")
     return v

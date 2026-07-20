@@ -6,6 +6,7 @@ Start / stop AIKON.
 
 up   (default)  docker services up; in dev mode also runs the front on the
                 host (runserver, celery, vite --watch, livereload) until Ctrl+C.
+build           build front docker containers for prod
 down            stops everything (docker compose down + api if delegated)
 logs            follows the docker services logs
 doctor          summarize
@@ -278,6 +279,8 @@ if __name__ == "__main__":
         run_api("down")
     elif action == "logs":
         compose("logs", "-f")
+    elif action == "build":
+        compose("up", "-d", "--build")
     elif action == "up":
         compose("up", "-d", "--remove-orphans")
         run_api("up")

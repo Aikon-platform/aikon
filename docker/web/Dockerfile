@@ -60,15 +60,16 @@ WORKDIR /home/${USER}
 COPY --chown=${USER} app /home/${USER}/app
 # COPY --chown=${USER} gunicorn /home/${USER}/gunicorn
 COPY --chown=${USER} celery /home/${USER}/celery
-COPY --chown=${USER} docker/supervisord.conf /home/${USER}/supervisord.conf
+COPY --from=conf --chown=${USER} supervisord.conf /home/${USER}/supervisord.conf
 
+# TODO probably useless
 RUN touch /home/${USER}/app/logs/app_log.log && chown ${USER}:${USER} /home/${USER}/app/logs/app_log.log
 RUN touch /home/${USER}/app/logs/iiif.log && chown ${USER}:${USER} /home/${USER}/app/logs/iiif.log
 RUN touch /home/${USER}/app/logs/download.log && chown ${USER}:${USER} /home/${USER}/app/logs/download.log
 
 RUN mkdir -p /home/${USER}/app/staticfiles && chown ${USER}:${USER} /home/${USER}/app/staticfiles
 
-COPY --chown=${USER}:${USER} docker/manage.sh /home/aikon/manage.sh
+COPY --from=conf --chown=${USER}:${USER} manage.sh /home/aikon/manage.sh
 RUN chmod +x /home/${USER}/manage.sh
 
 WORKDIR /home/${USER}/app

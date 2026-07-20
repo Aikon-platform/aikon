@@ -6,7 +6,7 @@ manage="uv --directory=/home/aikon/app run /home/aikon/app/manage.py"
 
 $manage collectstatic --noinput
 
-$manage makemigrations
+# $manage makemigrations
 $manage migrate
 
 $manage create_superuser_check
