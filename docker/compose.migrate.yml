@@ -1,0 +1,7 @@
+volumes:
+  pgdata:
+    name: docker_pgdata
+    external: true
+  mongodata:
+    name: docker_mongodata
+    external: true
