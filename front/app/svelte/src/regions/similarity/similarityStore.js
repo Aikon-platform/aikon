@@ -1,6 +1,7 @@
 import {derived, get, writable} from "svelte/store";
 import {errorMsg, initPagination, loading, pageUpdate} from "../../utils.js";
 import {appName, csrfToken} from "../../constants.js";
+import {noId} from "./similarityCategory.js";
 
 /**
  * @typedef { Object.<number, Object.<string, RegionsType>> } SelectedRegionsType
@@ -235,7 +236,7 @@ function createSimilarityStore() {
         const loading = writable(false);
         const propagatedLoading = writable(false);
         const error = writable(null);
-        let cGen = 0, pGen = 0, visible = isInModal;
+        let cGen = 0, pGen = 0, visible = false;
 
         const baseEndpoint = `${window.location.origin}/${appName}/regions`;
 
@@ -310,11 +311,13 @@ function createSimilarityStore() {
         return {
             items, propagated, loading, propagatedLoading, error, fetchRow,
             setVisible: (v) => { visible = v; if (v) fetchRow(); },
-            filtered: derived([items, excludedCategories, similarityScoreCutoff], ([$i, $e, $s]) =>
-                $i.filter(([score, , , , , cat]) =>
-                    !$e.includes(cat) && (score == null || $s == null || Number(score) >= $s)
-                )
-            ),
+            filtered: isInModal
+                ? derived(items, $i => $i.filter(([, , , , , cat]) => cat !== noId))
+                : derived([items, excludedCategories, similarityScoreCutoff], ([$i, $e, $s]) =>
+                    $i.filter(([score, , , , , cat]) =>
+                        !$e.includes(cat) && (score == null || $s == null || Number(score) >= $s)
+                    )
+                ),
             destroy: () => unsubs.forEach(fn => fn())
         };
     }

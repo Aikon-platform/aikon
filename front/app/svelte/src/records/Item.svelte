@@ -86,10 +86,9 @@
                 <div class="media-right">
                     <slot name="buttons"/>
                 </div>
-                {#if item.class === "Treatment" || item.class === "DocumentSet"}
-                    {#if item.user_id === parseInt(userId) || isSuperuser}
-                        <button class="delete is-medium" title="{appLang === 'en' ? 'Delete' : 'Supprimer'}" on:click={deleteItem}/>
-                    {/if}
+                <!--{#if item.class === "Treatment" || item.class === "DocumentSet"}{/if}-->
+                {#if item.user_id === parseInt(userId) || isSuperuser}
+                    <button class="delete is-medium" title="{appLang === 'en' ? 'Delete' : 'Supprimer'}" on:click={deleteItem}/>
                 {/if}
             </div>
 

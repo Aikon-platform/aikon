@@ -152,6 +152,11 @@ export function createDocumentSetStore(documentSetId) {
                             });
                         });
 
+                        docMap.forEach(doc => {
+                            const range = [doc.min_date, doc.max_date].filter(Boolean);
+                            if (range.length) doc.title += ` (${[...new Set(range)].join("–")})`;
+                        });
+
                         if (dsInfo) {
                             witnessNodes.set(new Map(Object.values(dsInfo.Witness).map(w => [w.id, w])));
                             seriesNodes.set(new Map(Object.values(dsInfo.Series).map(s => [s.id, s])));
@@ -186,6 +191,7 @@ export function createDocumentSetStore(documentSetId) {
                         });
 
                         allPairs.set(sorted);
+                        pairCat.set(new Map(sorted.map(p => [`${p.id_1}-${p.id_2}`, p.category])));
 
                         loading.set(false);
                         loadingProgress.set({ loaded: sorted.length, done: true });
@@ -285,6 +291,18 @@ export function createDocumentSetStore(documentSetId) {
 
             return docs.sort((a, b) => b.id - a.id);
         }
+    );
+
+    const docSort = writable("title");
+    const sortWith = {
+        id:        (a, b) => a[0] - b[0],
+        witnessId: (a, b) => (a[1].witness_id || 0) - (b[1].witness_id || 0),
+        title:     (a, b) => (a[1].title || "").localeCompare(b[1].title || ""),
+        date:      (a, b) => (a[1].min_date || 0) - (b[1].min_date || 0),
+    };
+    const sortedDocumentNodes = derived(
+        [documentNodes, docSort],
+        ([$nodes, $sort]) => Array.from($nodes).sort(sortWith[$sort])
     );
 
     const filteredDocPairStats = derived(filteredPairs, ($pairs) => {
@@ -425,127 +443,160 @@ export function createDocumentSetStore(documentSetId) {
         return { nodes, links };
     });
 
-    function buildAlignedImageMatrix(orderedSelection) {
-        if (!orderedSelection.length) return {regions: [], rows: []};
-
-        const $documentNodes = get(documentNodes);
+    function getFilteredPairsForDocPair(doc1Id, doc2Id) {
         const $pairIndex = get(pairIndex);
+        const $visibleIds = get(visiblePairIds);
+        const key = doc1Id < doc2Id ? `${doc1Id}-${doc2Id}` : `${doc2Id}-${doc1Id}`;
+        const pairs = $pairIndex.byDocPair.get(key) || [];
+        return $visibleIds.size > 0
+            ? pairs.filter(p => $visibleIds.has(`${p.id_1}-${p.id_2}`))
+            : pairs;
+    }
 
-        const firstDigitId = orderedSelection[0];
+    function otherSide(pair, anchorDocId, anchorImgId, imgNodes, docNodes) {
+        const isFrom1 = pair.digit_1 === anchorDocId && (anchorImgId == null || pair.id_1 === anchorImgId);
+        const isFrom2 = pair.digit_2 === anchorDocId && (anchorImgId == null || pair.id_2 === anchorImgId);
+        if (!isFrom1 && !isFrom2) return null;
+        const targetId = isFrom1 ? pair.id_2 : pair.id_1;
+        const targetDocId = isFrom1 ? pair.digit_2 : pair.digit_1;
+        const image = imgNodes.get(targetId);
+        const doc = docNodes.get(targetDocId);
+        return image && doc ? { image, doc, score: pair.weightedScore } : null;
+    }
 
-        const firstDoc = $documentNodes.get(firstDigitId);
-        if (!firstDoc?.images) return {regions: orderedSelection, rows: []};
-        const firstImages = firstDoc.images;
-
-        const findPairs = (imgId, sourceDigitId, targetDigitId) => {
-            const pairKey = sourceDigitId < targetDigitId
-                ? `${sourceDigitId}-${targetDigitId}`
-                : `${targetDigitId}-${sourceDigitId}`;
-            const pairs = $pairIndex.byDocPair.get(pairKey) || [];
-
-            return pairs
-                .filter(p =>
-                    (p.id_1 === imgId && p.digit_1 === sourceDigitId) ||
-                    (p.id_2 === imgId && p.digit_2 === sourceDigitId)
-                )
-                .map(p => {
-                    const isFirst = p.id_1 === imgId;
-                    return {
-                        id: isFirst ? p.id_2 : p.id_1,
-                        page: isFirst ? p.page_2 : p.page_1,
-                        rank: isFirst ? p.rank_1 : p.rank_2,
-                        otherRank: isFirst ? p.rank_2 : p.rank_1,
-                        score: p.weightedScore
-                    };
-                });
-        };
-
-        const findBestMatch = (imgId, sourceDigitId, targetDigitId) => {
-            const pairs = findPairs(imgId, sourceDigitId, targetDigitId);
-            if (!pairs.length) return null;
-
-            const mutualTop1 = pairs.find(p => p.rank <= 1 && p.otherRank <= 1);
-            if (mutualTop1) return {id: mutualTop1.id, page: mutualTop1.page};
-
-            const mutualTop2 = pairs.find(p => p.rank <= 2 && p.otherRank <= 2);
-            if (mutualTop2) return {id: mutualTop2.id, page: mutualTop2.page};
-
-            return null;
-        };
-
-        const $cats = get(selectedCategories);
-        const onlyExactMatch = $cats.length === 1 && $cats[0] === 1;
-        if (!onlyExactMatch) {
-            const rows = [];
-            for (const firstImg of firstImages) {
-                const row = {[firstDigitId]: {id: firstImg.id, page: firstImg.canvas}};
-
-                for (let colIdx = 1; colIdx < orderedSelection.length; colIdx++) {
-                    const targetDigitId = orderedSelection[colIdx];
-                    const best = findBestMatch(firstImg.id, firstDigitId, targetDigitId);
-                    if (best) row[targetDigitId] = best;
-                }
-
-                rows.push(row);
+    function assignIndices(data) {
+        let idx = 0;
+        for (const row of data.matches) {
+            for (const cell of row) {
+                if (!cell) continue;
+                cell.indices = cell.images.map(() => idx++);
             }
-            return {regions: orderedSelection, rows};
+        }
+        return data;
+    }
+
+    function buildMatchesForAnchor(anchorDoc, targetDocs, anchorImageIds = null, onlyOneMatch = false, onlyAnchorWithMatches = false) {
+        const byAnchor = new Map();
+        const imgNodes = get(imageNodes);
+        const docNodes = get(documentNodes);
+
+        const anchorImages = anchorImageIds
+            ? (anchorDoc.images || []).filter(img => anchorImageIds.has(img.id))
+            : (anchorDoc.images || []);
+
+        for (const img of anchorImages) {
+            byAnchor.set(img.id, { anchor: img, byTargetDoc: new Map() });
         }
 
-        const allRows = [];
+        for (const targetDoc of targetDocs) {
+            if (targetDoc.id === anchorDoc.id) continue;
+            const pairs = getFilteredPairsForDocPair(anchorDoc.id, targetDoc.id);
+            for (const p of pairs) {
+                const anchorOnSide1 = p.digit_1 === anchorDoc.id;
+                const anchorId = anchorOnSide1 ? p.id_1 : p.id_2;
+                const target = otherSide(p, anchorDoc.id, anchorId, imgNodes, docNodes);
+                const entry = byAnchor.get(anchorId);
+                if (!entry || !target) continue;
 
-        for (const firstImg of firstImages) {
-            let currentRows = [{[firstDigitId]: {id: firstImg.id, page: firstImg.canvas}}];
-
-            for (let colIdx = 1; colIdx < orderedSelection.length; colIdx++) {
-                const targetDigitId = orderedSelection[colIdx];
-                const nextRows = [];
-
-                for (const row of currentRows) {
-                    const allPairsFound = [];
-
-                    for (let srcIdx = 0; srcIdx < colIdx; srcIdx++) {
-                        const sourceDigitId = orderedSelection[srcIdx];
-                        if (row[sourceDigitId]) {
-                            const pairs = findPairs(row[sourceDigitId].id, sourceDigitId, targetDigitId);
-                            allPairsFound.push(...pairs);
-                        }
+                if (onlyOneMatch) {
+                    const existing = entry.byTargetDoc.get(targetDoc.id);
+                    if (!existing || p.weightedScore > existing.score) {
+                        entry.byTargetDoc.set(targetDoc.id, { image: target.image, score: p.weightedScore });
                     }
-
-                    if (allPairsFound.length === 0) {
-                        nextRows.push(row);
-                    } else {
-                        const uniquePairs = new Map();
-                        allPairsFound.forEach(p => {
-                            if (!uniquePairs.has(p.id)) {
-                                uniquePairs.set(p.id, {id: p.id, page: p.page});
-                            }
-                        });
-
-                        for (const pair of uniquePairs.values()) {
-                            const newRow = {...row, [targetDigitId]: pair};
-                            nextRows.push(newRow);
-                        }
-                    }
+                } else {
+                    if (!entry.byTargetDoc.has(targetDoc.id)) entry.byTargetDoc.set(targetDoc.id, new Map());
+                    entry.byTargetDoc.get(targetDoc.id).set(target.image.id, target.image);
                 }
-
-                currentRows = nextRows;
-            }
-
-            allRows.push(...currentRows);
-        }
-
-        const rows = [];
-        const seen = new Set();
-
-        for (const row of allRows) {
-            const key = orderedSelection.map(did => row[did]?.id || "").join("|");
-            if (!seen.has(key)) {
-                seen.add(key);
-                rows.push(row);
             }
         }
 
-        return {regions: orderedSelection, rows};
+        const rows = Array.from(byAnchor.values())
+            .sort((a, b) => (a.anchor.canvas ?? Infinity) - (b.anchor.canvas ?? Infinity))
+            .map(({ anchor, byTargetDoc }) => [
+                { images: [anchor], doc: anchorDoc },
+                ...targetDocs.map(td => {
+                    const entry = byTargetDoc.get(td.id);
+                    if (!entry) return null;
+                    const images = onlyOneMatch ? [entry.image] : [...entry.values()];
+                    return { images, doc: td };
+                }),
+            ]).filter(row => onlyAnchorWithMatches ? row.slice(1).some(c => c) : row);
+
+        const columns = [{ doc: anchorDoc }, ...targetDocs.map(d => ({ doc: d }))];
+        return assignIndices({ matches: rows, columns });
+    }
+
+    function buildFriezeMatches(frieze, pairs) {
+        const imgNodes = get(imageNodes);
+        const docNodes = get(documentNodes);
+        const baseDoc = docNodes.get(frieze.baseDocId);
+        const sourceImage = imgNodes.get(frieze.imageId);
+        if (!baseDoc || !sourceImage) return { matches: [], columns: [] };
+
+        const byDoc = new Map();
+        for (const p of pairs) {
+            const target = otherSide(p, frieze.baseDocId, frieze.imageId, imgNodes, docNodes);
+            if (!target || target.doc.id === frieze.baseDocId) continue;
+            if (!byDoc.has(target.doc.id)) byDoc.set(target.doc.id, { doc: target.doc, matches: new Map() });
+            const matches = byDoc.get(target.doc.id).matches;
+            const existing = matches.get(target.image.id);
+            if (!existing || target.score > existing.score) matches.set(target.image.id, target);
+        }
+
+        const targets = [...byDoc.values()].map(({ doc, matches }) => {
+            const sorted = [...matches.values()].sort((a, b) => b.score - a.score);
+            return { doc, images: sorted.map(m => m.image), bestImageId: sorted[0].image.id };
+        });
+
+        const row = [
+            { images: [sourceImage], doc: baseDoc, bestImageId: sourceImage.id },
+            ...targets,
+        ];
+        const columns = [{ doc: baseDoc }, ...targets.map(t => ({ doc: t.doc }))];
+        return assignIndices({ matches: [row], columns });
+    }
+
+    function buildClusterMatches({ baseDocId, docIds, imageIds }) {
+        const docNodes = get(documentNodes);
+        const baseDoc = docNodes.get(baseDocId);
+        if (!baseDoc) return { matches: [], columns: [] };
+        const targetDocs = [...docIds].map(id => docNodes.get(id)).filter(Boolean);
+        const data = buildMatchesForAnchor(baseDoc, targetDocs, imageIds, true, targetDocs.length > 0);
+        if (!targetDocs.length && data.matches.length) {
+            const allImages = data.matches.flatMap(row => row[0]?.images ?? []);
+            return {
+                matches: [[{ images: allImages, doc: baseDoc, indices: allImages.map((_, i) => i) }]],
+                columns: [{ doc: baseDoc }],
+            };
+        }
+        return data;
+    }
+
+    function buildNetworkMatches({ baseDocId, docIds, imageIds }) {
+        const imgNodes = get(imageNodes);
+        const docNodes = get(documentNodes);
+        const baseDoc = docNodes.get(baseDocId);
+        if (!baseDoc) return { matches: [], columns: [] };
+
+        const byDoc = new Map();
+        for (const id of imageIds) {
+            const img = imgNodes.get(id);
+            if (!img) continue;
+            if (!byDoc.has(img.digit)) byDoc.set(img.digit, []);
+            byDoc.get(img.digit).push(img);
+        }
+
+        const targets = [...docIds]
+            .filter(id => id !== baseDocId && byDoc.has(id))
+            .map(id => ({ doc: docNodes.get(id), images: byDoc.get(id) }))
+            .filter(t => t.doc);
+
+        const row = [
+            { images: byDoc.get(baseDocId) || [], doc: baseDoc },
+            ...targets,
+        ];
+        const columns = [{ doc: baseDoc }, ...targets.map(t => ({ doc: t.doc }))];
+        return assignIndices({ matches: [row], columns });
     }
 
     function toggleCategory(categoryId) {
@@ -612,6 +663,31 @@ export function createDocumentSetStore(documentSetId) {
         return map;
     });
 
+    const hideEmpty = writable(false);
+
+    /** Map<"id1-id2", category> for all loaded pairs; updated in-place by patchPairs */
+    const pairCat = writable(new Map());
+
+    /**
+     * Light refresh: patch already-loaded pairs in place and re-emit without re-streaming from the worker
+     * `updates`: [{img_1, img_2, category}]
+     * // TODO make more versatile => allow to remove pairs
+     */
+    const patchPairs = (updates) => {
+        const m = new Map(updates.map(u => [`${u.img_1}-${u.img_2}`, u.category]));
+        const $pairs = get(allPairs);
+        for (const p of $pairs) {
+            const cat = m.get(`${p.id_1}-${p.id_2}`) ?? m.get(`${p.id_2}-${p.id_1}`);
+            if (cat !== undefined) p.category = cat;
+        }
+        pairCat.update(prev => {
+            const next = new Map(prev);
+            for (const [k, v] of m) next.set(k, v);
+            return next;
+        });
+    };
+
+
     return {
         documentSetId,
         docSetId: documentSetId,
@@ -627,9 +703,12 @@ export function createDocumentSetStore(documentSetId) {
 
         allPairs,
         visiblePairs: filteredPairs,
+        pairCat,
         pairIndex,
-        documentNodes,
         imageNodes,
+        documentNodes,
+        docSort,
+        sortedDocumentNodes,
         fetchPairs,
         imageNetwork,
         documentNetwork,
@@ -646,7 +725,12 @@ export function createDocumentSetStore(documentSetId) {
         toggleCategory,
         toggleDoc,
         selectAllDocuments,
-        buildAlignedImageMatrix,
+        getFilteredPairsForDocPair,
+        buildMatchesForAnchor,
+        buildFriezeMatches,
+        buildClusterMatches,
+        buildNetworkMatches,
+        patchPairs,
 
         threshold,
         setThreshold: (t) => threshold.set(t),
@@ -665,6 +749,8 @@ export function createDocumentSetStore(documentSetId) {
         normalizeByImages,
         imageCountMap,
         visiblePairIds,
-        coverageData
+        coverageData,
+        hideEmpty,
+        setHideEmpty: (b) => hideEmpty.set(b),
     };
 }

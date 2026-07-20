@@ -1,0 +1,163 @@
+# docker compose up -d
+
+name: aikon
+
+x-proxy: &proxy
+  HTTP_PROXY: ${HTTP_PROXY:-}
+  HTTPS_PROXY: ${HTTPS_PROXY:-}
+  NO_PROXY: localhost,127.0.0.1,web,nginx,db,redis,mongo,cantaloupe,aiiinotate,mirador
+
+x-extra-hosts: &extra-hosts
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+services:
+  db:
+    image: postgres:14
+    env_file: .env
+    volumes:
+      - pgdata:/var/lib/postgresql/data
+    networks: [aikon]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -d $${POSTGRES_DB} -U $${POSTGRES_USER}"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  redis:
+    image: redis:6
+    command: redis-server --loglevel warning
+    volumes:
+      - redisdata:/data
+    networks: [aikon]
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "redis-cli", "ping"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  mongo:
+    image: mongo:8
+    volumes:
+      - mongodata:/data/db
+    networks: [aikon]
+    environment:
+      <<: *proxy
+    restart: unless-stopped
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+
+  cantaloupe:
+    build:
+      context: ../front
+      dockerfile: cantaloupe/Dockerfile
+      args:
+        CANTALOUPE_PORT: ${CANTALOUPE_PORT}
+    env_file: ../front/cantaloupe/.env
+    volumes:
+      - ${DATA_FOLDER}:/data
+    networks: [aikon]
+    environment:
+      <<: *proxy
+    user: root
+    restart: unless-stopped
+
+  aiiinotate:
+    build:
+      context: ../front
+      dockerfile: annotations/Dockerfile-aiiinotate
+      args:
+        PORT: ${AIIINOTATE_PORT}
+        ENV_PATH: app/config/.env
+    <<: *extra-hosts
+    # runtime env wins over the .env baked at build time (dotenvx does not
+    # override variables already present in the environment)
+
+    env_file: .env
+    depends_on:
+      mongo:
+        condition: service_healthy
+    networks: [aikon]
+    environment:
+      <<: *proxy
+    restart: unless-stopped
+
+  mirador:
+    build:
+      context: ../front
+      dockerfile: annotations/Dockerfile-mirador
+      args:
+        PORT: ${MIRADOR_PORT}
+        ENV_PATH: app/config/.env
+    <<: *extra-hosts
+    env_file: .env
+    depends_on:
+      - aiiinotate
+    networks: [aikon]
+    environment:
+      <<: *proxy
+    restart: unless-stopped
+
+  # ------------- only started in local and prod modes (COMPOSE_PROFILES=front) -------------
+
+  web:
+    profiles: [front]
+    build:
+      context: ../front
+      dockerfile: ../docker/web/Dockerfile
+      additional_contexts:
+        conf: ./web
+      args:
+        USERID: ${USERID}
+    env_file: ../front/app/config/.env
+    volumes:
+      - ${DATA_FOLDER}:/data
+      - staticfiles:/home/aikon/app/staticfiles
+    depends_on:
+      db:
+        condition: service_healthy
+      redis:
+        condition: service_healthy
+      aiiinotate:
+        condition: service_started
+      mirador:
+        condition: service_started
+    networks: [aikon]
+    environment:
+      <<: *proxy
+    restart: unless-stopped
+
+  nginx:
+    profiles: [front]
+    image: nginx:latest
+    env_file: .env
+    ports:
+      - "${NGINX_PORT}:80"
+    volumes:
+      - ./web/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
+      - staticfiles:/staticfiles:ro
+      - ${DATA_FOLDER}:/data:ro
+    depends_on:
+      - web
+      - cantaloupe
+      - mirador
+      - aiiinotate
+    networks: [aikon]
+    environment:
+      <<: *proxy
+    restart: unless-stopped
+
+volumes:
+  pgdata:
+  redisdata:
+  mongodata:
+  staticfiles:
+
+networks:
+  aikon:
+    driver: bridge

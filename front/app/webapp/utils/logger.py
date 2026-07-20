@@ -1,16 +1,52 @@
 import json
 import logging
 import os
-import random
 import traceback
 import time
-from pathlib import Path
+from html.parser import HTMLParser
 
-from django.utils.html import strip_tags
-from typing import Any, Iterable, Optional, Union
+from typing import Any, Iterable, Optional
 
-from app.webapp.utils.paths import BASE_DIR, LOG_DIR
-from app.config.settings import DEBUG
+
+class MLStripper(HTMLParser):
+    def __init__(self):
+        super().__init__(convert_charrefs=False)
+        self.reset()
+        self.fed = []
+
+    def handle_data(self, d):
+        self.fed.append(d)
+
+    def handle_entityref(self, name):
+        self.fed.append("&%s;" % name)
+
+    def handle_charref(self, name):
+        self.fed.append("&#%s;" % name)
+
+    def get_data(self):
+        return "".join(self.fed)
+
+
+def _strip_once(value):
+    """
+    Internal tag stripping utility used by strip_tags.
+    """
+    s = MLStripper()
+    s.feed(value)
+    s.close()
+    return s.get_data()
+
+
+def strip_tags(value):
+    """Return the given HTML with all tags stripped."""
+    value = str(value)
+    while "<" in value and ">" in value:
+        new_value = _strip_once(value)
+        if value.count("<") == new_value.count("<"):
+            # _strip_once wasn't able to detect more tags.
+            break
+        value = new_value
+    return value
 
 
 def sanitize(v):
@@ -25,7 +61,7 @@ def sanitize(v):
         return {str(k): sanitize(val) for k, val in v.items()}
     else:
         # For custom objects, include class name in representation
-        return f"{v.__class__.__name__}({str(v)})"
+        return f"{v.__class__.__name__} ({str(v)})"
 
 
 def pprint(o):
@@ -75,14 +111,18 @@ class Logger:
         "end": "\033[0m",
     }
 
-    def __init__(self, log_dir: Union[str, Path]):
-        self.log_dir = Path(log_dir)
-        self.log_dir.mkdir(parents=True, exist_ok=True)
+    def __init__(self, log_dir: str = None):
+        self.log_dir = log_dir
+        if self.log_dir:
+            os.makedirs(self.log_dir, exist_ok=True)
+            self.error_log = os.path.join(self.log_dir, "error.log")
+            self.download_log = os.path.join(self.log_dir, "download.log")
+            for log_file in [self.error_log, self.download_log]:
+                if not os.path.exists(log_file):
+                    with open(log_file, "x") as _:
+                        pass
 
         self.compact = False
-        self.error_log = self.log_dir / "error.log"
-        self.download_log = self.log_dir / "download.log"
-
         self.logger = logging.getLogger("aikon")
 
         if self.logger.handlers:
@@ -90,17 +130,13 @@ class Logger:
         self.logger.setLevel(logging.INFO)
         self.logger.propagate = False
 
-        for log_file in [self.error_log, self.download_log]:
-            if not os.path.exists(log_file):
-                with open(log_file, "x") as _:
-                    pass
-
         # File handler for errors
-        fh = logging.FileHandler(self.error_log)
-        fh.setLevel(logging.ERROR)
-        formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
-        fh.setFormatter(formatter)
-        self.logger.addHandler(fh)
+        if self.log_dir:
+            fh = logging.FileHandler(self.error_log)
+            fh.setLevel(logging.ERROR)
+            formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
+            fh.setFormatter(formatter)
+            self.logger.addHandler(fh)
 
         # Console handler for info
         ch = logging.StreamHandler()
@@ -116,16 +152,16 @@ class Logger:
         """Get the ANSI color code for a message type."""
         return self.COLORS.get(color, "")
 
-    def format_message(self, *msg: Any, msg_type: str = "info") -> str:
+    def format_message(self, *msg: Any, **kwargs) -> str:
         """Format a message with timestamp and colors."""
-        color = self.get_color(msg_type)
-        timestamp = self._get_timestamp()
+        color = self.get_color(kwargs.get("msg_type", "white"))
+        timestamp = f"\n{self._get_timestamp()}" if kwargs.get("with_time", True) else ""
 
         formatted = "\n".join([f"{color}{self.COLORS['bold']}{pprint(m)}" for m in msg])
-        if self.compact:
-            return f"\n{timestamp}{color}{formatted}{self.COLORS['end']}"
+        if kwargs.get("compact", self.compact):
+            return f"{timestamp}{color}{formatted}{self.COLORS['end']}"
 
-        return f"\n\n{timestamp}\n{color}{formatted}{self.COLORS['end']}\n\n"
+        return f"\n{timestamp}\n{color}{formatted}{self.COLORS['end']}\n\n"
 
     @staticmethod
     def format_exception(exception: Exception) -> str:
@@ -151,9 +187,9 @@ class Logger:
 
         self.logger.error(error_msg)
 
-    def log(self, *msg: Any, msg_type: Optional[str] = "white"):
+    def log(self, *msg: Any, **kwargs):
         """Log a message with a given type."""
-        self.logger.info(self.format_message(*msg, msg_type=msg_type))
+        self.logger.info(self.format_message(*msg, **kwargs))
 
     def warning(self, *msg: Any):
         """⚠️ Log a warning message."""
@@ -205,16 +241,6 @@ class Logger:
         #     bar_format="{l_bar}{bar}| {n_fmt}/{total_fmt} [{elapsed}<{remaining}]",
         # )
 
-    def log_failed_download(self, img_path: str, img_url: str):
-        """
-        Log a failed download attempt
-
-        Args:
-            img_path: Path of the image that should have been downloaded
-            img_url: URL that failed to be downloaded
-        """
-        self.add_to_file(self.download_log, f"{img_path} {img_url}\n", mode="a")
-
     @staticmethod
     def add_to_file(log_file, content, mode="w"):
         """Add a message to the log file."""
@@ -233,25 +259,21 @@ _logger_instance = None
 def get_logger():
     global _logger_instance
     if _logger_instance is None:
-        _logger_instance = Logger(f"{BASE_DIR}/{LOG_DIR}")
+        _logger_instance = Logger()
     return _logger_instance
 
 
 logger = get_logger()
 
 
-def log(msg, exception: Exception | None = None, msg_type: str | None = None):
+def log(msg, exception: Exception | None = None, **kwargs):
     current_logger = get_logger()
     if exception:
         current_logger.error(msg, exception=exception)
         return
-    current_logger.log(msg, msg_type=msg_type)
+    current_logger.log(msg, **kwargs)
 
 
 def console(msg="🚨🚨🚨", msg_type=None):
     # print(pprint(msg))
     get_logger().log(msg, msg_type=msg_type)
-
-
-def download_log(img_name, img_url):
-    get_logger().log_failed_download(img_name, img_url)

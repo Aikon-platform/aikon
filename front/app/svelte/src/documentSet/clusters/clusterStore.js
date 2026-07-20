@@ -1,13 +1,20 @@
 import {derived, writable, get} from "svelte/store";
-import {i18n, initPagination, pageUpdate, showMessage, withLoading} from "../../utils.js";
-import {appLang, appName, csrfToken, isSuperuser} from "../../constants.js";
+import {i18n, initPagination, pageUpdate, showMessage, sendTo} from "../../utils.js";
+import {appLang, appName} from "../../constants.js";
 import {categoryInfo} from "../../regions/similarity/similarityCategory.js";
+
+const t = {
+    batchCat: {en: "Batch categorization failed", fr: "La catégorisation par lot a échoué"},
+    batchUncat: {en: "Batch un-categorization failed", fr: "La dé-catégorisation par lot a échoué"}
+}
+
+const clusterIdOf = (members) => JSON.stringify(members.slice().sort());
 
 export function createClusterStore(documentSetStore, clusterSelection) {
     const pageLength = 10;
     const currentPage = writable(1);
 
-    const {visiblePairs, imageNodes} = documentSetStore;
+    const {visiblePairs, imageNodes, pairCat} = documentSetStore;
 
     initPagination(currentPage, "p");
 
@@ -59,20 +66,19 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 const n = members.length;
                 const maxEdges = (n * (n - 1)) / 2;
                 const imageSet = new Set(members);
-                let actualLinks = 0;
+                const edges = new Set();
                 let allCategory1 = true;
                 for (const p of pairs) {
-                    if (imageSet.has(p.id_1) && imageSet.has(p.id_2)) {
-                        actualLinks++;
-                        if (allCategory1 && p.category !== 1) allCategory1 = false;
-                    }
+                    if (!imageSet.has(p.id_1) || !imageSet.has(p.id_2)) continue;
+                    const [a, b] = p.id_1 < p.id_2 ? [p.id_1, p.id_2] : [p.id_2, p.id_1];
+                    edges.add(`${a}|${b}`);
+                    if (allCategory1 && p.category !== 1) allCategory1 = false;
                 }
-
                 return {
-                    id: crypto.randomUUID(),
+                    id: clusterIdOf(members),
                     members,
                     size: n,
-                    fullyConnected: actualLinks >= maxEdges && allCategory1
+                    fullyConnected: edges.size >= maxEdges && allCategory1
                 };
             })
             .filter(c => c.size > 1)
@@ -82,14 +88,17 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     /**
      * Clusters { id, members: [imgId1, imgId2, ...], size, fullyConnected }
      */
-    const imageClusters = derived(visiblePairs, ($pairs) => {
-        if (!$pairs.length) return [];
-        return findClusters($pairs);
-    });
+    const imageClusters = derived([visiblePairs, pairCat], ([$pairs]) =>
+        $pairs.length ? findClusters($pairs) : []
+    );
 
     // UI clusters, manipulable without needing to rerun findClusters
     const interfaceClusters = writable([]);
+    let prevClusters = "";
     imageClusters.subscribe($clusters => {
+        const newClusters = $clusters.map(c => c.id).join("§");
+        if (newClusters === prevClusters) return;
+        prevClusters = newClusters;
         interfaceClusters.set($clusters);
     });
 
@@ -149,71 +158,34 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             return true;
         }
 
-        try {
-            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/uncategorize-batch`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken
-                },
-                body: JSON.stringify({pairs: pairsToRemove})
-            }));
+        const ok = await uncategorizePairBatch(pairsToRemove);
+        if (ok) removeImgsFromInterface(imgRefSet, byOriginCluster);
+        return ok;
+    };
 
-            if (!response.ok) {
-                console.log(response)
-                await showMessage(
-                    appLang === "en" ? "Batch un-categorization failed" : "La dé-catégorisation par lot a échoué",
-                    i18n("error"),
-                );
-                return false;
-            }
+    const categorizePairBatch = async (pairs, category) => {
+        if (!pairs.length) return true;
+        const ok = await sendTo(`${appName}/categorize-batch`, {pairs, category}, i18n("batchCat", t));
+        if (ok) documentSetStore.patchPairs(pairs.map(p => ({...p, category})));
+        return ok;
+    };
 
-            removeImgsFromInterface(imgRefSet, byOriginCluster);
-
-            return true;
-        } catch (error) {
-            await showMessage(
-                error,
-                i18n("error"),
-            );
-            return false;
-        }
+    const uncategorizePairBatch = async (pairs) => {
+        if (!pairs.length) return true;
+        const ok = await sendTo(`${appName}/uncategorize-batch`, {pairs}, i18n("batchUncat", t));
+        if (ok) documentSetStore.patchPairs(pairs.map(p => ({...p, category: null})));
+        return ok;
     };
 
     const categorizePairs = async (imgRefs, category) => {
         const pairs = imgRefs.flatMap((ref1, i) =>
             imgRefs.slice(i + 1).map(ref2 => pairData(ref1, ref2))
         );
-
-        try {
-            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/categorize-batch`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken
-                },
-                body: JSON.stringify({ pairs, category })
-            }));
-
-            if (!response.ok) {
-                console.log(response)
-                await showMessage(
-                    appLang === "en" ? "Batch categorization failed" : "La catégorisation par lot a échoué",
-                    i18n("error"),
-                );
-                return false;
-            }
-
-            return true;
-        } catch (error) {
-            await showMessage(error, i18n("error"));
-            console.error("Error:", error);
-            return false;
-        }
+        return categorizePairBatch(pairs, category);
     };
 
     const categorizeSelection = async (category) => {
-        const selected = selectedDocs();
+        const selected = selectedImages();
         const imgRefs = Object.keys(selected);
 
         if (imgRefs.length < 2) {
@@ -239,56 +211,55 @@ export function createClusterStore(documentSetStore, clusterSelection) {
     };
 
     const validateCluster = async (cluster) => {
-        if (!isSuperuser){
-            await showMessage(
-                appLang === "en" ? "You do not have permission to validate clusters" : "Vous n'avez pas la permission, de valider les clusters.",
-                appLang === "en" ? "Permission Denied" : "Permission refusée"
-            );
-            return false;
-        }
+        // if (!isSuperuser){
+        //     await showMessage(
+        //         appLang === "en" ? "You do not have permission to validate clusters" : "Vous n'avez pas la permission, de valider les clusters.",
+        //         appLang === "en" ? "Permission Denied" : "Permission refusée"
+        //     );
+        //     return false;
+        // }
 
         const success = await categorizePairs(cluster.members, 1);
-
         if (success) {
             interfaceClusters.update($clusters =>
-                $clusters.map(c =>
-                    c.id === cluster.id ? {...c, fullyConnected: true} : c
-                )
+                $clusters.map(c => c.id === cluster.id ? {...c, fullyConnected: true} : c)
             );
         }
-
         return success;
     };
 
     const createCluster = async (imgRefs, category = 1) => {
         if (imgRefs.length < 2) return false;
-
         const success = await categorizePairs(imgRefs, category);
         if (!success) return false;
 
         const imgRefSet = new Set(imgRefs);
         const byOriginCluster = {};
-        get(interfaceClusters).forEach(cluster => {
-            if (cluster.members.some(m => imgRefSet.has(m))) {
-                byOriginCluster[cluster.id] = true;
+        get(interfaceClusters).forEach(c => {
+            if (c.members.some(m => imgRefSet.has(m))) {
+                byOriginCluster[c.id] = true;
             }
         });
         removeImgsFromInterface(imgRefSet, byOriginCluster);
 
+        const newId = clusterIdOf(imgRefs);
         interfaceClusters.update($clusters => [
             {
-                id: crypto.randomUUID(),
+                id: newId,
                 members: imgRefs,
                 size: imgRefs.length,
                 fullyConnected: category === 1
             },
-            ...$clusters
+            ...$clusters.filter(c => c.id !== newId)
         ].sort((a, b) => b.size - a.size));
 
         return true;
     };
 
-    const selectedDocs = () => get(clusterSelection).selected.regions || {};
+    const selectedImages = () => {
+        const selection = get(clusterSelection).selected;
+        return selection.regions || selection.region_extraction || {}
+    };
 
     const newCluster = async () => {
         const confirmed = await showMessage(
@@ -300,7 +271,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             return;
         }
 
-        const selected = selectedDocs();
+        const selected = selectedImages();
         const imgRefs = Object.keys(selected);
 
         if (imgRefs.length < 2) {
@@ -331,7 +302,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
             return;
         }
 
-        const selected = selectedDocs();
+        const selected = selectedImages();
         const removed = await removeImgRefs(Object.keys(selected));
         if (!removed) return false;
 
@@ -347,6 +318,8 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         validateCluster,
         removeFromClusters,
         categorizeSelection,
+        categorizePairBatch,
+        uncategorizePairBatch,
         newCluster,
 
         paginatedClusters,

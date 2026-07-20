@@ -1,24 +1,11 @@
 import json
-from pathlib import Path
-
-from django.db.models import Q
 from django.http import JsonResponse
-from django.shortcuts import get_object_or_404
 
-from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from app.webapp.models.regions import Regions
-from app.webapp.models.witness import Witness
-
-from app.webapp.utils.iiif.annotation import (
-    get_annotations_on_canvases,
-)
-from app.webapp.utils.logger import log
-from app.webapp.utils.paths import MEDIA_PATH, REGIONS_PATH
-from app.webapp.utils.regions import create_empty_regions
-from app.webapp.tasks import generate_all_json
-from app.webapp.utils.functions import page_bounds
 from app.webapp.utils.tasking import create_doc_set
+from app.webapp.tasks import generate_all_json, regenerate_witness_json
+from webapp.utils.logger import log
+
 
 # TODO ORGANISE THESE VIEWS BETTER
 
@@ -27,6 +14,17 @@ def json_regeneration(request):
     task = generate_all_json.delay()
     return JsonResponse(
         {"message": "JSON regeneration task started", "task_id": str(task.id)}
+    )
+
+
+def witness_json_regeneration(request, wid):
+    try:
+        task = regenerate_witness_json.delay(wid)
+    except Exception as e:
+        log(f"[witness_json_regeneration] failed for #{wid}", e)
+        return JsonResponse({"error": str(e)})
+    return JsonResponse(
+        {"message": "Witness JSON regeneration task started", "task_id": str(task.id)}
     )
 
 
@@ -103,7 +101,7 @@ def get_document_set_info(request, dsid=None):
         if not series:
             continue
 
-        if series.id not in result["Series"]:
+        if series_id not in result["Series"]:
             result["Series"][series_id] = {
                 # **(series.json or {}),
                 "id": series_id,
@@ -119,7 +117,7 @@ def get_document_set_info(request, dsid=None):
             update_date_range(entry, min_date, max_date)
             entry["witness_ids"].append(witness.id)
             entry["digitization_ids"].extend(
-                d for d in digit_ids if d not in entry["Digitization"]
+                d for d in digit_ids if d not in entry["digitization_ids"]
             )
 
     # Sort each entity group by min_date (None last)

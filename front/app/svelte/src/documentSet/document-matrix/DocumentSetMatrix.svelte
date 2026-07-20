@@ -2,30 +2,43 @@
     import * as d3 from "d3";
     import {createEventDispatcher} from "svelte";
     import {i18n} from "../../utils.js";
+    import RightClick from "../../ui/RightClick.svelte";
 
     export let documents = [];
     export let scoreData = new Map();
     export let docStats = new Map();
     export let imageCountMap = new Map();
     export let normalize = true;
-    export let sortOrder = "name";
     export let cellSize = 30;
     export let percentageMode = false;
     export let coverageData = new Map();
+
+    export let isInStemma = false;
+    export let stemmaStore = null;
+
+    $: edges = stemmaStore?.edges;
+    $: edgeKeys = isInStemma && $edges
+        ? new Set($edges.map(e => e.source < e.target ? `${e.source}-${e.target}` : `${e.target}-${e.source}`))
+        : new Set();
+    $: if (container && matrixData.docs.length) { edgeKeys; render(); }
 
     const dispatch = createEventDispatcher();
 
     const t = {
         score: {en: "Score", fr: "Score"},
+        match: {en: "matches", fr: "correspondances"},
         noPairs: {en: "No pairs", fr: "Aucune paire"},
+        addEdge: {en: "Add stemma edge", fr: "Ajouter un lien au stemma"},
+        percent: {en: "Percentage of images from", fr: "Pourcentage des images issues de"},
+        present: {en: "also present in", fr: "aussi présentes dans"},
     };
 
     let container;
     let selectedCell = null;
 
-    $: matrixData = buildMatrix(documents, scoreData, docStats, sortOrder, normalize, imageCountMap, percentageMode, $coverageData);
+    $: matrixData = buildMatrix(documents, scoreData, docStats, normalize, imageCountMap, percentageMode, $coverageData);
 
-    function buildMatrix(docs, scoreCount, docStatsMap, order, doNormalize, imgCount, pctMode, coverage) {
+    function buildMatrix(docs, scoreCount, docStatsMap, doNormalize, imgCount, pctMode, coverage) {
         if (!docs.length) return {docs: [], matrix: [], maxScore: 0};
 
         docs.forEach((doc, i) => {
@@ -33,13 +46,7 @@
             doc.count = docStatsMap?.get(doc.id)?.count || 0;
         });
 
-        const orders = {
-            name: d3.range(docs.length).sort((a, b) => docs[a].title.localeCompare(docs[b].title)),
-            score: d3.range(docs.length).sort((a, b) => docs[b].count - docs[a].count),
-        };
-
-        const sorted = orders[order].map(i => docs[i]);
-        const n = sorted.length;
+        const n = docs.length;
         const matrix = [];
         let maxScore = 0;
 
@@ -47,30 +54,32 @@
             const row = [];
             for (let j = 0; j < n; j++) {
                 if (i !== j) {
-                    const key = sorted[i].id < sorted[j].id
-                        ? `${sorted[i].id}-${sorted[j].id}`
-                        : `${sorted[j].id}-${sorted[i].id}`;
+                    const key = docs[i].id < docs[j].id
+                        ? `${docs[i].id}-${docs[j].id}`
+                        : `${docs[j].id}-${docs[i].id}`;
 
-                    let z, pct;
+                    let z, pct, count;
 
                     if (pctMode) {
-                        const covKey = `${sorted[i].id}-${sorted[j].id}`;
+                        const covKey = `${docs[i].id}-${docs[j].id}`;
                         const covCount = coverage.get(covKey)?.size || 0;
-                        const total = imgCount.get(sorted[i].id) || 1;
-                        pct = covCount / total;
+                        count = imgCount.get(docs[i].id) || 1;
+                        pct = covCount / count;
                         z = pct;
                     } else {
-                        let score = scoreCount?.get(key)?.score || 0;
+                        const entry = scoreCount?.get(key);
+                        let score = entry?.score || 0;
                         if (doNormalize && score > 0) {
-                            const n1 = imgCount.get(sorted[i].id) || 1;
-                            const n2 = imgCount.get(sorted[j].id) || 1;
+                            const n1 = imgCount.get(docs[i].id) || 1;
+                            const n2 = imgCount.get(docs[j].id) || 1;
                             score /= Math.sqrt(n1 * n2);
                         }
+                        count = entry?.count || 0;
                         z = score;
                     }
 
                     if (z > maxScore) maxScore = z;
-                    row.push({x: j, y: i, z, pct, doc1: sorted[i], doc2: sorted[j]});
+                    row.push({x: j, y: i, z, pct, count, doc1: docs[i], doc2: docs[j]});
                 } else {
                     row.push({x: j, y: i, z: 0, diagonal: true});
                 }
@@ -78,11 +87,21 @@
             matrix.push(row);
         }
 
-        return {docs: sorted, matrix, maxScore, pctMode};
+        return {docs, matrix, maxScore, pctMode};
     }
 
     function isSelected(d) {
         return selectedCell && selectedCell.doc1.id === d.doc1.id && selectedCell.doc2.id === d.doc2.id;
+    }
+
+    function isMirror(d) {
+        return selectedCell && selectedCell.doc1.id === d.doc2.id && selectedCell.doc2.id === d.doc1.id;
+    }
+
+    function applyStroke(sel) {
+        sel.attr("stroke", d => isSelected(d) || isMirror(d) ? "var(--bulma-text)" : "var(--bulma-scheme-main)")
+            .attr("stroke-width", d => isSelected(d) || isMirror(d) ? 2 : 0.5)
+            .attr("stroke-dasharray", d => isMirror(d) ? "5,2" : null);
     }
 
     function render() {
@@ -131,40 +150,43 @@
                 .attr("height", x.bandwidth())
                 .attr("fill", d => {
                     if (d.z === 0) return "var(--bulma-text)";
-                    const color = d3.hsl(233, 0.951, 0.52);
+                    const key = d.doc1.id < d.doc2.id ? `${d.doc1.id}-${d.doc2.id}` : `${d.doc2.id}-${d.doc1.id}`;
+                    const color = d3.hsl(edgeKeys.has(key) ? 19 : 233, 0.951, 0.52);
                     color.opacity = maxScore > 0 ? 0.2 + 0.8 * (d.z / maxScore) : 0.2;
                     return color;
                 })
-                .attr("stroke", d => isSelected(d) ? "var(--bulma-text)" : "var(--bulma-scheme-main)")
-                .attr("stroke-width", d => isSelected(d) ? 2 : 0.5)
+                .call(applyStroke)
                 .style("cursor", "pointer")
                 .on("mouseover", function (event, d) {
-                    if (!isSelected(d)) d3.select(this).attr("stroke", "var(--bulma-text)").attr("stroke-width", 2);
+                    if (!isSelected(d) && !isMirror(d)) d3.select(this).attr("stroke", "var(--bulma-text)").attr("stroke-width", 2);
                     tooltip.style("opacity", 1);
                 })
                 .on("mousemove", function (event, d) {
                     let content;
                     if (matrixData.pctMode) {
                         const pctStr = d.pct != null ? `${(d.pct * 100).toFixed(1)}%` : "0%";
-                        content = `Percentage of images from<br/><span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>present also in<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}<br/><br/><strong>${pctStr}</strong>`;
+                        content = `${i18n("percent", t)}<br/><span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>${i18n("present", t)}<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}<br/><br/><strong>${pctStr}</strong>`;
                     } else {
                         const docs = `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}`;
                         content = d.z === 0
                             ? `${docs}<br/><br/><em>${i18n("noPairs", t)}</em>`
-                            : `${docs}<br/><br/>${i18n("score", t)}: ${d.z.toFixed(2)}`;
+                            : `${docs}<br/><br/>${i18n("score", t)}: ${d.z.toFixed(2)} | <b>${d.count}</b> ${i18n("match", t)}`;
                     }
                     tooltip.html(content)
                         .style("left", (event.clientX + 15) + "px")
                         .style("top", (event.clientY + 15) + "px");
                 })
                 .on("mouseleave", function (event, d) {
-                    if (!isSelected(d)) d3.select(this).attr("stroke", "var(--bulma-scheme-main)").attr("stroke-width", 0.5);
+                    if (!isSelected(d) && !isMirror(d)) d3.select(this).attr("stroke", "var(--bulma-scheme-main)").attr("stroke-width", 0.5);
                     tooltip.style("opacity", 0);
                 })
                 .on("click", (event, d) => {
                     selectedCell = {row: d.y, col: d.x, doc1: d.doc1, doc2: d.doc2};
                     updateSelection();
                     dispatch("cellselect", selectedCell);
+                })
+                .on("contextmenu", (event, d) => {
+                    if (isInStemma && stemmaStore) openContextMenu(event, d);
                 });
 
             if (matrixData.pctMode) {
@@ -195,9 +217,7 @@
 
     function updateSelection() {
         if (!container) return;
-        d3.select(container).selectAll(".cell")
-            .attr("stroke", d => isSelected(d) ? "var(--bulma-text)" : "var(--bulma-scheme-main)")
-            .attr("stroke-width", d => isSelected(d) ? 2 : 0.5);
+        applyStroke(d3.select(container).selectAll(".cell"));
     }
 
     export function clearSelection() {
@@ -206,9 +226,36 @@
     }
 
     $: if (container && matrixData.docs.length) render();
+
+    let menuOpen = false, menuX = 0, menuY = 0, menuItems = [];
+
+    function docDate(d) {
+        return d.min_date ?? d.max_date ?? null;
+    }
+
+    function orientEdge(doc1, doc2) {
+        const d1 = docDate(doc1), d2 = docDate(doc2);
+        if (d1 != null && d2 != null) return d1 <= d2 ? [doc1, doc2] : [doc2, doc1];
+        if (d1 != null) return [doc1, doc2];
+        if (d2 != null) return [doc2, doc1];
+        return [doc1, doc2];
+    }
+
+    function openContextMenu(event, d) {
+        event.preventDefault();
+        const [src, tgt] = orientEdge(d.doc1, d.doc2);
+        menuItems = [{
+            label: i18n("addEdge", t),
+            icon: "arrow-right",
+            action: () => stemmaStore.addEdge(src.id, tgt.id, src, tgt)
+        }];
+        menuX = event.clientX;
+        menuY = event.clientY;
+        menuOpen = true;
+    }
 </script>
 
-<div class="matrix-grid" style="--cell-size: {cellSize}px;">
+<div id="doc-set-matrix" class="matrix-grid" style="--cell-size: {cellSize}px;">
     <div class="matrix-corner"></div>
     {#each ["col", "row"] as side}
         <div class="{side}-headers">
@@ -221,6 +268,8 @@
     {/each}
     <div class="matrix-canvas" bind:this={container}></div>
 </div>
+
+<RightClick bind:open={menuOpen} x={menuX} y={menuY} items={menuItems}/>
 
 <style>
     .matrix-grid {

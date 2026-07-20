@@ -1,5 +1,4 @@
 <script>
-    import {appLang} from "../constants.js";
     import { RegionItem } from "./types.js";
     import RegionCard from "./RegionCard.svelte";
     import PageView from "./modal/PageView.svelte";
@@ -8,6 +7,7 @@
 
     import {regionsSelection} from "../selection/selectionStore.js";
     import QueryExpansionView from "./modal/QueryExpansionView.svelte";
+    import {i18n} from "../utils.js";
     export let selectionStore = regionsSelection;
 
     /** @type {RegionItemType[]} */
@@ -30,9 +30,9 @@
     };
 
     const tabs = [
-        { id: "region", label: appLang === "en" ? "Main view" : "Vue principale" },
-        { id: "page", label: appLang === "en" ? "Page View" : "Vue de la page" },
-        { id: "matches", label: appLang === "en" ? "Matches" : "Correspondances" }
+        { id: "region", label: i18n("mainView") },
+        { id: "page", label: i18n("pageView") },
+        { id: "matches", label: i18n("matchesView") },
     ];
 </script>
 

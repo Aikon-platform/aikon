@@ -1,0 +1,20 @@
+import requests
+from app.config.celery import celery_app
+from app.config.settings import API_URL
+
+
+@celery_app.task
+def process_region_extraction_file(file_content, digit_id, model):
+    from app.webapp.models.region_extraction import Digitization
+    from app.webapp.utils.iiif.annotation import process_region_extraction
+
+    digitization = Digitization.objects.filter(pk=digit_id).first()
+    return process_region_extraction(file_content, digitization, model)
+
+
+@celery_app.task
+def delete_api_region_extraction(digit_ref, model_name=None):
+    model = f"?model_name={model_name}" if model_name else ""
+    response = requests.post(f"{API_URL}/region_extraction/{digit_ref}/delete{model}")
+    response.raise_for_status()
+    return response.json()

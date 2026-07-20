@@ -6,6 +6,7 @@
     import { regionsStore } from "./regionsStore.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     import ModalOpener from "./modal/ModalOpener.svelte";
+    import {i18n} from "../utils.js";
     const { clipBoard } = regionsStore;
 
     export let selectionStore;
@@ -23,6 +24,8 @@
     export let index = null;
     /** @type {string|null} */
     export let borderColor = null;
+    /** @type {int|null} */
+    export let borderWidth = 5;
     /** @type {boolean} */
     export let copyable = false;
     /** @type {boolean} */
@@ -34,18 +37,33 @@
     /** @type {number|"full"} */
     export let height = isSquare ? 96 : 140;
     if ( height === "full" ) { isSquare = false }
+    export let url = null;
+    export let downloadable = isInModal;
 
     $: currentRegion = new RegionItem(item);
-    $: isCopied = currentRegion.ref === $clipBoard;
-    $: imgSrc = currentRegion.url(null, height === "full" ? "full" : isSquare ? `${height},` : `,${height}`);
+    $: isCopied = currentRegion.copyId === $clipBoard;
+    $: imgSrc = url ?? currentRegion.url(null, height === "full" ? "full" : isSquare ? `${height},` : `,${height}`);
 
     const dispatch = createEventDispatcher();
     const openModal = () => isInModal ? null : dispatch("openModal", { index });
+
+    const download = async () => {
+        const res = await fetch(currentRegion.url(null, "full"));
+        const url = URL.createObjectURL(await res.blob());
+        Object.assign(document.createElement("a"), { href: url, download: `${currentRegion.ref.replace(".jpg", "")}.jpg` }).click();
+        URL.revokeObjectURL(url);
+    };
+
+    const t = {
+        downloadImg: { en: "Download image", fr: "Télécharger l'image" },
+        copy: { en: "Copy ID", fr: "Copier l'ID" },
+        copied: { en: "Copied!", fr: "Copié !" },
+    };
 </script>
 
 <div class="region is-center {selectable && $isSelected(item) ? 'checked' : ''}" style="{height === 'full' ? 'height: 100%' : ''}"> <!-- transition:fade={{ duration: 10 }} -->
     <figure class="image card region-image" class:is-96x96={isSquare} tabindex="-1"
-            style="{height === 'full' ? 'height: 100%' : `height: ${height}px; min-width: ${height}px`}; {borderColor ? `border: 5px solid ${borderColor};` : ''}"
+            style="{height === 'full' ? 'height: 100%' : `height: ${height}px; min-width: ${height}px`}; {borderColor ? `border: ${borderWidth}px solid ${borderColor};` : ''}"
             on:click={() => selectable ? toggleSelection(currentRegion) : openModal()} on:keyup={null}>
         <img class="region-img" src={imgSrc} alt="Extracted region"/>
         <div class="overlay is-center">
@@ -55,7 +73,7 @@
 
     <div class="region-btn ml-1">
         {#if copyable}
-        <button class="button tag" on:click|stopPropagation={() => regionsStore.copyRef(item.ref)}>
+        <button class="button tag" on:click|stopPropagation={() => regionsStore.copyRef(currentRegion.copyId)}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                 {#if isCopied}
                     <path d="M208 0H332.1c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9V336c0 26.5-21.5 48-48 48H208c-26.5 0-48-21.5-48-48V48c0-26.5 21.5-48 48-48zM48 128h80v64H64V448H256V416h64v48c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48z"/>
@@ -64,16 +82,17 @@
                 {/if}
             </svg>
             <span class="tooltip">
-                {#if isCopied}
-                    {appLang === "en" ? "Copied!" : "Copié !"}
-                {:else}
-                    {appLang === "en" ? "Copy ID" : "Copier l'ID"}
-                {/if}
+                {i18n(isCopied ? "copied" : "copy", t)}
             </span>
         </button>
         {/if}
         {#if !isInModal}
             <ModalOpener on:open={openModal}/>
+        {/if}
+        {#if downloadable}
+            <button class="button tag mb-1 p-0 p-2 has-text-link" on:click|stopPropagation={download} title={i18n("downloadImg", t)}>
+                <i class="fa-solid fa-download"/>
+            </button>
         {/if}
         <slot name="actions"/>
     </div>
@@ -93,6 +112,7 @@
     .region-img {
         object-fit: contain;
         height: 100%;
+        max-height: 60vh;
     }
     svg > path {
         transition: fill 0.1s ease-out;

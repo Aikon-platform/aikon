@@ -7,6 +7,15 @@ const LINK_STRENGTH = 0.5;
 const WIDTH = 800;
 const HEIGHT = 600;
 
+const ticked = (link, node) => {
+    link.attr("x1", d => d.source.x)
+        .attr("y1", d => d.source.y)
+        .attr("x2", d => d.target.x)
+        .attr("y2", d => d.target.y);
+    node.attr("cx", d => d.x)
+        .attr("cy", d => d.y);
+};
+
 export function createSvg(div, nodes, links = null, onSelectionChange = null, onModeChange = null) {
     const centerX = WIDTH / 2;
     const centerY = HEIGHT / 2;
@@ -44,7 +53,12 @@ export function createSvg(div, nodes, links = null, onSelectionChange = null, on
         .force("center", d3.forceCenter(centerX, centerY).strength(0.7))
         .force("collide", d3.forceCollide(d => (d.radius || NODE_RADIUS) + 10).strength(LINK_STRENGTH))
         .force("x", d3.forceX(centerX).strength(0.025))
-        .force("y", d3.forceY(centerY).strength(0.025))
+        .force("y", d3.forceY(centerY).strength(0.025));
+
+    simulation.stop();
+    simulation.tick(300);
+    nodes.forEach(d => { d.fx = d.x; d.fy = d.y; });
+    ticked(link, node);
 
     let selectionManager = null;
     if (onSelectionChange){
@@ -211,32 +225,18 @@ function createSelectionManager(options) {
 }
 
 function createSimulationHandlers(simulation, link, node) {
-    simulation.on("tick", () => {
-        link
-            .attr("x1", d => d.source.x)
-            .attr("y1", d => d.source.y)
-            .attr("x2", d => d.target.x)
-            .attr("y2", d => d.target.y);
+    const dragstarted = e => {
+        e.sourceEvent.stopPropagation();
+        e.subject.fx = e.subject.x;
+        e.subject.fy = e.subject.y;
+    };
 
-        node.attr("cx", d => d.x).attr("cy", d => d.y);
-    });
-
-    function dragstarted(event) {
-        if (!event.active) simulation.alphaTarget(0.3).restart();
-        event.subject.fx = event.subject.x;
-        event.subject.fy = event.subject.y;
-    }
-
-    function dragged(event) {
-        event.subject.fx = event.x;
-        event.subject.fy = event.y;
-    }
-
-    function dragended(event) {
-        if (!event.active) simulation.alphaTarget(0);
-        event.subject.fx = null;
-        event.subject.fy = null;
-    }
+    const dragged = e => {
+        e.subject.fx = e.subject.x = e.x;
+        e.subject.fy = e.subject.y = e.y;
+        ticked(link, node);
+    };
+    const dragended = () => {};
 
     return {dragstarted, dragged, dragended};
 }

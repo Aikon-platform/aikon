@@ -1,14 +1,15 @@
 from celery.schedules import crontab
-from celery import chain
+from celery import chain, chord
 from app.config.celery import celery_app
 from django.apps import apps
 
 from app.webapp.models.searchable_models import AbstractSearchableModel
+from app.webapp.models.document_set import DocumentSet
 from app.webapp.utils.constants import MAX_RES
 from app.webapp.utils.iiif.download import iiif_to_img
-from webapp.models.utils.constants import PDF_ABBR, IMG_ABBR, MAN_ABBR
-from webapp.utils.paths import MEDIA_PATH, IMG_PATH
-from webapp.utils.pdf import pdf_2_img
+from app.webapp.models.utils.constants import PDF_ABBR, IMG_ABBR, MAN_ABBR
+from app.webapp.utils.paths import MEDIA_PATH, IMG_PATH
+from app.webapp.utils.pdf import pdf_2_img
 
 
 @celery_app.task
@@ -29,31 +30,31 @@ def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit):
 
 
 @celery_app.task
-def reindex_from_file(regions_id):
-    from app.webapp.models.regions import Regions
+def reindex_from_file(region_extraction_id):
+    from app.webapp.models.region_extraction import RegionExtraction
     from app.webapp.utils.iiif.annotation import check_indexation
 
-    # regions = Regions.objects.filter(pk=regions_id).first()
-    regions = Regions.objects.get(pk=regions_id)
-    return check_indexation(regions, True)
+    # region_extraction = RegionExtraction.objects.filter(pk=region_extraction_id).first()
+    region_extraction = RegionExtraction.objects.get(pk=region_extraction_id)
+    return check_indexation(region_extraction, True)
 
 
 # NOTE unused
 @celery_app.task
-def delete_regions_and_annotations(regions_id):
-    from app.webapp.models.regions import Regions
-    from app.webapp.utils.iiif.annotation import destroy_regions
+def delete_region_extraction_and_annotations(regions_id):
+    from app.webapp.models.region_extraction import RegionExtraction
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction
 
-    # regions = Regions.objects.filter(pk=regions_id).first()
-    regions = Regions.objects.get(pk=regions_id)
-    return destroy_regions(regions)
+    # region_extraction = RegionExtraction.objects.filter(pk=regions_id).first()
+    region_extraction = RegionExtraction.objects.get(pk=regions_id)
+    return destroy_region_extraction(region_extraction)
 
 
 @celery_app.task
 def delete_annotations(regions_ref, manifest_url):
-    from app.webapp.utils.iiif.annotation import unindex_regions
+    from app.webapp.utils.iiif.annotation import unindex_region_extraction
 
-    return unindex_regions(regions_ref, manifest_url)
+    return unindex_region_extraction(regions_ref, manifest_url)
 
 
 @celery_app.task
@@ -84,6 +85,8 @@ def generate_all_json():
 
 @celery_app.task
 def launch_task(treatment):
+    if treatment.task_type == "import":
+        return start_import(str(treatment.id))
     try:
         witnesses = treatment.get_witnesses()
         treatment.start_task(witnesses)
@@ -97,6 +100,148 @@ def launch_task(treatment):
                 "notify": treatment.notify_email,
             },
         )
+
+
+@celery_app.task
+def start_import(treatment_id):
+    """
+    Orchestrator for cross-instance imports:
+    - fetch source, import witnesses + metadata cascade synchronously
+    - launch one chain per digitization (download imgs → update json → import regions)
+    - a chord callback finalizes the treatment (and imports similarities)
+    """
+    from app.webapp.models.treatment import Treatment
+    from app.webapp.utils.data_import import (
+        ImportContext, is_same_instance, resolve_source, import_witness,
+    )
+    from app.webapp.utils.logger import log
+
+    treatment = Treatment.objects.get(pk=treatment_id)
+    treatment.update(status="IN PROGRESS")
+
+    ctx = ImportContext(treatment)
+    source_url = ctx.opts.get("source_url", "")
+    log(f"[start_import] Treatment #{treatment_id}: importing from {source_url}", msg_type="info")
+
+    if is_same_instance(source_url):
+        treatment.on_task_success(
+            {"notify": treatment.notify_email, "message": "Source is this instance, nothing to import"}
+        )
+        return
+
+    try:
+        wit_urls, similarity_url, title = resolve_source(source_url, ctx)
+        ctx.opts["similarity_url"] = similarity_url
+    except Exception as e:
+        treatment.on_task_error(
+            {"notify": treatment.notify_email, "error": f"Could not fetch source {source_url}: {e}"}
+        )
+        return
+
+    doc_set = DocumentSet.objects.create(
+        title=title or source_url, user=treatment.requested_by
+    )
+    treatment.update(document_set=doc_set)
+
+    chains = []
+    for wit_url in wit_urls.values():
+        try:
+            witness, digits = import_witness(wit_url, ctx)
+        except Exception as e:
+            ctx.errors.append(f"{wit_url}: {e}")
+            log(f"[start_import] Failed to import witness {wit_url}", e)
+            continue
+
+        if witness:
+            log(
+                f"[start_import] {wit_url} → witness #{witness.id}, {len(digits)} digit(s), "
+                f"{sum(len(r) for _, _, r in digits)} region extraction(s) to import",
+                msg_type="info",
+            )
+
+        for digit, manifest_url, regions_url in digits:
+            sig = chain(
+                extract_images_from_iiif_manifest.s(manifest_url, digit.get_ref(), digit),
+                update_image_json.s(digit.id),
+            )
+            if regions_url and ctx.opts.get("import_regions"):
+                sig |= import_regions_task.s(digit.id, regions_url, treatment_id)
+            chains.append(sig)
+
+    log(
+        f"[start_import] Treatment #{treatment_id}: {len(ctx.mapping['witnesses'])} witness(es) mapped, "
+        f"{len(chains)} digitization chain(s) launched, {len(ctx.errors)} error(s)",
+        msg_type="info",
+    )
+
+    if wit_ids := sorted(ctx.mapping["witnesses"].values()):
+        doc_set.wit_ids = wit_ids
+        doc_set.save()
+    ctx.save()
+
+    if chains:
+        chord(chains)(
+            finalize_import.s(treatment_id).on_error(
+                import_failed.s(treatment_id=treatment_id)
+            )
+        )
+    else:
+        finalize_import.delay(None, treatment_id)
+
+
+@celery_app.task
+def import_regions_task(prev, digit_id, regions_url, treatment_id):
+    """Chained after update_image_json (prev = its return value)"""
+    from app.webapp.models.digitization import Digitization
+    from app.webapp.utils.data_import import import_region_extraction, update_mapping
+    from app.webapp.utils.logger import log
+
+    if prev is not True:
+        return f"Image processing failed for digit #{digit_id}, skipping regions import: {prev}"
+
+    digit = Digitization.objects.get(id=digit_id)
+    try:
+        if new_rid := import_region_extraction(digit, regions_url):
+            update_mapping(treatment_id, "regions", digit_id, new_rid)
+    except Exception as e:
+        log(f"[import_regions_task] Failed to import regions {regions_url} for digit #{digit_id}", e)
+    return True
+
+
+@celery_app.task
+def import_failed(*args, treatment_id):
+    from app.webapp.models.treatment import Treatment
+
+    treatment = Treatment.objects.get(pk=treatment_id)
+    treatment.on_task_error(
+        {"notify": treatment.notify_email, "error": f"Import chain failed: {args}"}
+    )
+
+
+@celery_app.task
+def finalize_import(results, treatment_id):
+    from app.config.settings import ADDITIONAL_MODULES
+    from app.webapp.models.treatment import Treatment
+    from app.webapp.utils.data_import import ImportContext, import_similarity_pairs
+    from app.webapp.utils.logger import log
+
+    treatment = Treatment.objects.get(pk=treatment_id)
+    ctx = ImportContext(treatment)
+    msg = f"Imported {len(ctx.mapping['witnesses'])} witness(es)"
+
+    sim_url = ctx.opts.get("similarity_url")
+    if ctx.opts.get("import_similarities") and sim_url and "similarity" in ADDITIONAL_MODULES:
+        try:
+            msg += f", {import_similarity_pairs(ctx, sim_url)} region pair(s)"
+        except Exception as e:
+            ctx.errors.append(f"similarity: {e}")
+            log("[finalize_import] Failed to import similarity pairs", e)
+
+    ctx.save()
+    if ctx.errors:
+        treatment.on_task_error({"notify": treatment.notify_email, "error": f"{msg}. Errors: {ctx.errors}"})
+    else:
+        treatment.on_task_success({"notify": treatment.notify_email, "message": msg})
 
 
 @celery_app.task
@@ -132,11 +277,26 @@ def update_image_json(img_list, digit_id):
         digit.update_imgs_json(img_list)
 
         witness = digit.witness
+        # reindex to add first image to witness metadata
         witness.get_json(reindex=True)
 
         return True
     except Exception as e:
         return f"[update_image_json] Error updating JSON image property after processing: {e}"
+
+
+@celery_app.task
+def regenerate_witness_json(witness_id):
+    from app.webapp.models.witness import Witness
+
+    witness = Witness.objects.get(id=witness_id)
+    digits = witness.get_digits()
+    for digit in digits:
+        digit.update_imgs_json(force=True)
+        digit.update_json(digit.to_json(no_img=True))
+
+    witness.get_json(reindex=True)
+    return f"[regenerate_witness_json] Regenerated witness #{witness_id} and {len(digits)} digitization(s)"
 
 
 @celery_app.task
@@ -207,16 +367,16 @@ def delete_digitization(digit_ref, other_media):
 
 
 @celery_app.task
-def delete_regions(regions_ids):
-    from app.webapp.models.regions import Regions
-    from app.webapp.utils.iiif.annotation import destroy_regions
+def delete_region_extraction(regions_ids):
+    from app.webapp.models.region_extraction import RegionExtraction
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction
 
     for regions_id in regions_ids:
         try:
-            regions = Regions.objects.get(id=regions_id)
-            destroy_regions(regions)
-        except Regions.DoesNotExist:
-            return f"Error: Regions #{regions_ids} does not exist"
+            regions = RegionExtraction.objects.get(id=regions_id)
+            destroy_region_extraction(regions)
+        except RegionExtraction.DoesNotExist:
+            return f"Error: RegionExtraction #{regions_ids} does not exist"
         except Exception as e:
-            return f"Error deleting Regions {regions_ids}: {e}"
-    return f"Successfully deleted regions {regions_ids}"
+            return f"Error deleting RegionExtraction {regions_ids}: {e}"
+    return f"Successfully deleted region extraction {regions_ids}"

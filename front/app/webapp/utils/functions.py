@@ -26,12 +26,10 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
-from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL
+
+from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL, APP_URL, APP_PORT, MODE
 from app.webapp.models.utils.constants import DATE_ERROR, IMG
-from app.webapp.utils.paths import (
-    BASE_DIR,
-    IMG_PATH,
-)
+from app.webapp.utils.paths import IMG_PATH
 from app.vectorization.const import SVG_PATH
 from app.webapp.utils.constants import MAX_SIZE, PAGE_LEN
 from app.webapp.utils.logger import log
@@ -423,13 +421,19 @@ def get_action(action, formatting=None):
         "no_manifest": {"en": "no manifest", "fr": "pas de manifest"},
         "no_digit": {"en": "no digitization", "fr": "pas de numérisation"},
         "no_img": {"en": "no image", "fr": "pas d'image"},
-        "no_regions": {"en": "no regions yet", "fr": "pas de régions"},
-        "download": {"en": "download regions", "fr": "télécharger les régions"},
+        "no_region_extraction": {
+            "en": "no region extraction yet",
+            "fr": "pas de régions extraites",
+        },
+        "download": {
+            "en": "download extracted regions",
+            "fr": "télécharger les régions extraites",
+        },
         "edit": {"en": "edit regions", "fr": "modifier les régions"},
         "final": {"en": "visualize final regions", "fr": "voir les régions finales"},
-        "regions": {
-            "en": "all regions",
-            "fr": "toutes les régions",
+        "region_extraction": {
+            "en": "all extracted regions",
+            "fr": "toutes les régions extraites",
         },
         "vectors": {
             "en": "visualize automatic vectorizations",
@@ -614,8 +618,7 @@ def check_dir(path):
 
 
 def create_dir(path):
-    path = Path(path)
-    path.mkdir(parents=True, exist_ok=True)
+    Path(path).mkdir(parents=True, exist_ok=True)
     return path
 
 
@@ -732,7 +735,7 @@ def sort_key(s: str) -> List[str | int]:
 
     :returns: a list where numbers in string `s` are converted to ints for comparison. non-number characters are kept as strings
     """
-    return [int(part) if part.isdigit() else part for part in re.split("(\d+)", s)]
+    return [int(part) if part.isdigit() else part for part in re.split(r"(\d+)", s)]
 
 
 def gen_img_ref(img, coord):
@@ -783,3 +786,24 @@ def cast(val, to_type):
         elif to_type == float:
             return 0.0
         return None
+
+
+def ensure_legacy_regions(task_name: str) -> str:
+    """
+    RegionExtraction was previously called Regions and this task name is
+    used in the front's URLs. to avoid breaking changes and updating all URLs,
+    ensure that "regions" is used instead of "region_extraction".
+    """
+    if task_name == "region_extraction":
+        return "regions"
+    return task_name
+
+def maybe_dockerize(url: str) -> str:
+    """
+    replace the app's default URL to Docker's host.docker.internal,
+    which resolves to the host's localhost. necessary for Docker
+    containers-to-Django HTTP requests.
+    """
+    if MODE == "dev":
+        return url.replace(APP_URL, f"http://host.docker.internal:{APP_PORT}")
+    return url

@@ -51,7 +51,7 @@ class Treatment(AbstractSearchableModel):
         app_label = "webapp"
 
     def __str__(self, light=False):
-        task = f"{self.task_type.__str__().capitalize()}"
+        task = f"{self.task_type.__str__().replace('_', ' ').capitalize()}"
         if light:
             if self.json and "title" in self.json:
                 return self.json["title"]
@@ -59,6 +59,7 @@ class Treatment(AbstractSearchableModel):
 
         if self.document_set:
             return f"{task} | {self.document_set.title}"
+        # TODO add source url for import treatments
         return task
 
     id = models.UUIDField(primary_key=True, default=uuid.uuid4, editable=False)
@@ -143,11 +144,14 @@ class Treatment(AbstractSearchableModel):
             return urls
         witnesses = self.document_set.all_witness_ids()
         urls.append(
-            [reverse("webapp:witness_regions_view", args=[wid]) for wid in witnesses]
+            [
+                reverse("webapp:witness_region_extraction_view", args=[wid])
+                for wid in witnesses
+            ]
         )
         #  TODO make variable used in svelte component and in overall app
         tabs = {
-            "regions": "page",
+            "region_extraction": "page",
             "similarity": "similarity",
             "vectorization": "vectorization",
         }
@@ -156,7 +160,7 @@ class Treatment(AbstractSearchableModel):
             urls = [f"{url}?tab={tabs[self.task_type]}" for url in urls]
         return urls
 
-    def to_json(self, reindex=True, no_img=False, request_user=None):
+    def to_json(self, reindex=True, no_img=False):
         try:
             user = self.requested_by
             doc_set = self.document_set
@@ -173,6 +177,7 @@ class Treatment(AbstractSearchableModel):
                     "user": user.__str__() if user else NO_USER,
                     "user_id": user.id if user else 0,
                     "status": self.status,
+                    "task_type": self.task_type,
                     "is_finished": self.is_finished,
                     "treated_objects": self.treated_objects,
                     "cancel_url": self.get_cancel_url(),
@@ -202,10 +207,9 @@ class Treatment(AbstractSearchableModel):
                 self.requested_by = user
 
             if not self.document_set:
-                log(
-                    f"[treatment_save] No document set for treatment {self.id}, aborting."
-                )
-                self.status = "ERROR"
+                if self.task_type != "import":
+                    log(f"[treatment_save] No document set for treatment {self.id}, aborting.")
+                    self.status = "ERROR"
                 super().save(*args, **kwargs)
                 return
 
@@ -232,7 +236,7 @@ class Treatment(AbstractSearchableModel):
 
     def start_task(self, witnesses):
         """Start the task"""
-        if self.task_type not in ADDITIONAL_MODULES:
+        if self.task_type not in ADDITIONAL_MODULES + ["import"]:
             log(f"[start_task] Uninstalled module: {self.task_type}")
             return
 
@@ -354,9 +358,10 @@ class Treatment(AbstractSearchableModel):
         """
         err = data.get("error", "Unknown error")
         log(
-            f"[on_task_error] Task #{self.id} failed because of:\n{err}",
+            f"[on_task_error] Task #{self.id} failed because of:\n{err}\n\nPayload",
             exception=exception,
         )
+        log(data, msg_type="error", compact=True, with_time=False)
 
         if completed:
             self.terminate_task(

@@ -1,8 +1,10 @@
 from django.urls import path, reverse_lazy
-from app.config.settings import APP_NAME
+from django.contrib.auth import views as auth_views
+
 from app.webapp.views import *
 from app.webapp.views.users import *
-from django.contrib.auth import views as auth_views
+from webapp.views.region import save_region
+
 
 app_name = "webapp"
 
@@ -49,19 +51,14 @@ urlpatterns = [
         name="export-selected-regions",
     ),
     path(
-        f"{APP_NAME}/<str:regions_ref>/list/",
+        f"{APP_NAME}/<str:region_extraction_ref>/list/",
         get_regions_img_list,
         name="regions-list",
     ),
     path(
-        f"test",
-        test,
-        name="test",
-    ),
-    path(
-        f"{APP_NAME}/test/<str:wit_ref>",
-        test,
-        name="test",
+        f"{APP_NAME}/witness/<int:wid>/list/",
+        get_witness_img_list,
+        name="witness-list",
     ),
     path(
         # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
@@ -75,19 +72,19 @@ urlpatterns = [
         name="populate-annotation",
     ),
     path(
-        f"{APP_NAME}/iiif/validate/<str:regions_ref>",
-        validate_regions,
-        name="validate-regions",
+        f"{APP_NAME}/iiif/validate/<str:region_extraction_ref>",
+        validate_region_extraction,
+        name="validate-region-extraction",
     ),
     path(
-        f"{APP_NAME}/iiif/<str:regions_ref>/list/anno-<int:canvas_nb>.json",
+        f"{APP_NAME}/iiif/<str:region_extraction_ref>/list/anno-<int:canvas_nb>.json",
         canvas_annotations,
         name="canvas-annotations",
     ),
     path(
         f"{APP_NAME}/iiif/regions/<int:regions_id>",
-        export_regions_img,
-        name="regions-imgs",
+        export_region_extraction_img,
+        name="region-extraction-imgs",
     ),
     path(
         f"{APP_NAME}/index-witness/<int:wit_id>",
@@ -100,13 +97,13 @@ urlpatterns = [
         name="reindex-regions",
     ),
     path(
-        f"{APP_NAME}/index-regions/<str:regions_ref>",
-        index_regions,
+        f"{APP_NAME}/index-regions/<str:region_extraction_ref>",
+        index_region_extraction,
         name="index-regions",
     ),
     path(
         f"{APP_NAME}/index-regions",
-        index_regions,
+        index_region_extraction,
         name="index-regions",
     ),
     path(
@@ -151,7 +148,6 @@ urlpatterns = [
     ),
     path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
-    # path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
     path(
         f"{APP_NAME}/autocomplete/edition/",
         EditionAutocomplete.as_view(),
@@ -209,13 +205,13 @@ urlpatterns += [
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/",
-        RegionsView.as_view(),
-        name="regions_view",
+        RegionExtractionView.as_view(),
+        name="region_extraction_view",
     ),
     path(
         f"{APP_NAME}/witness/<int:id>/regions/",
-        WitnessRegionsView.as_view(),
-        name="witness_regions_view",
+        WitnessRegionExtractionView.as_view(),
+        name="witness_region_extraction_view",
     ),
     path(f"{APP_NAME}/treatment/", TreatmentList.as_view(), name="treatment_list"),
     path(
@@ -267,41 +263,41 @@ urlpatterns += [
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/add",
-        create_manual_regions,
-        name="witness_manual_regions",
+        create_manual_region_extraction,
+        name="witness_manual_region_extraction",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/digitization/<int:did>/regions/add",
-        create_manual_regions,
-        name="digit_manual_regions",
+        create_manual_region_extraction,
+        name="digit_manual_region_extraction",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add",
-        create_manual_regions,
-        name="regions_manual_regions",
+        create_manual_region_extraction,
+        name="region_extraction_manual_region_extraction",
     ),
     path(
         f"{APP_NAME}/regions/<int:rid>/delete",
-        delete_regions,
-        name="delete_regions",
+        delete_region_extraction,
+        name="delete_region_extraction",
     ),
     path(
         f"{APP_NAME}/regions/export",
-        export_regions,
-        name="export_regions",
+        export_region_extraction,
+        name="export_region_extraction",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/json", get_json_witness, name="get_json_witness"
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/extracted-regions",
-        get_json_regions,
-        name="get_json_regions",
+        f"{APP_NAME}/witness/<int:wid>/digitization/<int:did>/json/extracted-regions",
+        get_json_digit_regions,
+        name="get_json_digit_regions",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/similarities",
-        get_json_simil,
-        name="get_json_simil",
+        f"{APP_NAME}/document-set/<int:dsid>/json/similarities",
+        get_json_docset_simil,
+        name="get_json_docset_simil",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/vectorized-images",
@@ -319,6 +315,12 @@ urlpatterns += [
         name="export_docset",
     ),
     path(
+        f"{APP_NAME}/document-set/<int:dsid>/json/similarity",
+        get_json_docset_simil,
+        name="get_json_document_set_similarity",
+    ),
+    path(f"{APP_NAME}/raw/<str:model_name>/<int:rid>", get_json_record, name="record-raw"),
+    path(
         f"{APP_NAME}/witness/select",
         witness_select_fields,
         name="witness_select_fields",
@@ -327,6 +329,16 @@ urlpatterns += [
         f"{APP_NAME}/witness/<int:wid>/update",
         witness_update,
         name="witness_update",
+    ),
+    path(
+        f"{APP_NAME}/regions/<int:reid>/region/add",
+        save_region,
+        name="new-region",
+    ),
+    path(
+        f"{APP_NAME}/regions/<int:reid>/region/<int:rid>/edit",
+        save_region,
+        name="change-region",
     ),
 ]
 
@@ -339,27 +351,20 @@ urlpatterns += [
     path("search/series/", search_series, name="search-series"),
     path("search/documentset/", search_document_set, name="search-document-sets"),
     path("search/digitization/", search_digitizations, name="search-digitizations"),
-    path("search/regions/", search_regions, name="search-regions"),
+    path(
+        "search/regions/", search_region_extractions, name="search-region-extractions"
+    ),
     path("search/user/", search_user, name="search-user"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
+    path(
+        "search/witness-json-generation/<int:wid>",
+        witness_json_regeneration,
+        name="witness-regenerate_json",
+    ),
 ]
 
 # SUPERADMIN VIEWS
 urlpatterns += [
     path("superadmin/empty-works/", list_empty_works, name="empty-works"),
     path("superadmin/works/", list_works, name="list-works"),
-]
-
-# TEST VIEWS
-urlpatterns += [
-    path(
-        f"{APP_NAME}/test",
-        test,
-        name="test",
-    ),
-    path(
-        f"{APP_NAME}/test/error",
-        test_error,
-        name="test-error",
-    ),
 ]

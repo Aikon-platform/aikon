@@ -17,12 +17,17 @@ def process_similarity_file(file):
 
 
 @celery_app.task
-def delete_api_similarity(regions_ref, algorithm=None, feat_net=None):
+def delete_api_similarity(ref, algorithm=None, feat_net=None):
+    """
+    ref can be region_extraction_ref or witness_id
+    """
     args = {
         "algorithm": algorithm,
         "feat_net": feat_net,
     }
 
-    response = requests.post(f"{API_URL}/similarity/{regions_ref}/delete", params=args)
+    response = requests.post(
+        f"{API_URL}/similarity/{ref}/delete", params=args
+    )
     response.raise_for_status()
     return response.json()

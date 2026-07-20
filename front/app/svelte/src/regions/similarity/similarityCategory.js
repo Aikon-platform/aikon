@@ -74,6 +74,13 @@ export const semanticAction = appLang === "en" ?  "Categorize as semantic match"
 export const noAction = appLang === "en" ?  "Confirm that the selection do not contain any match" : "Confirmer que la sélection ne contient aucune correspondance";
 export const userAction = appLang === "en" ?  "Categorize as personal match" : "Catégoriser comme correspondance personnelle";
 
+export const notCatId = 0;
+export const exactId = 1;
+export const partialId = 2;
+export const semanticId = 3;
+export const noId = 4;
+export const userId = 5;
+
 export const categoryInfo = {
     0: {
         title: noCatLabel,

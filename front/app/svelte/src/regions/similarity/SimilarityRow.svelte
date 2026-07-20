@@ -1,19 +1,24 @@
 <script>
     import { onMount, onDestroy, setContext, getContext } from "svelte";
     import { similarityStore } from "./similarityStore.js";
-    import { csrfToken } from "../../constants";
-    import { i18n, getColNb, manifestToMirador, refToIIIF, showMessage } from "../../utils.js";
+    import {appName, appUrl, csrfToken} from "../../constants";
+    import {i18n, getColNb, manifestToMirador, refToIIIF, showMessage, sendTo} from "../../utils.js";
     import { RegionItem } from "../types.js";
 
     import MatchedRegions from "./MatchedRegions.svelte";
     import Row from "../../Row.svelte";
+    import RegionCard from "../RegionCard.svelte";
+    import Tabs from "../../ui/Tabs.svelte";
+    import QueryExpansionView from "../modal/QueryExpansionView.svelte";
+    import PageView from "../modal/PageView.svelte";
+    import RegionModal from "../modal/RegionModal.svelte";
 
     export let qImg;
     export let isInModal = false;
 
     const row = similarityStore.createRowStore(qImg, isInModal);
     const { loading, propagatedLoading, error, propagated, filtered, fetchRow } = row;
-    const { selectedRegions, baseUrl, currentPageId } = similarityStore;
+    const { selectedRegions, currentPageId } = similarityStore;
 
     const qImgItem = RegionItem.fromImg(qImg);
     setContext("qImgMetadata", qImgItem);
@@ -86,33 +91,19 @@
             await showMessage(i18n("invalidRef", t), i18n("error"));
             return;
         }
-        try {
-            const response = await fetch(`${baseUrl}add-region-pair`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
-                body: JSON.stringify({
-                    q_img: qImg.replace(".jpg", ""),
-                    s_img: sImg,
-                })
-            });
-            if (!response.ok) {
-                await showMessage(i18n("networkPb", t), i18n("error"));
-                return;
-            }
-            const data = await response.json();
-            if (data.hasOwnProperty("error") || !data.hasOwnProperty("s_regions")) {
-                await showMessage(`${i18n("errored")}<br>${data.error}`, i18n("error"));
-                return;
-            }
-
-            // TODO get rid of this behavior when we get rid of relying on regions to filter similarities
-            // TODO in order to filter by digitization (and remove corresponding code in add_region_pair())
-            similarityStore.addComparedRegions(data.s_regions);
-
-            fetchRow();
-        } catch (error) {
-            await showMessage(`${i18n("errored")}<br>${error}`, i18n("error"));
+        const data = await sendTo(`${appName}/add-region-pair`, {
+            q_img: qImg.replace(".jpg", ""),
+            s_img: sImg
+        }, i18n("networkPb", t));
+        if (!data) return;
+        if (data.error || !data.s_regions) {
+            await showMessage(`${i18n("errored")}<br>${data.error}`, i18n("error"));
+            return;
         }
+        // TODO get rid of this behavior when we get rid of relying on regions to filter similarities
+        // TODO in order to filter by digitization (and remove corresponding code in add_region_pair())
+        similarityStore.addComparedRegions(data.s_regions);
+        fetchRow();
     }
 
     async function noMatch() {
@@ -122,48 +113,38 @@
             `${i18n("confirmNoMatch", t)} ${regions.title}?`, i18n("confirm"), true
         );
         if (!confirmed) return;
-        try {
-            const response = await fetch(`${baseUrl}no-match`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
-                body: JSON.stringify({q_img: qImg, s_regions: regions.id})
-            });
-            if (!response.ok) {
-                await showMessage(`${i18n("networkPb")}`, i18n("error"));
-                return;
-            }
+        if (await sendTo(`${appName}/no-match`, {q_img: qImg, s_regions: regions.id}, i18n("networkPb", t))) {
             fetchRow();
-        } catch (error) {
-            await showMessage(`${i18n("errored")}<br>${error}`, i18n("error"));
         }
     }
+
+    let modalOpen = false;
+    let modalIndex = 0;
+    const handleOpenModal = (e) => {
+        modalIndex = e.detail.index ?? 0;
+        modalOpen = true;
+    };
 
     async function deletePairWith() {
         const confirmed = await showMessage(
             i18n("confirmDelete", t), i18n("confirm"), true
         );
         if (!confirmed) return;
-        try {
-            const response = await fetch(`${baseUrl}delete-matches`, {
-                method: "POST",
-                headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
-                body: JSON.stringify({q_img: qImg})
-            });
-            if (!response.ok) {
-                await showMessage(`${i18n("networkPb")}`, i18n("error"));
-                return;
-            }
-            const data = await response.json();
-            if (data.error) {
-                await showMessage(`${i18n("errored")}<br>${data.error}`, i18n("error"));
-                return;
-            }
-            similarityStore.removeQImg(qImg);
-            fetchRow();
-        } catch (error) {
-            await showMessage(`${i18n("errored")}<br>${error}`, i18n("error"));
+        const data = await sendTo(`${appName}/similarity/delete-matches`, {q_img: qImg}, i18n("networkPb", t));
+        if (!data) return;
+        if (data.error) {
+            await showMessage(`${i18n("errored")}<br>${data.error}`, i18n("error"));
+            return;
         }
+        similarityStore.removeQImg(qImg);
+        fetchRow();
     }
+
+    const tabs = [
+        { id: "region", label: i18n("mainView") },
+        { id: "page", label: i18n("pageView") },
+        { id: "matches", label: i18n("matchesView") },
+    ];
 </script>
 
 <svelte:window bind:innerWidth/>
@@ -180,7 +161,8 @@
                 <span class="tag px-2 py-1 mb-2 is-rounded">Page {qImgItem.canvasNb}</span>
             {/if}
 
-            <img src="{qImgItem.url(null, '250,')}" alt={i18n("qImg", t)} class="mb-3 card query-image">
+            <RegionCard item={qImgItem} {isInModal} copyable={true} height="full" url={qImgItem.url(null, '250,')} downloadable={false} selectable={false} on:openModal={handleOpenModal}/>
+            <!--<img src="{qImgItem.url(null, '250,')}" alt={i18n("qImg", t)} class="mb-3 card query-image">-->
             <div class="new-similarity control pt-2">
                 <div class="tags has-addons" style="flex-wrap: nowrap">
                     <input bind:value={sImg} class="input is-small tag" type="text" placeholder="{i18n('newMatch', t)}"/>
@@ -191,7 +173,7 @@
                     </button>
                 </div>
 
-                {#if sLen === 1}
+                {#if sLen === 1 && !isInModal}
                     <button id="no-match" class="button is-small tag is-danger is-center m-0" on:click={noMatch} title="{i18n('noMatch', t)}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                             <path fill="currentColor" d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"/>
@@ -212,19 +194,35 @@
 
     <svelte:fragment slot="row-body">
         {#if hasBeenVisible}
-            <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} cols={colNb - 1}/>
+            <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} cols={colNb - 1} downloadable={false}/>
             <div class="block propagated-regions my-4">
-                <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} cols={colNb - 1}/>
+                <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} cols={colNb - 1} downloadable={false}/>
             </div>
         {/if}
     </svelte:fragment>
 </Row>
 
-<style>
-    .query-image {
-        max-height: 60vh;
-    }
+{#if !isInModal}
+    <RegionModal items={[qImgItem]} bind:currentIndex={modalIndex} bind:open={modalOpen}>
+        <svelte:fragment let:item={currentItem}>
+            <Tabs {tabs} let:activeTab>
+                {#if activeTab === "region"}
+                    <div class="modal-region">
+                        <RegionCard item={currentItem} height="full" isInModal={true} copyable={true} selectable={false}/>
+                    </div>
+                {:else if activeTab === "page"}
+                    <PageView item={currentItem}/>
+                {:else if activeTab === "matches"}
+                    {#key currentItem.img}
+                        <QueryExpansionView item={currentItem}/>
+                    {/key}
+                {/if}
+            </Tabs>
+        </svelte:fragment>
+    </RegionModal>
+{/if}
 
+<style>
     .new-similarity {
         display: flex;
         gap: 0.5em;

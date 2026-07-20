@@ -5,12 +5,14 @@
     import DocumentSetMatrix from "./DocumentSetMatrix.svelte";
     import DocumentPairMatrix from "./DocumentPairMatrix.svelte";
     import PairDetailModal from "./PairDetailModal.svelte";
+    import Matches from "../Matches.svelte";
 
     export let documentSetStore;
+    export let clusterStore;
 
     const {
-        documentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
-        imageCountMap, visiblePairIds, coverageData, visiblePairs, allPairs
+        sortedDocumentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
+        imageCountMap, visiblePairIds, coverageData, buildMatchesForAnchor, hideEmpty, pairCat
     } = documentSetStore;
 
     const t = {
@@ -28,18 +30,23 @@
         allPairs: {en: "All pairs in the document set", fr: "Toutes les paires du corpus"},
         filteredPairs: {en: "Filtered pairs", fr: "Paires après filtrage"},
         filtering: {en: "Source of image pairs for the visualizations", fr: "Source des paires d'images pour les visualisations"},
+        matches: {en: "Matches", fr: "Correspondances"},
     };
 
     let selectedCell = null;
     let sortOrder = "name";
-    let scatterMode = "page";
+    let scatterMode = "image";
     let navState = null;
     let modalActive = false;
     let scatterData = null;
     let percentageMode = false;
 
-    $: documents = Array.from($documentNodes?.values() || []);
+    $: documents = $sortedDocumentNodes.map(([, meta]) => meta)
+        .filter(d => !$hideEmpty || ($filteredDocStats.scoreCount?.get(d.id)?.count || 0) > 0);
     $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $visiblePairIds) : [];
+    $: matchesData = selectedCell
+        ? buildMatchesForAnchor(selectedCell.doc1, [selectedCell.doc2], null, false, true)
+        : { matches: [], columns: [] };
 
     function getPairsForCell(cell, visibleIds) {
         const {doc1, doc2} = cell;
@@ -72,15 +79,7 @@
     <div slot="left-title" class="is-flex is-justify-content-space-between">
         <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
         <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
-            <DownloadPng targetId="matrix-viz" filename="document-matrix.png" />
-            <div class="control">
-                <div class="select is-small">
-                    <select bind:value={sortOrder}>
-                        <option value="name">{i18n("byName", t)}</option>
-                        <option value="score">{i18n("byScore", t)}</option>
-                    </select>
-                </div>
-            </div>
+            <DownloadPng targetId="matrix-viz" filename="document-matrix" svgExport={true}/>
 <!--            <label title={i18n("normalization", t)} class="checkbox is-size-7 is-flex is-align-items-center">-->
 <!--                <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>-->
 <!--                <span class="pl-1">{i18n("normalize", t)}</span>-->
@@ -104,11 +103,23 @@
         />
         <!--normalize={$normalizeByImages}-->
     </div>
+
+    <div slot="bottom-left-title" class="is-flex is-justify-content-space-between">
+        {#if matchesData.matches.length}
+            <h4 class="title is-6 mb-0">
+                {i18n("matches", t)} ({matchesData.matches.length})
+            </h4>
+        {/if}
+    </div>
+    <div slot="bottom-left-scroll">
+        <Matches matches={matchesData.matches} columns={matchesData.columns} hideEmpty={$hideEmpty} pairCat={$pairCat} {clusterStore}/>
+    </div>
+
     <div slot="right-title" class="is-flex is-justify-content-space-between">
         <h4 class="title is-6 mb-0">{i18n("pageByPage", t)}</h4>
         <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
             {#if selectedCell}
-                <DownloadPng targetId="scatter-viz" filename="document-comparison.png"/>
+                <DownloadPng targetId="scatter-viz" filename="document-comparison" svgExport={true}/>
                 <div class="control">
                     <div class="select is-small">
                         <select bind:value={scatterMode}>
@@ -127,6 +138,7 @@
                 doc2={selectedCell.doc2}
                 pairs={pairsForSelection}
                 mode={scatterMode}
+                hideEmpty={$hideEmpty}
                 on:cellclick={handleScatterClick}
             />
         {:else}
@@ -135,9 +147,8 @@
     </div>
 </SplitLayout>
 
-<PairDetailModal
-    active={modalActive} {scatterData} {navState}
-    pairs={pairsForSelection}
+<PairDetailModal {documentSetStore}
+    active={modalActive} {scatterData} {navState} pairCat={$pairCat}
     on:navigate={handleModalNavigate}
     on:close={handleModalClose}
-/> <!--on:categorize={() => allPairs.update(p => p)}-->
+/> <!--on:categorize={() => allPairs.update(p => p)} pairs={pairsForSelection}-->

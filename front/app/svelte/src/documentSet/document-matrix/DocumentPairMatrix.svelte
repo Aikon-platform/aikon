@@ -1,13 +1,14 @@
 <script>
     import * as d3 from "d3";
     import {createEventDispatcher} from "svelte";
-    import {appLang} from "../../constants.js";
+    import {i18n} from "../../utils.js";
 
     export let doc1 = null;
     export let doc2 = null;
     export let pairs = [];
-    export let mode = "page"; // 'page' | 'image'
+    export let mode = "image"; // 'page' | 'image'
     export let cellSize = 5;
+    export let hideEmpty = false;
 
     const dispatch = createEventDispatcher();
 
@@ -16,15 +17,30 @@
         image: {en: "image", fr: "image"},
         score: {en: "Score", fr: "Score"},
     };
-    const i18n = (key) => t[key]?.[appLang] || t[key]?.en || key;
 
     let container;
 
-    $: scatterData = doc1 && doc2 && pairs.length ? buildScatter(doc1, doc2, pairs, mode) : null;
+    $: scatterData = doc1 && doc2 && pairs.length ? buildScatter(doc1, doc2, pairs, mode, hideEmpty) : null;
     $: if (container && scatterData) render();
 
-    function buildScatter(d1, d2, pairList, m) {
-        return m === "image" ? buildImageScatter(d1, d2, pairList) : buildPageScatter(d1, d2, pairList);
+    function buildScatter(d1, d2, pairList, m, hide) {
+        return m === "image" ? buildImageScatter(d1, d2, pairList, hide) : buildPageScatter(d1, d2, pairList, hide);
+    }
+
+    function compact(keys) {
+        // keys: Iterable<`${i}-${j}`>  → returns {keepA: Set<int>, keepB: Set<int>}
+        const keepA = new Set(), keepB = new Set();
+        for (const k of keys) {
+            const [a, b] = k.split("-").map(Number);
+            keepA.add(a); keepB.add(b);
+        }
+        return { keepA, keepB };
+    }
+
+    function remap(items, keep) {
+        const kept = items.map((v, i) => [v, i]).filter(([, i]) => keep.has(i));
+        const idxMap = new Map(kept.map(([, oldIdx], newIdx) => [oldIdx, newIdx]));
+        return { items: kept.map(([v]) => v), idxMap };
     }
 
     function buildPageScatter(d1, d2, pairList) {
@@ -45,9 +61,16 @@
 
         const points = Array.from(pageMap.values()).map(({page1, page2, scores}) => ({
             page1, page2,
-            score: scores.reduce((a, b) => a + b, 0) / scores.length,
+            score: Math.max(...scores),
             count: scores.length
         }));
+
+        if (hideEmpty) {
+            const pages1 = [...new Set(points.map(p => p.page1))].sort((a, b) => a - b);
+            const pages2 = [...new Set(points.map(p => p.page2))].sort((a, b) => a - b);
+            const m1 = new Map(pages1.map((p, i) => [p, i])), m2 = new Map(pages2.map((p, i) => [p, i]));
+            points.forEach(p => { p.page1 = m1.get(p.page1); p.page2 = m2.get(p.page2); });
+        }
 
         return {mode: "page", points, minScore, maxScore, doc1: d1, doc2: d2};
     }
@@ -78,6 +101,17 @@
             }
         });
 
+        if (hideEmpty) {
+            const { keepA, keepB } = compact(pairScores.keys());
+            const a = remap(images1, keepA), b = remap(images2, keepB);
+            const remapped = new Map();
+            for (const [k, v] of pairScores) {
+                const [i, j] = k.split("-").map(Number);
+                const ni = a.idxMap.get(i), nj = b.idxMap.get(j);
+                remapped.set(`${ni}-${nj}`, { ...v, idx1: ni, idx2: nj });
+            }
+            return {mode: "image", images1: a.items, images2: b.items, pairScores: remapped, minScore, maxScore, doc1: d1, doc2: d2};
+        }
         return {mode: "image", images1, images2, pairScores, minScore, maxScore, doc1: d1, doc2: d2};
     }
 
@@ -136,8 +170,8 @@
         g.append("g").call(d3.axisTop(xScale).ticks(Math.min(maxPage1, 10)));
         g.append("g").call(d3.axisLeft(yScale).ticks(Math.min(maxPage2, 10)));
 
-        renderAxisLabel(g, d1, plotWidth, plotHeight, "x", i18n("page"));
-        renderAxisLabel(g, d2, plotWidth, plotHeight, "y", i18n("page"));
+        renderAxisLabel(g, d1, plotWidth, plotHeight, "x", i18n("page", t));
+        renderAxisLabel(g, d2, plotWidth, plotHeight, "y", i18n("page", t));
 
         g.append("rect")
             .attr("width", plotWidth).attr("height", plotHeight)
@@ -148,8 +182,8 @@
                 const p2 = Math.floor(my / cellSize) + 1;
                 if (p1 < 1 || p1 > maxPage1 || p2 < 1 || p2 > maxPage2) { tooltip.style("opacity", 0); return; }
                 const point = pointMap.get(`${p1}-${p2}`);
-                const tip = `<span style="color:${d1.color}">●</span> ${i18n("page")} ${p1}<br/><span style="color:${d2.color}">●</span> ${i18n("page")} ${p2}`;
-                tooltip.style("opacity", 1).html(point ? `${tip}<br/>${i18n("score")}: ${point.score.toFixed(2)}` : tip)
+                const tip = `<span style="color:${d1.color}">●</span> ${i18n("page", t)} ${p1}<br/><span style="color:${d2.color}">●</span> ${i18n("page", t)} ${p2}`;
+                tooltip.style("opacity", 1).html(point ? `${tip}<br/>${i18n("score", t)}: ${point.score.toFixed(2)}` : tip)
                     .style("left", (event.clientX + 10) + "px").style("top", (event.clientY - 40) + "px");
             })
             .on("mouseleave", () => tooltip.style("opacity", 0))
@@ -201,8 +235,8 @@
         g.append("g").call(d3.axisTop(xScale).ticks(Math.min(images1.length, 10)));
         g.append("g").call(d3.axisLeft(yScale).ticks(Math.min(images2.length, 10)));
 
-        renderAxisLabel(g, d1, plotWidth, plotHeight, "x", i18n("image"));
-        renderAxisLabel(g, d2, plotWidth, plotHeight, "y", i18n("image"));
+        renderAxisLabel(g, d1, plotWidth, plotHeight, "x", i18n("image", t));
+        renderAxisLabel(g, d2, plotWidth, plotHeight, "y", i18n("image", t));
 
         g.append("rect")
             .attr("width", plotWidth).attr("height", plotHeight)
@@ -213,8 +247,8 @@
                 if (idx1 < 0 || idx1 >= images1.length || idx2 < 0 || idx2 >= images2.length) { tooltip.style("opacity", 0); return; }
                 const img1 = images1[idx1], img2 = images2[idx2];
                 const pair = pairScores.get(`${idx1}-${idx2}`);
-                const tip = `<span style="color:${d1.color}">●</span> ${i18n("page")} ${img1.canvas}, ${i18n("image")} ${idx1 + 1}<br/><span style="color:${d2.color}">●</span> ${i18n("page")} ${img2.canvas}, ${i18n("image")} ${idx2 + 1}`;
-                tooltip.style("opacity", 1).html(pair ? `${tip}<br/>${i18n("score")}: ${pair.score.toFixed(2)}` : tip)
+                const tip = `<span style="color:${d1.color}">●</span> ${i18n("page", t)} ${img1.canvas}, ${i18n("image", t)} ${idx1 + 1}<br/><span style="color:${d2.color}">●</span> ${i18n("page", t)} ${img2.canvas}, ${i18n("image", t)} ${idx2 + 1}`;
+                tooltip.style("opacity", 1).html(pair ? `${tip}<br/>${i18n("score", t)}: ${pair.score.toFixed(2)}` : tip)
                     .style("left", (event.clientX + 10) + "px").style("top", (event.clientY - 40) + "px");
             })
             .on("mouseleave", () => tooltip.style("opacity", 0))
@@ -257,7 +291,7 @@
             if (axis === "x") rect.attr("x", i * cellSize).attr("width", cellSize).attr("height", height);
             else rect.attr("x", 0).attr("y", i * cellSize).attr("width", height).attr("height", cellSize);
             rect.on("mouseover", () => tooltip.style("opacity", 1))
-                .on("mousemove", (event) => tooltip.html(`<strong>${count}</strong> image${count > 1 ? "s" : ""}<br/>${i18n("page")} ${i + 1}`)
+                .on("mousemove", (event) => tooltip.html(`<strong>${count}</strong> image${count > 1 ? "s" : ""}<br/>${i18n("page", t)} ${i + 1}`)
                     .style("left", (event.clientX + 10) + "px").style("top", (event.clientY - 30) + "px"))
                 .on("mouseleave", () => tooltip.style("opacity", 0));
         });
@@ -270,7 +304,7 @@
             if (axis === "x") rect.attr("x", start * cellSize).attr("width", (end - start) * cellSize).attr("height", height);
             else rect.attr("x", 0).attr("y", start * cellSize).attr("width", height).attr("height", (end - start) * cellSize);
             rect.on("mouseover", () => tooltip.style("opacity", 1))
-                .on("mousemove", (event) => tooltip.html(`${i18n("page")} ${page}<br/><strong>${count}</strong> image${count > 1 ? "s" : ""}`)
+                .on("mousemove", (event) => tooltip.html(`${i18n("page", t)} ${page}<br/><strong>${count}</strong> image${count > 1 ? "s" : ""}`)
                     .style("left", (event.clientX + 10) + "px").style("top", (event.clientY - 30) + "px"))
                 .on("mouseleave", () => tooltip.style("opacity", 0));
         });
@@ -289,7 +323,7 @@
     }
 </script>
 
-<div class="scatter-container" bind:this={container}></div>
+<div id="doc-pair-matrix" class="scatter-container" bind:this={container}></div>
 
 <style>
     .scatter-container {

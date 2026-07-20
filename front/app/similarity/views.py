@@ -1,4 +1,5 @@
 import json
+import re
 from collections import OrderedDict
 from typing import List
 
@@ -12,7 +13,7 @@ from django.db import transaction, connection
 from django.contrib.auth.decorators import user_passes_test
 
 from app.similarity.models.region_pair import RegionPair, parse_img, add_jpg
-from app.webapp.models.regions import Regions
+from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import (
     truncate_char,
@@ -50,44 +51,52 @@ from app.webapp.models.document_set import DocumentSet
 
 
 @user_passes_test(is_superuser)
-def send_similarity(request, regions_refs):
+def send_similarity(request, region_extraction_refs):
     """
     To relaunch similarity request in case the automatic process has failed
     """
 
     regions = [
         region
-        for (passed, region) in [check_ref(ref, "Regions") for ref in regions_refs]
+        for (passed, region) in [
+            check_ref(ref, "RegionExtraction") for ref in region_extraction_refs
+        ]
         if passed
     ]
 
     if not len(regions):
         return JsonResponse(
             {
-                "response": f"No corresponding regions in the database for {regions_refs}"
+                "response": f"No corresponding region extraction in the database for {region_extraction_refs}"
             },
             safe=False,
         )
 
-    if len(check_computed_pairs(regions_refs)) == 0:
+    if len(check_computed_pairs(region_extraction_refs)) == 0:
         return JsonResponse(
-            {"response": f"All similarity pairs were computed for {regions_refs}"},
+            {
+                "response": f"All similarity pairs were computed for {region_extraction_refs}"
+            },
             safe=False,
         )
 
     try:
         if send_request(regions):
             return JsonResponse(
-                {"response": f"Successful similarity request for {regions_refs}"},
+                {
+                    "response": f"Successful similarity request for {region_extraction_refs}"
+                },
                 safe=False,
             )
         return JsonResponse(
-            {"response": f"Failed to send similarity request for {regions_refs}"},
+            {
+                "response": f"Failed to send similarity request for {region_extraction_refs}"
+            },
             safe=False,
         )
 
     except Exception as e:
-        error = f"[send_similarity] Couldn't send request for {regions_refs}"
+        error = f"[send_similarity] Couldn't send request for {region_extraction_refs}"
         log(error, e)
 
         return JsonResponse({"response": error, "reason": e}, safe=False)
@@ -120,20 +129,21 @@ def get_similar_images(request):
     except ValueError as e:
         return JsonResponse({"error": f"Invalid qImg ({q_img}): {e}"}, status=400)
 
-    filter_by_regions = data.get("filterByRegions", True)
+    filter_by_region_extraction = data.get("filterByRegionExtraction", True)
     t_digit_ids = data.get("digitIds", [])
 
-    if filter_by_regions and not t_digit_ids:
+    if filter_by_region_extraction and not t_digit_ids:
         return JsonResponse({})
 
     raw_topk = data.get("topk")
+    # topk between 1 and 20, or None
     topk = min(max(int(raw_topk), 1), 20) if raw_topk else None
 
     try:
         pairs = get_region_pairs_with(
             q_img,
             query_digit_ids={q_ref.digit},
-            target_digit_ids=t_digit_ids if filter_by_regions else None,
+            target_digit_ids=t_digit_ids if filter_by_region_extraction else None,
         )
 
         result = get_best_pairs(
@@ -154,9 +164,6 @@ def get_propagated_matches(request, img_id: str = "") -> JsonResponse:
     """
     Given an image `img_id`, find all images reachable through a chain of exact matches
     (category=1), excluding direct exact matches and already-saved propagations.
-
-    Uses a recursive SQL CTE instead of Python-level recursion for O(1) queries
-    regardless of graph size and depth.
     """
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
@@ -196,14 +203,14 @@ def get_propagated_matches(request, img_id: str = "") -> JsonResponse:
 
 def get_compared_regions(request, wid, rid=None):
     """
-    Return the id and metadata of the Regions that have a RegionPair record
-    in common with the Regions whose id is passed in the URL
+    Return the id and metadata of the RegionExtraction that have a RegionPair record
+    in common with the RegionExtraction whose id is passed in the URL
     """
     if rid is not None:
-        q_regions = [get_object_or_404(Regions, id=rid)]
+        q_regions = [get_object_or_404(RegionExtraction, id=rid)]
     else:
         witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
+        q_regions = witness.get_region_extractions()
 
     try:
         current_regions = {
@@ -216,6 +223,7 @@ def get_compared_regions(request, wid, rid=None):
             Q(digit_1__in=q_digit_ids) | Q(digit_2__in=q_digit_ids)
         ).values_list("digit_1", "digit_2")
 
+        # loop over all regionpairs to collect target digitizations
         partner_ids = set()
         for d1, d2 in pairs:
             if d1 in q_digit_ids:
@@ -224,7 +232,9 @@ def get_compared_regions(request, wid, rid=None):
                 partner_ids.add(d1)
         partner_ids -= q_digit_ids
 
-        partner_regions = Regions.objects.filter(digitization_id__in=partner_ids)
+        partner_regions = RegionExtraction.objects.filter(
+            digitization_id__in=partner_ids
+        )
 
         compared_regions = dict(
             sorted(
@@ -325,22 +335,59 @@ def _propagate_cte(
         return [row[0] for row in cursor.fetchall()]
 
 
-def get_regions_title_by_ref(request, wid, rid=None, regions_ref: str | None = None):
+def get_region_extractions(img_1, img_2, wid, rid):
+    def get_digit_id(img):
+        return int(re.findall(r"\d+", img)[1])
+
+    def get_region_extraction_from_digit(digit_id):
+        digit = get_object_or_404(Digitization, id=digit_id)
+        region_extractions = list(digit.get_region_extractions())
+        if not region_extractions:
+            region_extraction = RegionExtraction.objects.create(
+                digitization=digit,
+                model="manual",
+            )
+        else:
+            region_extraction = region_extractions[0]
+        return region_extraction.id
+
+    if img_1.startswith(f"wit{wid}"):
+        witness = get_object_or_404(Witness, id=wid)
+        regions_1 = rid or witness.get_region_extractions()[0].id
+        digit_2 = get_digit_id(img_2)
+        regions_2 = get_region_extraction_from_digit(digit_2)
+    else:
+        digit_1 = get_digit_id(img_1)
+        regions_1 = get_region_extraction_from_digit(digit_1)
+        witness = get_object_or_404(Witness, id=wid)
+        regions_2 = rid or witness.get_region_extractions()[0].id
+    return regions_1, regions_2
+
+
+def get_region_extraction_title_by_ref(
+    request, wid, rid=None, region_extraction_ref: str | None = None
+):
     try:
-        regions = Regions.objects.filter(json__ref__startswith=regions_ref).first()
-        if regions is None:
+        region_extraction = RegionExtraction.objects.filter(
+            json__ref__startswith=region_extraction_ref
+        ).first()
+        if region_extraction is None:
             return JsonResponse(
-                {"error": f"Regions not found for regions_ref {regions_ref}"},
+                {
+                    "error": f"RegionExtraction not found for region_extraction_ref {region_extraction_ref}"
+                },
                 status=400,
             )
-        return JsonResponse({"title": truncate_char(regions.json["title"], 75)})
+        return JsonResponse(
+            {"title": truncate_char(region_extraction.json["title"], 75)}
+        )
     except Exception as e:
         return JsonResponse(
-            {"error": f"Error retrieving regions title: {e}"}, status=500
+            {"error": f"Error retrieving region extraction title: {e}"}, status=500
         )
 
 
-def add_region_pair(request, wid, rid=None):
+def add_region_pair(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
 
@@ -381,13 +428,13 @@ def add_region_pair(request, wid, rid=None):
         # TODO in order to filter by digitization (and remove corresponding code in addMatch())
         if region_pair.regions_id_1 and region_pair.regions_id_2:
             s_regions = get_object_or_404(
-                Regions,
+                RegionExtraction,
                 id=region_pair.regions_id_2
                 if q_img == img_1
                 else region_pair.regions_id_1,
             )
         else:
-            s_regions = Regions.objects.filter(
+            s_regions = RegionExtraction.objects.filter(
                 digitization__id=ref2.digit if q_img == img_1 else ref1.digit
             ).first()
 
@@ -407,7 +454,7 @@ def add_region_pair(request, wid, rid=None):
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
-def no_match(request, wid, rid=None):
+def no_match(request):
     """categorize all region pairs containing q_img and the specified regions id in `s_regions` as no match (category=4)"""
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
@@ -431,7 +478,7 @@ def no_match(request, wid, rid=None):
 
 
 @user_passes_test(is_superuser)
-def delete_matches(request, wid, rid=None):
+def delete_matches(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=405)
 
@@ -473,13 +520,13 @@ def delete_pair(request):
 
 def get_query_images(request, wid, rid=None):
     """
-    returns the list of region images associated to a query Regions
+    returns the list of region images associated to a query RegionExtraction
     """
     if rid is not None:
-        q_regions = [get_object_or_404(Regions, id=rid)]
+        q_regions = [get_object_or_404(RegionExtraction, id=rid)]
     else:
         witness = get_object_or_404(Witness, id=wid)
-        q_regions = witness.get_regions()
+        q_regions = witness.get_region_extractions()
 
     try:
         q_imgs = set()
@@ -758,18 +805,18 @@ def uncategorize_batch(request):
 
 
 @user_passes_test(is_superuser)
-def index_regions_similarity(request, regions_ref=None):
+def index_regions_similarity(request, region_extraction_ref=None):
     """
-    Index the content of score files containing regions_ref in their name
+    Index the content of score files containing region_extraction_ref in their name
     OR all the similarity score files into the RegionPair database table
     if the score files have already been added to the database, it will only override the score
     """
     from app.similarity.tasks import process_similarity_file
 
-    if regions_ref is None:
+    if region_extraction_ref is None:
         pairs = get_all_pairs()
     else:
-        pairs = get_computed_pairs(regions_ref)
+        pairs = get_computed_pairs(region_extraction_ref)
 
     for pair in pairs:
         process_similarity_file.delay(pair)
@@ -784,14 +831,14 @@ def index_regions_similarity(request, regions_ref=None):
 @user_passes_test(is_superuser)
 def delete_all_regions_pairs(request):
     # NOTE deactivated, only for dev purposes
-    all_regions = Regions.objects.all()
+    all_regions = RegionExtraction.objects.all()
     reset_similarities = []
     for regions in all_regions:
         if reset_similarity(regions):
             reset_similarities.append(regions.id)
     return JsonResponse(
         {
-            "message": f"Regions {', '.join(map(str, reset_similarities))} have been reset"
+            "message": f"RegionExtraction {', '.join(map(str, reset_similarities))} has been reset"
         }
     )
 
@@ -799,13 +846,13 @@ def delete_all_regions_pairs(request):
 def reset_regions_similarity(request, rid=None):
     if request.method == "DELETE":
         if rid:
-            regions = get_object_or_404(Regions, id=rid)
+            regions = get_object_or_404(RegionExtraction, id=rid)
             if reset_similarity(regions):
                 return JsonResponse(
-                    {"message": f"Regions #{rid} similarities has been reset"}
+                    {"message": f"RegionExtraction #{rid} similarities have been reset"}
                 )
             return JsonResponse(
-                {"error": f"Regions #{rid} similarities couldn't been reset"},
+                {"error": f"RegionExtraction #{rid} similarities could not be reset"},
                 status=400,
             )
 
@@ -813,88 +860,38 @@ def reset_regions_similarity(request, rid=None):
     return JsonResponse({"error": f"Invalid request method"}, status=400)
 
 
-# @user_passes_test(is_superuser)
-# def remove_incorrect_pairs(request, mismatched=False, duplicate=False, swapped=True):
-#     """
-#     Removes RegionPair instances that are faulty
-#     """
-#     from django.db import DatabaseError
-#
-#     count = 0
-#
-#     try:
-#         if mismatched:
-#             from django.db.models import F
-#
-#             # if img_1 is alphabetically after img_2,
-#             # indicating that the pair has been incorrectly inserted in the database
-#             mismatched_pairs = RegionPair.objects.filter(img_1__gt=F("img_2"))
-#             count += mismatched_pairs.count()
-#             mismatched_pairs.delete()
-#
-#         if duplicate:
-#             # if there is duplicates of the same img pair with different ids
-#             duplicate_pairs = (
-#                 RegionPair.objects.values("img_1", "img_2")
-#                 .annotate(count=Count("id"))
-#                 .filter(count__gt=1)
-#             )
-#             count += len(duplicate_pairs)
-#             for pair in duplicate_pairs:
-#                 duplicates = RegionPair.objects.filter(
-#                     img_1=pair["img_1"], img_2=pair["img_2"]
-#                 )
-#                 count += duplicates.count() - 1
-#                 duplicates[1:].delete()
-#
-#         if swapped:
-#             # if there is duplicates of the same img pair but with img_1 and img_2 swapped
-#             swapped_pairs = RegionPair.objects.filter(
-#                 Q(img_1__in=RegionPair.objects.values("img_2"))
-#                 & Q(img_2__in=RegionPair.objects.values("img_1"))
-#             )
-#             count += len(swapped_pairs)
-#             for pair in swapped_pairs:
-#                 reverse_pair = RegionPair.objects.filter(
-#                     img_1=pair.img_2, img_2=pair.img_1
-#                 ).first()
-#                 if reverse_pair:
-#                     sorted_imgs = RegionPair.order_pair((pair.img_1, pair.img_2))
-#                     if pair.img_1 != sorted_imgs[0]:
-#                         pair.delete()
-#                     else:
-#                         reverse_pair.delete()
-#
-#         return JsonResponse({"message": f"{count} incorrect pairs removed"})
-#
-#     except DatabaseError as e:
-#         return JsonResponse(
-#             {"message": f"An error occurred while removing incorrect pairs: {e}"},
-#             status=500,
-#         )
-
-
+# NOTE unused => delete ?
 def get_regions_pairs(request, wid, rid=None):
     """
-    Return all the region pairs for a given region id or witness id.
-    Filters on digit_ids derived from witness/regions.
+    Return all the region pairs for a given region id or witness id
+    1. if rid is provided, return all pairs for this region
+    2. if rid is not provided, return all pairs for all regions of the witness
 
-    URL arguments:
-    - minScore, maxScore, topk, category, excludeSelf
-    - regionsIds: comma-separated digitization IDs (legacy name kept for API compat)
-    - witnessIds: comma-separated witness IDs
+    if witnessIds or regionsIds are provided, return only pairs where regions_id_1 AND regions_id_2 are in the list of q_regions
+    otherwise, return pairs where regions_id_1 OR regions_id_2 are in the list of q_regions
+
+    additional URL arguments can be passed in the URL
+    - minScore: float, minimum score to filter pairs
+    - maxScore: float, maximum score to filter pairs
+    - topk: int, maximum number of pairs to return
+    - category: list[int], filter pairs by category
+    - regionsIds: list of int, filter pairs by regions ids
+    - witnessIds: list of int, filter pairs by witness ids
+    - excludeSelf: bool, if true, filter out pairs where both regions_1 and regions_2 are the same
     """
     if rid is not None:
-        regions = [get_object_or_404(Regions, id=rid)]
+        region_extractions = [get_object_or_404(RegionExtraction, id=rid)]
     else:
         witness = get_object_or_404(Witness, id=wid)
-        regions = witness.get_regions()
+        region_extractions = witness.get_region_extractions()
 
-    if not len(regions):
+    if not len(region_extractions):
         return JsonResponse(
-            {"error": f"No regions found for this witness #{wid}"}, status=400
+            {"error": f"No region extractions found for this witness #{wid}"},
+            status=400,
         )
 
+    # TODO update route param from regionsIds to regionExtractionIds or digitizationIds ?
     digit_ids_param = request.GET.get("regionsIds", "")
     witness_ids_param = request.GET.get("witnessIds", "")
 
@@ -917,7 +914,7 @@ def get_regions_pairs(request, wid, rid=None):
             return JsonResponse({"error": "Invalid witnessIds parameter"}, status=400)
 
     # Always include the current witness's digit_ids
-    digit_ids.update(r.digitization_id for r in regions)
+    digit_ids.update(r.digitization_id for r in region_extractions)
 
     try:
         pairs = filter_pairs(

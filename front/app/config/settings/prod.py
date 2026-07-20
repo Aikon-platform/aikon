@@ -1,18 +1,15 @@
-from urllib.parse import urlparse
-
 from .base import *
 
-prod_api_url = ENV.str("PROD_API_URL")
-API_URL = (
-    f"http://{prod_api_url}" if not prod_api_url.startswith("http") else prod_api_url
-)
 PROD_URL = ENV.str("PROD_URL", default="")
+BASE_URL = ENV.str("BASE_URL", default=f"https://{PROD_URL}")
 
-BASE_URL = f"https://{PROD_URL}"
+API_URL = ENV.str("API_URL")
 APP_URL = BASE_URL
-CANTALOUPE_APP_URL = BASE_URL  # .replace("http", "https").replace(":8080", "")
-AIIINOTATE_BASE_URL = f"{BASE_URL}/{ENV('AIIINOTATE_HOST', default='aiiinotate')}"
-MIRADOR_BASE_URL = f"{BASE_URL}/{ENV('MIRADOR_HOST', default='mirador')}"
+APP_URL_FROM_DOCKER = ENV.str("APP_URL_FROM_DOCKER", default=APP_URL)
+APP_URL_FROM_API = ENV.str("APP_URL_FROM_API", default=APP_URL)
+CANTALOUPE_APP_URL = BASE_URL
+AIIINOTATE_BASE_URL = ENV.str("AIIINOTATE_BASE_URL", default=f"{BASE_URL}/aiiinotate")
+MIRADOR_BASE_URL = ENV.str("MIRADOR_BASE_URL", default=f"{BASE_URL}/mirador")
 
 if ENV.str("HTTPS_PROXY", default=""):
     PROXIES = {
@@ -26,21 +23,14 @@ ADMINS = [(f"{APP_NAME} admin", ADMIN_EMAIL)]
 
 EMAIL_BACKEND = "django.core.mail.backends.smtp.EmailBackend"
 
-EMAIL_USE_TLS = True
+EMAIL_USE_TLS = ENV.bool("EMAIL_USE_TLS", default=True)
+EMAIL_USE_SSL = ENV.bool("EMAIL_USE_SSL", default=False)
 EMAIL_HOST = ENV("EMAIL_HOST", default="localhost")
-EMAIL_PORT = ENV("EMAIL_PORT", default=587)
+EMAIL_PORT = ENV.int("EMAIL_PORT", default=25)
 EMAIL_HOST_USER = ENV("EMAIL_HOST_USER")
 EMAIL_HOST_PASSWORD = ENV("EMAIL_HOST_PASSWORD", default="")
 DEFAULT_FROM_EMAIL = ENV("DEFAULT_FROM_EMAIL", default=f"noreply@{PROD_URL}")
-SERVER_EMAIL = ENV("SERVER_EMAIL", default=EMAIL_HOST_USER)
-
-# if DOCKER:
-#     EMAIL_USE_TLS = False
-#     EMAIL_HOST = ENV("EMAIL_HOST", default="mailserver")
-#     EMAIL_PORT = ENV("EMAIL_PORT", default=25)
-#     EMAIL_HOST_PASSWORD = ENV("EMAIL_HOST_PASSWORD", default="")
-#     DEFAULT_FROM_EMAIL = ENV("DEFAULT_FROM_EMAIL", default=f"noreply@{PROD_URL}")
-#     SERVER_EMAIL = ENV("SERVER_EMAIL", default=EMAIL_HOST_USER)
+SERVER_EMAIL = ENV("SERVER_EMAIL", default=DEFAULT_FROM_EMAIL)
 
 # Send automatic emails to the site admins when
 LOGGING.update(

@@ -6,17 +6,24 @@
     let container;
     let resizeObserver;
     let hRatio = 0.5;  // horizontal
-    let vRatio = 0.5;  // vertical (for right panel split)
+    let vRatio = 0.5;  // vertical
     let dragging = null; // 'h' | 'v' | null
     let containerWidth = 0;
     let rightPanelHeight = 0;
+    let leftPanelHeight = 0;
     let rightPanel;
+    let leftPanel;
 
     $: leftWidth = Math.max(MIN_WIDTH, containerWidth * hRatio - 4);
     $: rightWidth = Math.max(MIN_WIDTH, containerWidth * (1 - hRatio) - 4);
-    $: topHeight = Math.max(MIN_HEIGHT, rightPanelHeight * vRatio - 4);
-    $: bottomHeight = Math.max(MIN_HEIGHT, rightPanelHeight * (1 - vRatio) - 4);
+
+    $: hasBottomLeft = $$slots["bottom-left-title"] || $$slots["bottom-left-scroll"];
     $: hasBottomRight = $$slots["bottom-right-title"] || $$slots["bottom-right-scroll"];
+
+    $: rightTopHeight = Math.max(MIN_HEIGHT, rightPanelHeight * vRatio - 4);
+    $: rightBottomHeight = Math.max(MIN_HEIGHT, rightPanelHeight * (1 - vRatio) - 4);
+    $: leftTopHeight = Math.max(MIN_HEIGHT, leftPanelHeight * vRatio - 4);
+    $: leftBottomHeight = Math.max(MIN_HEIGHT, leftPanelHeight * (1 - vRatio) - 4);
 
     function startDrag(axis) {
         return (e) => {
@@ -34,7 +41,9 @@
             const rect = container.getBoundingClientRect();
             hRatio = Math.max(0.2, Math.min(0.8, (clientX - rect.left) / rect.width));
         } else if (dragging === "v" && rightPanel) {
-            const rect = rightPanel.getBoundingClientRect();
+            const panel = rightPanel || leftPanel;
+            if (!panel) return;
+            const rect = panel.getBoundingClientRect();
             vRatio = Math.max(0.2, Math.min(0.8, (clientY - rect.top) / rect.height));
         }
     }
@@ -65,34 +74,63 @@
         window.removeEventListener("touchend", stopDrag);
     });
 
-    function observeRightPanel(node) {
+    function observePanel(node, side = "left") {
         const ro = new ResizeObserver(entries => {
-            rightPanelHeight = entries[0].contentRect.height;
+            if (side === "left") {
+                leftPanelHeight = entries[0].contentRect.height;
+            } else {
+                rightPanelHeight = entries[0].contentRect.height;
+            }
+
         });
         ro.observe(node);
-        rightPanel = node;
+        if (side === "left") {
+            leftPanel = node;
+        } else {
+            rightPanel = node;
+        }
         return { destroy: () => ro.disconnect() };
+    }
+
+    function observeRightPanel(node) {
+        observePanel(node, "right");
+    }
+
+    function observeLeftPanel(node) {
+        observePanel(node, "left");
     }
 </script>
 
 <div class="split-container" bind:this={container}>
-    <div class="split-panel" style="width: {leftWidth}px;">
-        <div class="box panel-box">
-            <div class="mb-3"><slot name="left-title"/></div>
-            <div class="scroll-area"><slot name="left-scroll"/></div>
-        </div>
+    <div class="split-panel" style="width: {leftWidth}px;" use:observeLeftPanel>
+         {#if hasBottomLeft}
+            <div class="box panel-box mb-0" style="height: {leftTopHeight}px;">
+                <div class="mb-3"><slot name="left-title"/></div>
+                <div class="scroll-area"><slot name="left-scroll"/></div>
+            </div>
+            <div class="split-divider v" on:mousedown={startDrag("v")} on:touchstart={startDrag("v")} role="separator" tabindex="-1"/>
+            <div class="box panel-box" style="height: {leftBottomHeight}px;">
+                <div class="mb-3"><slot name="bottom-left-title"/></div>
+                <div class="scroll-area"><slot name="bottom-left-scroll"/></div>
+            </div>
+        {:else}
+            <div class="box panel-box">
+                <div class="mb-3"><slot name="left-title"/></div>
+                <div class="scroll-area"><slot name="left-scroll"/></div>
+            </div>
+        {/if}
     </div>
 
     <div class="split-divider h" on:mousedown={startDrag("h")} on:touchstart={startDrag("h")} role="separator" tabindex="-1"/>
 
     <div class="split-panel" style="width: {rightWidth}px;" use:observeRightPanel>
         {#if hasBottomRight}
-            <div class="box panel-box mb-0" style="height: {topHeight}px;">
+            <div class="box panel-box mb-0" style="height: {rightTopHeight}px;">
                 <div class="mb-3"><slot name="right-title"/></div>
                 <div class="scroll-area"><slot name="right-scroll"/></div>
             </div>
             <div class="split-divider v" on:mousedown={startDrag("v")} on:touchstart={startDrag("v")} role="separator" tabindex="-1"/>
-            <div class="box panel-box" style="height: {bottomHeight}px;">
+            <div class="box panel-box" style="height: {rightBottomHeight}px;">
                 <div class="mb-3"><slot name="bottom-right-title"/></div>
                 <div class="scroll-area"><slot name="bottom-right-scroll"/></div>
             </div>
@@ -146,6 +184,7 @@
         flex-direction: column;
         flex: 1;
         min-height: 0;
+        overflow-x: hidden;
     }
     .scroll-area {
         flex: 1;

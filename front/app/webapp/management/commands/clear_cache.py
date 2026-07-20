@@ -9,10 +9,10 @@ class Command(BaseCommand):
         # Create a mutually exclusive group
         group = parser.add_mutually_exclusive_group(required=True)
         group.add_argument(
-            "--regions",
+            "--regext",
             "-r",
             type=int,
-            help="ID of the Regions to clear the cache",
+            help="ID of the RegionExtraction to clear the cache",
         )
         group.add_argument(
             "--all",
@@ -22,13 +22,13 @@ class Command(BaseCommand):
         )
 
     def handle(self, *args, **options):
-        regions_id = options.get("regions")
+        region_extraction_id = options.get("regext")
         process_all = options.get("all")
 
-        if regions_id:
-            cache_key = f"regions_q_imgs_{regions_id}"
+        if region_extraction_id:
+            cache_key = f"regions_q_imgs_{region_extraction_id}"
             cache.delete(cache_key)
-            self.style.SUCCESS(f"regions_q_imgs_{regions_id} cache cleared!")
+            self.style.SUCCESS(f"regions_q_imgs_{region_extraction_id} cache cleared!")
         elif process_all:
             cache.clear()
             self.style.SUCCESS("All cache cleared!")

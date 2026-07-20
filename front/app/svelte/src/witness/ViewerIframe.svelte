@@ -20,7 +20,7 @@
     </label>
     <div id="digit" class="control pl-3">
         <div class="select is-small">
-            <select on:change={(event) => witnessStore.selectedManifest(event.target.value)}>
+            <select on:change={(event) => witnessStore.selectManifest(event.target.value)}>
                 {#each $manifests as man}
                     <option value={man}>{manifestLabel(man)}</option>
                 {/each}

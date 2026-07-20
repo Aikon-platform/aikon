@@ -16,7 +16,7 @@ STATIC_DIR = "staticfiles"
 IMG_DIR = "img"
 LOG_DIR = "logs"
 PDF_DIR = "pdf"
-REGIONS_DIR = "regions"
+REGIONS_DIR = "region_extraction"
 TMP_DIR = "tmp"
 
 # Media file paths

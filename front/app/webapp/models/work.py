@@ -88,7 +88,7 @@ class Work(AbstractSearchableModel):
 
         return f"{base_url}?{query_string}"
 
-    def to_json(self, reindex=True, no_img=False, request_user=None):
+    def to_json(self, reindex=True, no_img=False):
         place = self.place
         author = self.author
         return json_encode(
@@ -96,8 +96,6 @@ class Work(AbstractSearchableModel):
                 "id": self.id,
                 "class": self.__class__.__name__,
                 "type": get_name("Work"),
-                # "user": self.user.__str__(),
-                # "user_id": self.user.id,
                 "edit_url": self.get_absolute_edit_url(),
                 "view_url": self.get_absolute_view_url(),
                 "can_edit": True,

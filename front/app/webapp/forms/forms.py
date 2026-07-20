@@ -6,8 +6,8 @@ from django import forms
 from dal import autocomplete
 
 from app.config.settings import APP_LANG, API_URL
-from app.webapp.models.language import Language
 from app.webapp.models.place import Place
+from app.webapp.models.language import Language
 from app.webapp.models.user_profile import UserProfile
 
 SEARCH_MSG = "Search..." if APP_LANG == "en" else "Rechercher..."

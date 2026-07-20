@@ -4,7 +4,6 @@
 
     import { recordsSelection } from "./selectionStore.js";
     import { appLang, userId, isSuperuser } from "../constants.js";
-    import DownloadPng from "../ui/DownloadPng.svelte";
     const { selected } = recordsSelection;
 
     export let selectionStore;
@@ -74,6 +73,7 @@
     }
 </script>
 
+<!--TODO if isSaved, and documentSet add link to view-->
 
 <div id="selection-modal" class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
     <div class="modal-background"/>
@@ -107,7 +107,7 @@
         </div>
 
         <section class="modal-card-body">
-            <slot />
+            <slot/>
 
             <hr>
 
@@ -159,7 +159,7 @@
                     <label class="checkbox is-size-7 is-flex is-align-items-center">
                         <input type="checkbox"
                             checked={$selected?.is_public}
-                            on:change={(e) => updatePublic(e.target.checked)}
+                            on:change={(e) => updatePublic(e.target.checked) && save()}
                         />
                         <span class="pl-1">
                             {appLang === "en" ? "Make public" : "Rendre public"}
@@ -193,5 +193,9 @@
 
     .tags:last-of-type {
         margin-bottom: 0.75em;
+    }
+
+    .modal-card-body {
+        overflow: initial;
     }
 </style>

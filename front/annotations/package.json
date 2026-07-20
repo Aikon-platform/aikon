@@ -19,7 +19,10 @@
     "mirador-annotation-editor": ">=1.2.5",
     "parcel": ">=2.16.1"
   },
+  "peerDependencies": {
+    "@mui/system": "^7.x"
+  },
   "devDependencies": {
-    "aiiinotate": ">=0.10.2"
+    "aiiinotate": ">=0.11.0"
   }
 }
