@@ -59,6 +59,7 @@ PROMPTED = {
         "EMAIL_HOST",
         "EMAIL_HOST_USER",
         "EMAIL_HOST_PASSWORD",
+        "DEFAULT_FROM_EMAIL",
         "APP_LOGO",
         "SSL_CERTIFICATE",
         "SSL_KEY",
