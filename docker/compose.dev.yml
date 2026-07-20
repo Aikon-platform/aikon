@@ -1,4 +1,8 @@
 # dev mode: the front (and api) run on the host, every service is reachable from localhost
+x-extra-hosts: &extra-hosts
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
 
 services:
   db:
@@ -16,6 +20,8 @@ services:
   aiiinotate:
     ports:
       - "${AIIINOTATE_PORT}:${AIIINOTATE_PORT}"
+    <<: *extra-hosts
   mirador:
     ports:
       - "${MIRADOR_PORT}:${MIRADOR_PORT}"
+    <<: *extra-hosts
