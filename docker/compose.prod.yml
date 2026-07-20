@@ -1,5 +1,12 @@
 # prod mode: only nginx is exposed (SSL termination is handled by the nginx host -> nginx_external.conf)
 
+x-prod-hosts: &prod-hosts
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+    # Fixes container-to-app failures: maps ${PROD_URL} to the host gateway
+    # so requests reach the host nginx directly, bypassing public DNS.
+    - "${PROD_URL}:host-gateway"
+
 services:
   db:
     restart: always
@@ -10,10 +17,13 @@ services:
   cantaloupe:
     restart: always
   aiiinotate:
+    <<: *prod-hosts
     restart: always
   mirador:
+    <<: *prod-hosts
     restart: always
   web:
+    <<: *prod-hosts
     restart: always
   nginx:
     restart: always
