@@ -695,6 +695,11 @@ def reset_digit_similarity(digit) -> bool:
         delete_api_similarity.delay(regions.get_ref(), algorithm=None, feat_net=None)
 
     try:
+        delete_api_similarity.delay(digit.witness.id, algorithm=None, feat_net=None)
+    except Exception as e:
+        log(f"[reset_digit_similarity] Error deleting API similarity for digit #{digit.id}", e)
+
+    try:
         delete_pairs_with_digit(digit.id)
     except Exception as e:
         log(f"[reset_digit_similarity] Error deleting pairs for digit #{digit.id}", e)
