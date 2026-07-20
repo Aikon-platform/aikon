@@ -1,4 +1,12 @@
+x-extra-hosts: &extra-hosts
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
 services:
   db:
     ports:
       - "${DB_PORT}:5432"
+  mirador:
+    <<: *extra-hosts
+  web:
+    <<: *extra-hosts
