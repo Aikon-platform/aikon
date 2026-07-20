@@ -145,6 +145,7 @@ if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=generate_env.MODES)
     parser.add_argument("--defaults", action="store_true", help="never prompt, use defaults")
+    parser.add_argument("--no-api", action="store_true", help="install/build only the front")
     args = parser.parse_args()
 
     check_docker()
@@ -152,6 +153,7 @@ if __name__ == "__main__":
     v = generate_env.generate(mode, args.defaults or mode == "local")
 
     (setup_dev if mode == "dev" else setup_docker)(v)
-    setup_api(mode, args.defaults)
+    if not args.no_api:
+        setup_api(mode, args.defaults)
 
     detect_firewall()

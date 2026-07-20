@@ -171,11 +171,9 @@ def run_dev() -> None:
 
 
 def run_api(action: str) -> None:
-    api_run = ROOT / "api/run.py"
-    if not api_run.exists() or ENV.get("MODE") == "dev":
+    if not (ROOT / "api/.env").exists() or ENV.get("MODE") == "dev":
         return
-    subprocess.run([sys.executable, str(api_run), action], cwd=ROOT / "api")
-
+    subprocess.run([sys.executable, str(ROOT / "api/run.py"), action], cwd=ROOT / "api")
 
 def doctor() -> None:
     ok = True
