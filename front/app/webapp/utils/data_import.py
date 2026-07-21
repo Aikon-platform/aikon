@@ -226,17 +226,23 @@ def import_similarity_pairs(ctx: ImportContext, similarity_url: str) -> int:
         get_digit_region_extraction_id,
         parse_img,
     )
+    from app.webapp.models.digitization import Digitization
 
     wit_map, digit_map = ctx.mapping["witnesses"], ctx.mapping["digitizations"]
+    zeros = {
+        d.id: (d.json or {}).get("zeros", 4)
+        for d in Digitization.objects.filter(id__in=digit_map.values())
+    }
 
     def rewrite(img):
         ref = parse_img(img)
         wit, digit = wit_map.get(str(ref.wit)), digit_map.get(str(ref.digit))
         if wit is None or digit is None:
             return None
+        page = str(ref.page).zfill(zeros.get(digit, 4))
         suffix = f"_{ref.bbox}" if ref.bbox else ""
         # imported digitizations are always manifests
-        return f"wit{wit}_{MAN_ABBR}{digit}_{ref.page}{suffix}.jpg"
+        return f"wit{wit}_{MAN_ABBR}{digit}_{page}{suffix}.jpg"
 
     hashed, manual, after, pages = [], [], 0, 0
     while True:
