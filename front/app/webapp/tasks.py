@@ -24,9 +24,20 @@ def convert_temp_to_img(digit):
     return temp_to_img(digit)
 
 
-@celery_app.task
-def extract_images_from_iiif_manifest(manifest_url, digit_ref, digit):
-    return iiif_to_img(manifest_url, digit_ref, digit)
+@celery_app.task(
+    rate_limit="2/s", bind=True, max_retries=3, default_retry_delay=10,
+    retry_backoff=True, retry_backoff_max=120, retry_jitter=True,
+)
+def extract_images_from_iiif_manifest(self, manifest_url, digit_ref, digit):
+    try:
+        return iiif_to_img(manifest_url, digit_ref, digit)
+    except Exception as exc:
+        try:
+            raise self.retry(exc=exc)
+        except self.MaxRetriesExceededError:
+            from app.webapp.utils.logger import log
+            log(f"[extract_images] giving up on {manifest_url}", exc)
+            return []
 
 
 @celery_app.task
@@ -37,17 +48,6 @@ def reindex_from_file(region_extraction_id):
     # region_extraction = RegionExtraction.objects.filter(pk=region_extraction_id).first()
     region_extraction = RegionExtraction.objects.get(pk=region_extraction_id)
     return check_indexation(region_extraction, True)
-
-
-# NOTE unused
-@celery_app.task
-def delete_region_extraction_and_annotations(regions_id):
-    from app.webapp.models.region_extraction import RegionExtraction
-    from app.webapp.utils.iiif.annotation import destroy_region_extraction
-
-    # region_extraction = RegionExtraction.objects.filter(pk=regions_id).first()
-    region_extraction = RegionExtraction.objects.get(pk=regions_id)
-    return destroy_region_extraction(region_extraction)
 
 
 @celery_app.task
@@ -196,7 +196,7 @@ def import_regions_task(prev, digit_id, regions_url, treatment_id):
     from app.webapp.utils.data_import import import_region_extraction, update_mapping
     from app.webapp.utils.logger import log
 
-    if prev is not True:
+    if prev != digit_id:
         return f"Image processing failed for digit #{digit_id}, skipping regions import: {prev}"
 
     digit = Digitization.objects.get(id=digit_id)
@@ -224,10 +224,26 @@ def finalize_import(results, treatment_id):
     from app.webapp.models.treatment import Treatment
     from app.webapp.utils.data_import import ImportContext, import_similarity_pairs
     from app.webapp.utils.logger import log
+    from app.webapp.models.digitization import Digitization
 
     treatment = Treatment.objects.get(pk=treatment_id)
     ctx = ImportContext(treatment)
     msg = f"Imported {len(ctx.mapping['witnesses'])} witness(es)"
+
+    all_digit_ids = set(ctx.mapping["digitizations"].values())
+    digits_with_img = set(
+        Digitization.objects.filter(id__in=all_digit_ids)
+        .filter(json__img_nb__gt=0)
+        .values_list("id", flat=True)
+    )
+    ctx.mapping["digitizations"] = {
+        src: did for src, did in ctx.mapping["digitizations"].items() if did in digits_with_img
+    }
+    if digits_no_img := all_digit_ids - digits_with_img:
+        try:
+            Digitization.objects.filter(id__in=digits_no_img).delete()
+        except Exception as e:
+            log("[finalize_import] Failed to delete empty digitizations", e)
 
     sim_url = ctx.opts.get("similarity_url")
     if ctx.opts.get("import_similarities") and sim_url and "similarity" in ADDITIONAL_MODULES:
@@ -280,7 +296,7 @@ def update_image_json(img_list, digit_id):
         # reindex to add first image to witness metadata
         witness.get_json(reindex=True)
 
-        return True
+        return digit_id
     except Exception as e:
         return f"[update_image_json] Error updating JSON image property after processing: {e}"
 
