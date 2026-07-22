@@ -13,6 +13,5 @@ python install.py --mode prod --no-api
 
 ```bash
 git pull
-cd docker
 python run.py build
 ```

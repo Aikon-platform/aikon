@@ -5,7 +5,7 @@
 
 const IMG_REGEX = /^(.+)_(\d+)_([\d,]+)\.jpg$/;
 // const weights = { 1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125 };
-const weights = { 1: 1, 2: 1.5, 3: 1.25, 4: -1.0, 5: 1.25 };
+const weights = { 0: 1, 1: 1, 2: 1.5, 3: 1.25, 4: -1.0, 5: 1.25 };
 const getDigitId = img => parseInt(img.match(/_(?:man|img|pdf)(\d+)/)?.[1]);
 
 let state = null;
