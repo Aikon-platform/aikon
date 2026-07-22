@@ -256,7 +256,7 @@ function createSimilarityStore() {
                     headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
                     body: JSON.stringify({
                         digitIds,
-                        filterByRegions: !isInModal,
+                        filterByRegionExtraction: !isInModal,
                         qImg,
                         ...(!isInModal && { topk: 10 })
                     }),
@@ -280,7 +280,7 @@ function createSimilarityStore() {
                     headers: {"Content-Type": "application/json", "X-CSRFToken": csrfToken},
                     body: JSON.stringify({
                         digitIds: isInModal ? [] : digitIds,
-                        filterByRegions: isInModal ? false : params.propagateFilterByRegions,
+                        filterByRegionExtraction: isInModal ? false : params.propagateFilterByRegions,
                         recursionDepth: params.propagateRecursionDepth,
                     })
                 });
