@@ -183,16 +183,18 @@ SIMILARITY = (
     "Compute similarity score" if APP_LANG == "en" else "Calcul de score de similarité"
 )
 VECTORIZATION = "Vectorization" if APP_LANG == "en" else "Vectorisation"
+IMPORT = "Import" if APP_LANG == "en" else "Import"
 
 TASK_TYPE = {
     "region_extraction": REGIONS,
     "similarity": SIMILARITY,
     "vectorization": VECTORIZATION,
+    "import": IMPORT
 }
 
 TRMT_TYPE = ()
 
-for x in ADDITIONAL_MODULES:
+for x in ADDITIONAL_MODULES + ["import"]:
     trmt = (x, TASK_TYPE.get(x, x))
     TRMT_TYPE += (trmt,)
 

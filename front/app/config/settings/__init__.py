@@ -2,17 +2,11 @@ import warnings
 
 warnings.filterwarnings("ignore", message="pkg_resources is deprecated")
 
-from .base import ENV
+from .base import MODE
 
-# Load the appropriate settings file based on the TARGET environment variable
-
-tgt = ENV("TARGET", default="").strip()
-
-if tgt == "dev":
+if MODE in ("local", "dev"):
     from .dev import *
-elif tgt == "docker_local":
-    from .docker_local import *
-elif tgt == "prod":
+elif MODE == "prod":
     from .prod import *
 else:
-    raise ValueError("TARGET environment variable must be either 'dev' or 'prod'")
+    raise ValueError(f"MODE must be 'local', 'dev' or 'prod' (got '{MODE}')")

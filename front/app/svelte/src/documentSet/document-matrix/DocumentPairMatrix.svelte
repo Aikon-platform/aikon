@@ -61,7 +61,7 @@
 
         const points = Array.from(pageMap.values()).map(({page1, page2, scores}) => ({
             page1, page2,
-            score: scores.reduce((a, b) => a + b, 0) / scores.length,
+            score: Math.max(...scores),
             count: scores.length
         }));
 

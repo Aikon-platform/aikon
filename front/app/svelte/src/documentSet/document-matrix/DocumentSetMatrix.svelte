@@ -94,6 +94,16 @@
         return selectedCell && selectedCell.doc1.id === d.doc1.id && selectedCell.doc2.id === d.doc2.id;
     }
 
+    function isMirror(d) {
+        return selectedCell && selectedCell.doc1.id === d.doc2.id && selectedCell.doc2.id === d.doc1.id;
+    }
+
+    function applyStroke(sel) {
+        sel.attr("stroke", d => isSelected(d) || isMirror(d) ? "var(--bulma-text)" : "var(--bulma-scheme-main)")
+            .attr("stroke-width", d => isSelected(d) || isMirror(d) ? 2 : 0.5)
+            .attr("stroke-dasharray", d => isMirror(d) ? "5,2" : null);
+    }
+
     function render() {
         if (!container || !matrixData.docs.length) return;
 
@@ -145,11 +155,10 @@
                     color.opacity = maxScore > 0 ? 0.2 + 0.8 * (d.z / maxScore) : 0.2;
                     return color;
                 })
-                .attr("stroke", d => isSelected(d) ? "var(--bulma-text)" : "var(--bulma-scheme-main)")
-                .attr("stroke-width", d => isSelected(d) ? 2 : 0.5)
+                .call(applyStroke)
                 .style("cursor", "pointer")
                 .on("mouseover", function (event, d) {
-                    if (!isSelected(d)) d3.select(this).attr("stroke", "var(--bulma-text)").attr("stroke-width", 2);
+                    if (!isSelected(d) && !isMirror(d)) d3.select(this).attr("stroke", "var(--bulma-text)").attr("stroke-width", 2);
                     tooltip.style("opacity", 1);
                 })
                 .on("mousemove", function (event, d) {
@@ -168,7 +177,7 @@
                         .style("top", (event.clientY + 15) + "px");
                 })
                 .on("mouseleave", function (event, d) {
-                    if (!isSelected(d)) d3.select(this).attr("stroke", "var(--bulma-scheme-main)").attr("stroke-width", 0.5);
+                    if (!isSelected(d) && !isMirror(d)) d3.select(this).attr("stroke", "var(--bulma-scheme-main)").attr("stroke-width", 0.5);
                     tooltip.style("opacity", 0);
                 })
                 .on("click", (event, d) => {
@@ -208,9 +217,7 @@
 
     function updateSelection() {
         if (!container) return;
-        d3.select(container).selectAll(".cell")
-            .attr("stroke", d => isSelected(d) ? "var(--bulma-text)" : "var(--bulma-scheme-main)")
-            .attr("stroke-width", d => isSelected(d) ? 2 : 0.5);
+        applyStroke(d3.select(container).selectAll(".cell"));
     }
 
     export function clearSelection() {

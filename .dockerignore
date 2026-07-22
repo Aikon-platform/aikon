@@ -1,0 +1,7 @@
+venv/
+**/node_modules/
+app/mediafiles/
+app/staticfiles/
+app/logs/*.log
+**/__pycache__/
+.git/

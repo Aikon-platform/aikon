@@ -27,11 +27,9 @@ LOGIN_REDIRECT_URL = "/"
 # SECURITY WARNING: keep the secret key used in production secret!
 SECRET_KEY = ENV.str("SECRET_KEY", default="")
 
-TARGET = ENV("TARGET", default="dev")
+MODE = ENV("MODE", default="dev")
 DOCKER = ENV.bool("DOCKER", default=False)
-
-# SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = ENV.bool("DEBUG", default=False if TARGET == "prod" else True)
+DEBUG = ENV.bool("DEBUG", default=MODE != "prod")
 
 INSTALLED_APPS = [
     "dal",
@@ -60,8 +58,10 @@ wildcard_hosts = [f"https://*.{host}" for host in hosts if "." in host]
 
 # https remote access config:
 ALLOWED_HOSTS = hosts + https_hosts + wildcard_hosts
-CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts
 SECURE_PROXY_SSL_HEADER = ("HTTP_X_FORWARDED_PROTO", "https")
+CSRF_TRUSTED_ORIGINS = https_hosts + wildcard_hosts + [ENV.str("BASE_URL", default="")]
+if DEBUG:
+    CSRF_TRUSTED_ORIGINS += [f"http://{host}" for host in hosts]
 
 MIDDLEWARE = [
     "django.middleware.security.SecurityMiddleware",
@@ -112,18 +112,13 @@ LOGGING = {
     },
 }
 
-if DEBUG:
-    INSTALLED_APPS += [
-        "livereload",
-        "debug_toolbar",
-    ]
+if DEBUG and MODE == "dev":
+    INSTALLED_APPS += ["livereload", "debug_toolbar"]
     MIDDLEWARE += [
         "livereload.middleware.LiveReloadScript",
         "debug_toolbar.middleware.DebugToolbarMiddleware",
     ]
-    INTERNAL_IPS = [
-        "127.0.0.1",
-    ]
+    INTERNAL_IPS = ["127.0.0.1"]
 
 # Define the default values for application URLs in development mode
 # APP, CANTALOUPE, SAS
@@ -166,7 +161,7 @@ DATABASES = {
         "NAME": ENV.str("POSTGRES_DB", default=""),
         "USER": ENV.str("POSTGRES_USER", default=""),
         "PASSWORD": ENV.str("POSTGRES_PASSWORD", default=""),
-        "HOST": "db" if DOCKER else "localhost",
+        "HOST": ENV.str("DB_HOST", default="localhost"),
         "PORT": ENV.str("DB_PORT", default=5432),
     },
     "test": {"NAME": f"test_{ENV.str('POSTGRES_DB', default='')}"},

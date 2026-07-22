@@ -1,22 +1,17 @@
 from .base import *
 
-DEBUG = True
-
-API_URL = f'http://localhost:{ENV("API_PORT", default=5000)}'
-BASE_URL = f"http://localhost:{ENV('FRONT_PORT', default=8000)}"
-
-APP_URL = f"http://localhost:{APP_PORT}"
-CANTALOUPE_APP_URL = f"http://localhost:{CANTALOUPE_PORT}"
-
-# django-environ doesn't support variable expansion in the .env => recreate AIIINOTATE_BASE_URL and MIRADOR_BASE_URL manually
-AIIINOTATE_HOST = ENV("AIIINOTATE_HOST")
-AIIINOTATE_SCHEME = ENV("AIIINOTATE_SCHEME")
-AIIINOTATE_PORT = ENV("AIIINOTATE_PORT")
-AIIINOTATE_BASE_URL = f"{AIIINOTATE_SCHEME}://{AIIINOTATE_HOST}:{AIIINOTATE_PORT}"
-MIRADOR_HOST = ENV("MIRADOR_HOST")
-MIRADOR_SCHEME = ENV("MIRADOR_SCHEME")
-MIRADOR_PORT = ENV("MIRADOR_PORT")
-MIRADOR_BASE_URL = f"{MIRADOR_SCHEME}://{MIRADOR_HOST}:{MIRADOR_PORT}"
+API_URL = ENV.str(
+    "API_URL", default=f"http://localhost:{ENV.int('API_PORT', default=5001)}"
+)
+BASE_URL = ENV.str("BASE_URL", default=f"http://localhost:{APP_PORT}")
+APP_URL = BASE_URL
+APP_URL_FROM_DOCKER = ENV.str("APP_URL_FROM_DOCKER", default=APP_URL)
+APP_URL_FROM_API = ENV.str("APP_URL_FROM_API", default=APP_URL)
+CANTALOUPE_APP_URL = ENV.str(
+    "CANTALOUPE_BASE_URI", default=f"http://localhost:{CANTALOUPE_PORT}"
+)
+AIIINOTATE_BASE_URL = ENV.str("AIIINOTATE_BASE_URL")
+MIRADOR_BASE_URL = ENV.str("MIRADOR_BASE_URL")
 
 EMAIL_BACKEND = "django.core.mail.backends.console.EmailBackend"
 

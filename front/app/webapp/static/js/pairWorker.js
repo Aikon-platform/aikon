@@ -108,7 +108,9 @@ function processBatch(batch) {
             category: cat,
             similarity_type: p.similarity_type,
             rank_1: 0,
-            rank_2: 0
+            rank_2: 0,
+            doc_rank_1: 0,
+            doc_rank_2: 0
         };
 
         pairs.push(processedPair);
@@ -148,11 +150,17 @@ function finalize() {
     for (const p of state.exactPairs) p.weightedScore = exactScore;
 
     pairs.sort((a, b) => b.weightedScore - a.weightedScore);
+    const rankGroups = new Map();
 
     for (const [imgId, imgPairs] of index.byImage) {
         imgPairs.sort((a, b) => b.weightedScore - a.weightedScore);
+
         for (let k = 0; k < imgPairs.length; k++) {
             const pair = imgPairs[k];
+
+            const other = pair.id_1 === imgId ? pair.digit_2 : pair.digit_1;
+            pushToMap(rankGroups, `${imgId}|${other}`, pair);
+
             const isSelf = pair.digit_1 === pair.digit_2;
             const isExact = pair.category === 1
             const rank = isSelf ? Infinity : (isExact ? 1 : k + 1);
@@ -160,6 +168,21 @@ function finalize() {
                 pair.rank_1 = rank;
             } else {
                 pair.rank_2 = rank;
+            }
+        }
+    }
+
+    // ranking of the pair relative to the document pair (digit_1, digit_2)
+    for (const [key, group] of rankGroups) {
+        const imgId = key.slice(0, key.lastIndexOf('|'));
+        group.sort((a, b) => b.weightedScore - a.weightedScore);
+        for (let k = 0; k < group.length; k++) {
+            const pair = group[k];
+            const rank = pair.digit_1 === pair.digit_2 ? Infinity : (pair.category === 1 ? 1 : k + 1);
+            if (pair.id_1 === imgId) {
+                pair.doc_rank_1 = rank;
+            } else {
+                pair.doc_rank_2 = rank;
             }
         }
     }

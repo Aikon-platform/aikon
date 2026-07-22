@@ -36,7 +36,7 @@ SIMILARITY_JSON = {
     "parameters": {
         "algorithm": "cosine",
         "topk": 20,
-        "feat_net": "dino_deitsmall16_pretrain",
+        "feat_net": "dinov2_vitb14",
         "segswap_prefilter": True,
         "segswap_n": 10,
         "raw_transpositions": ["none"],

@@ -4,7 +4,6 @@ import re
 from enum import IntEnum
 
 import numpy as np
-from typing import Set, List
 
 import orjson
 import requests
@@ -21,7 +20,6 @@ from app.similarity.models.region_pair import (
     RegionPair,
     RegionPairTuple,
     parse_img,
-    add_jpg,
 )
 from app.similarity.models.similarity_parameters import (
     SimilarityParameters,
@@ -29,7 +27,7 @@ from app.similarity.models.similarity_parameters import (
 )
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.region_extraction import RegionExtraction
+from app.webapp.models.region_extraction import RegionExtraction, get_witness_ids
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 from app.webapp.utils.functions import delete_path
@@ -221,23 +219,32 @@ def prepare_document(document: Witness | Digitization | RegionExtraction, **kwar
             for d in digits
         ]
 
-    # run similarity on extracted regions
-    region_extraction = (
-        document.get_region_extractions()
-        if hasattr(document, "get_region_extractions")
-        else [document]
-    )
-    if not region_extraction:
-        # TODO should task be canceled because one of the document has no extraction??
-        raise ValueError(
-            f"“{document}” has no extracted regions for which to calculate similarity scores"
-            if APP_LANG == "en"
-            else f"« {document} » n'a pas de régions extraites pour lesquelles calculer les scores de similarité"
-        )
     return [
-        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
-        for ref in [region.get_ref() for region in region_extraction]
+        {
+            "type": "url_list",
+            "src": f"{APP_URL}/{APP_NAME}/witness/{wid}/list/",
+            "uid": str(wid),
+        }
+        for wid in get_witness_ids(document)
     ]
+
+    # # run similarity on extracted regions
+    # region_extraction = (
+    #     document.get_region_extractions()
+    #     if hasattr(document, "get_region_extractions")
+    #     else [document]
+    # )
+    # if not region_extraction:
+    #     # TODO should task be canceled because one of the document has no extraction??
+    #     raise ValueError(
+    #         f"“{document}” has no extracted regions for which to calculate similarity scores"
+    #         if APP_LANG == "en"
+    #         else f"« {document} » n'a pas de régions extraites pour lesquelles calculer les scores de similarité"
+    #     )
+    # return [
+    #     {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
+    #     for ref in [region.get_ref() for region in region_extraction]
+    # ]
 
 
 def send_request(witnesses):
@@ -354,7 +361,7 @@ def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
     params = {
         "algorithm": str(parameters.get("algorithm", "cosine")),
         "topk": int(parameters.get("cosine_n_filter", 20)),
-        "feat_net": str(parameters.get("feat_net", "dino_deitsmall16_pretrain")),
+        "feat_net": str(parameters.get("feat_net", "dinov2_vitb14")),
         "segswap_prefilter": bool(parameters.get("segswap_prefilter", True)),
         "segswap_n": int(parameters.get("segswap_n", 10)),
         "raw_transpositions": ["none"],
@@ -676,6 +683,30 @@ def get_all_pairs():
     return [pair_file.replace(".npy", "") for pair_file in os.listdir(SCORES_PATH)]
 
 
+def reset_digit_similarity(digit) -> bool:
+    """Delete all similarity data (score files, API data, RegionPairs) for a digitization"""
+    digit_ref = digit.get_ref()
+    for file in os.listdir(SCORES_PATH):
+        if digit_ref in file:
+            if not delete_path(Path(SCORES_PATH) / file):
+                log(f"[reset_digit_similarity] Failed to delete file {file}")
+
+    for regions in digit.region_extractions.all():
+        delete_api_similarity.delay(regions.get_ref(), algorithm=None, feat_net=None)
+
+    try:
+        delete_api_similarity.delay(digit.witness.id, algorithm=None, feat_net=None)
+    except Exception as e:
+        log(f"[reset_digit_similarity] Error deleting API similarity for digit #{digit.id}", e)
+
+    try:
+        delete_pairs_with_digit(digit.id)
+    except Exception as e:
+        log(f"[reset_digit_similarity] Error deleting pairs for digit #{digit.id}", e)
+        return False
+    return True
+
+
 def reset_similarity(region_extraction: RegionExtraction):
     region_extraction_id = region_extraction.id
     try:
@@ -889,3 +920,28 @@ def build_pairs_query(digit_ids, categories, min_score, max_score, topk, exclude
     """
 
     return sql, params
+
+
+def export_pairs(digit_ids, after_id: int = 0, limit: int | None = None) -> dict:
+    """
+    Export RegionPair rows where BOTH digitizations are in `digit_ids`
+    (self-contained: every reference resolves on re-import).
+    Cursor-paginated on pk. limit=None returns all rows.
+    """
+    if not digit_ids:
+        return {"pairs": [], "next_cursor": None, "count": 0}
+
+    qs = RegionPair.objects.filter(
+        digit_1__in=digit_ids, digit_2__in=digit_ids, id__gt=after_id
+    ).order_by("id")
+
+    rows = list(qs if limit is None else qs[: limit + 1])
+    has_more = limit is not None and len(rows) > limit
+    if has_more:
+        rows = rows[:limit]
+
+    return {
+        "pairs": [p.to_dict() for p in rows],
+        "next_cursor": rows[-1].id if has_more else None,
+        "count": len(rows),
+    }

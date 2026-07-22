@@ -90,3 +90,4 @@ run_main.sh
 
 flagged_pairs.json
 front/app/webapp/static/svelte/*
+data/

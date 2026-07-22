@@ -63,7 +63,11 @@ class AbstractSearchableModel(models.Model):
             return None
 
     def update(self, **kwargs):
-        type(self).objects.filter(pk=self.pk.__str__()).update(**kwargs)
+        type(self).objects.filter(pk=self.pk).update(**kwargs)
+        for k, v in kwargs.items():
+            setattr(self, k, v)
+        if "json" not in kwargs:
+            self.update_json(self.to_json(no_img=True))
 
     def update_json(self, new_json: Dict) -> Dict:
         self.update(json=new_json)
@@ -108,6 +112,7 @@ class AbstractSearchableModel(models.Model):
 @receiver(post_save)
 def generate_json(sender, instance, **kwargs):
     if isinstance(instance, AbstractSearchableModel):
+        # TODO verify that it works
         # from app.webapp.tasks import generate_record_json
         # generate_record_json.apply_async(
         #     args=[type(instance).__name__, instance.pk.__str__()],

@@ -2,7 +2,7 @@
     import { getContext, onMount } from "svelte";
 
     import {showMessage, withLoading} from "../utils.js";
-    import { appLang, appName, csrfToken } from "../constants";
+    import {appLang, appName, csrfToken, model2title} from "../constants";
     import { activeLayout } from "../ui/tabStore.js";
 
     const witness = getContext("witness");
@@ -104,7 +104,7 @@
     {:else}
         {#each witness.region_extraction as regionId}
             <a href="{baseUrl}{regionId}/?{searchParamsString}" class="tag is-dark mr-3 mb-3 is-rounded">
-                Regions extraction #{regionId}
+                {model2title.RegionExtraction} #{regionId}
             </a>
         {/each}
     {/if}

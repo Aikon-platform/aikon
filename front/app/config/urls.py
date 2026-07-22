@@ -2,6 +2,7 @@ from django.urls import path, include, register_converter
 from django.conf.urls.static import static
 from django.conf.urls import handler404, handler500, handler403, handler400
 from django.contrib.auth import views as auth_views
+from django.urls.converters import get_converters
 
 from app.config.settings import (
     MEDIA_URL,
@@ -9,6 +10,7 @@ from app.config.settings import (
     ADDITIONAL_MODULES,
     DEBUG,
     APP_NAME,
+    INSTALLED_APPS
 )
 
 from django.contrib.admin import site as admin_site
@@ -24,7 +26,8 @@ class ListConverter:
         return "+".join(value)
 
 
-register_converter(ListConverter, "list")
+if "list" not in get_converters():
+    register_converter(ListConverter, "list")
 
 # Custom error handlers
 handler404 = "webapp.views.error_404"
@@ -46,8 +49,7 @@ if DEBUG:
     # Serve media files in development
     urlpatterns += static(MEDIA_URL, document_root=MEDIA_ROOT)
 
+if "debug_toolbar" in INSTALLED_APPS:
     import debug_toolbar
 
-    urlpatterns += [
-        path("__debug__/", include(debug_toolbar.urls)),
-    ]
+    urlpatterns += [path("__debug__/", include(debug_toolbar.urls))]

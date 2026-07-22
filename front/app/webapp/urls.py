@@ -1,7 +1,6 @@
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 
-from app.config.settings import APP_NAME
 from app.webapp.views import *
 from app.webapp.views.users import *
 from webapp.views.region import save_region
@@ -55,6 +54,11 @@ urlpatterns = [
         f"{APP_NAME}/<str:region_extraction_ref>/list/",
         get_regions_img_list,
         name="regions-list",
+    ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/list/",
+        get_witness_img_list,
+        name="witness-list",
     ),
     path(
         # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
@@ -286,14 +290,14 @@ urlpatterns += [
         f"{APP_NAME}/witness/<int:wid>/json", get_json_witness, name="get_json_witness"
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/extracted-regions",
-        get_json_regions,
-        name="get_json_regions",
+        f"{APP_NAME}/witness/<int:wid>/digitization/<int:did>/json/extracted-regions",
+        get_json_digit_regions,
+        name="get_json_digit_regions",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/similarities",
-        get_json_simil,
-        name="get_json_simil",
+        f"{APP_NAME}/document-set/<int:dsid>/json/similarities",
+        get_json_docset_simil,
+        name="get_json_docset_simil",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/vectorized-images",
@@ -310,6 +314,12 @@ urlpatterns += [
         export_docset,
         name="export_docset",
     ),
+    path(
+        f"{APP_NAME}/document-set/<int:dsid>/json/similarity",
+        get_json_docset_simil,
+        name="get_json_document_set_similarity",
+    ),
+    path(f"{APP_NAME}/raw/<str:model_name>/<int:rid>", get_json_record, name="record-raw"),
     path(
         f"{APP_NAME}/witness/select",
         witness_select_fields,

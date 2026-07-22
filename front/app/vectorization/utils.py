@@ -2,13 +2,12 @@ import os
 import shutil
 from pathlib import Path
 from zipfile import ZipFile
-from stream_unzip import stream_unzip
 import requests
 
 from app.config.settings import APP_URL, APP_NAME
 from app.vectorization.const import VECTO_MODEL_EPOCH, SVG_PATH
 from app.webapp.models.digitization import Digitization
-from app.webapp.models.region_extraction import RegionExtraction
+from app.webapp.models.region_extraction import RegionExtraction, get_witness_ids
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 
@@ -110,17 +109,21 @@ def prepare_document(document: Witness | Digitization | RegionExtraction, **kwar
             else f"« {document} » est déjà vectorisé"
         )
 
-    region_extractions = (
-        document.get_region_extractions()
-        if hasattr(document, "get_region_extractions")
-        else [document]
-    )
+    # region_extractions = (
+    #     document.get_region_extractions()
+    #     if hasattr(document, "get_region_extractions")
+    #     else [document]
+    # )
 
+    # return [
+    #     {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
+    #     for ref in [
+    #         region_extraction.get_ref() for region_extraction in region_extractions
+    #     ]
+    # ]
     return [
-        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/{ref}/list", "uid": ref}
-        for ref in [
-            region_extraction.get_ref() for region_extraction in region_extractions
-        ]
+        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/witness/{wid}/list/", "uid": str(wid)}
+        for wid in get_witness_ids(document)
     ]
 
 

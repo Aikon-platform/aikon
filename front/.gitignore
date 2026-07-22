@@ -145,5 +145,4 @@ docker/nginx.conf
 docker/nginx_external.conf
 docker/nginx_reverse_proxy.conf
 docker/nginx_ssl.conf
-docker/supervisord.conf
 .parcel-cache/*

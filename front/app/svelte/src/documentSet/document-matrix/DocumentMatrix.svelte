@@ -79,7 +79,7 @@
     <div slot="left-title" class="is-flex is-justify-content-space-between">
         <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
         <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
-            <DownloadPng targetId="matrix-viz" filename="document-matrix.png" />
+            <DownloadPng targetId="matrix-viz" filename="document-matrix" svgExport={true}/>
 <!--            <label title={i18n("normalization", t)} class="checkbox is-size-7 is-flex is-align-items-center">-->
 <!--                <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>-->
 <!--                <span class="pl-1">{i18n("normalize", t)}</span>-->
@@ -119,7 +119,7 @@
         <h4 class="title is-6 mb-0">{i18n("pageByPage", t)}</h4>
         <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
             {#if selectedCell}
-                <DownloadPng targetId="scatter-viz" filename="document-comparison.png"/>
+                <DownloadPng targetId="scatter-viz" filename="document-comparison" svgExport={true}/>
                 <div class="control">
                     <div class="select is-small">
                         <select bind:value={scatterMode}>

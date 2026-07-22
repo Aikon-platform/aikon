@@ -10,6 +10,39 @@ from app.webapp.models.treatment import Treatment
 from app.webapp.models.utils.constants import TRMT_TYPE
 
 
+class ImportForm(forms.Form):
+    source_url = forms.URLField(
+        label="Source URL",
+        required=False,
+        help_text="URL of a document set or witness JSON export from another AIKON instance "
+        "(e.g. https://host/aikon/document-set/13/json)",
+    )
+    regions = forms.BooleanField(
+        required=False, initial=True, label="Import region extractions"
+    )
+    similarities = forms.BooleanField(
+        required=False, label="Import similarity pairs"
+    )
+
+    def __init__(self, *args, **kwargs):
+        super().__init__(*args, **kwargs)
+        if "similarity" not in ADDITIONAL_MODULES:
+            del self.fields["similarities"]
+
+    def clean(self):
+        cleaned = super().clean()
+        if not cleaned.get("source_url"):
+            self.add_error("source_url", "A source URL is required.")
+        return cleaned
+
+    def get_api_parameters(self):
+        return {
+            "source_url": self.cleaned_data["source_url"],
+            "import_regions": self.cleaned_data.get("regions", False),
+            "import_similarities": self.cleaned_data.get("similarities", False),
+        }
+
+
 class TreatmentForm(forms.ModelForm):
     class Meta:
         model = Treatment
@@ -43,6 +76,7 @@ class TreatmentForm(forms.ModelForm):
             "similarity": SimilarityForm,
             "region_extraction": RegionExtractionForm,
             "vectorization": VectorizationForm,
+            "import": ImportForm,
         }
 
         for task_name in ADDITIONAL_MODULES:
@@ -53,6 +87,7 @@ class TreatmentForm(forms.ModelForm):
                     kwargs.get("data"),
                     kwargs.get("files"),
                 )
+        self.add_subform("import", ImportForm, kwargs.get("data"), kwargs.get("files"))
 
         self._prefill()
 
@@ -86,14 +121,13 @@ class TreatmentForm(forms.ModelForm):
         subform_data = None
         if data:
             subform_data = {
-                name.replace(f"{prefix}_", ""): value
+                name.removeprefix(f"{prefix}_"): value
                 for name, value in data.items()
                 if name.startswith(f"{prefix}_")
             }
 
         self.subforms[prefix] = form_class(
             data=subform_data,
-            prefix=prefix,
             files=files,
         )
         for name, field in self.subforms[prefix].fields.items():
@@ -103,16 +137,16 @@ class TreatmentForm(forms.ModelForm):
     def clean(self):
         cleaned_data = super().clean()
 
-        if not cleaned_data.get("document_set"):
-            self.add_error("document_set", "A document set is required.")
-
         task_type = cleaned_data.get("task_type")
         if not task_type:
             self.add_error("task_type", "A task type is required.")
 
+        if not cleaned_data.get("document_set") and task_type != "import":
+            self.add_error("document_set", "A document set is required.")
+
         subform = self.subforms.get(task_type)
         # Only validate selected subtask form
-        if not subform.is_valid():
+        if subform and not subform.is_valid():
             for field, error in subform.errors.items():
                 self.add_error(f"{task_type}_{field}", error)
         # else:
