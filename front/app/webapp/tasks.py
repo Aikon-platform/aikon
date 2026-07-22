@@ -18,9 +18,11 @@ def convert_pdf_to_img(pdf_name, dpi=MAX_RES):
 
 
 @celery_app.task
-def convert_temp_to_img(digit):
+def convert_temp_to_img(digit_id):
     from app.webapp.utils.functions import temp_to_img
+    from app.webapp.models.digitization import Digitization
 
+    digit = Digitization.objects.get(id=digit_id)
     return temp_to_img(digit)
 
 
@@ -28,16 +30,15 @@ def convert_temp_to_img(digit):
     rate_limit="2/s", bind=True, max_retries=3, default_retry_delay=10,
     retry_backoff=True, retry_backoff_max=120, retry_jitter=True,
 )
-def extract_images_from_iiif_manifest(self, manifest_url, digit_ref, digit):
+def extract_images_from_iiif_manifest(self, manifest_url, digit_id):
     try:
-        return iiif_to_img(manifest_url, digit_ref, digit)
+        return iiif_to_img(manifest_url, digit_id)
     except Exception as exc:
-        try:
-            raise self.retry(exc=exc)
-        except self.MaxRetriesExceededError:
+        if self.request.retries >= self.max_retries:
             from app.webapp.utils.logger import log
             log(f"[extract_images] giving up on {manifest_url}", exc)
             return []
+        raise self.retry(exc=exc)
 
 
 @celery_app.task
@@ -161,7 +162,7 @@ def start_import(treatment_id):
 
         for digit, manifest_url, regions_url in digits:
             sig = chain(
-                extract_images_from_iiif_manifest.s(manifest_url, digit.get_ref(), digit),
+                extract_images_from_iiif_manifest.s(manifest_url, digit.id),
                 update_image_json.s(digit.id),
             )
             if regions_url and ctx.opts.get("import_regions"):
@@ -348,13 +349,13 @@ def convert_digitization(digit_id):
 
         elif digit_type == IMG_ABBR:
             return chain(
-                convert_temp_to_img.s(instance), update_image_json.s(instance.id)
+                convert_temp_to_img.s(instance.id), update_image_json.s(instance.id)
             ).apply_async(countdown=1)
 
         elif digit_type == MAN_ABBR:
             return chain(
                 extract_images_from_iiif_manifest.s(
-                    instance.manifest, instance.get_ref(), instance
+                    instance.manifest, instance.id
                 ),
                 update_image_json.s(instance.id),
             ).apply_async(countdown=1)

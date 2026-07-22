@@ -512,3 +512,6 @@ class Witness(AbstractSearchableModel):
     def save(self, *args, **kwargs):
         self.slug = slugify(self.__str__())
         super().save(*args, **kwargs)
+
+
+# TODO add a pre_delete method to remove witnesses from document set (+do the same for series and work)

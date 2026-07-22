@@ -170,7 +170,7 @@ def get_propagated_matches(request, img_id: str = "") -> JsonResponse:
 
     try:
         data = json.loads(request.body)
-        filter_by_digit: bool = data.get("filterByRegions", False)
+        filter_by_digit: bool = data.get("filterByRegionExtraction", False)
         digit_ids: List[int] = data.get("digitIds", data.get("regionsIds", []))
         max_depth = min(int(data.get("recursionDepth", 6)), 6)
 
