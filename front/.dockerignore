@@ -1,0 +1,4 @@
+app/mediafiles
+app/logs
+app/.venv
+app/svelte/node_modules

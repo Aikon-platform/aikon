@@ -1,7 +1,6 @@
 from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 
-from app.config.settings import APP_NAME
 from app.webapp.views import *
 from app.webapp.views.users import *
 from webapp.views.region import save_region
@@ -56,36 +55,17 @@ urlpatterns = [
         get_regions_img_list,
         name="regions-list",
     ),
-    # TODO add f"{APP_NAME}/witness/<int:wit_id>/regions/<int:region_extraction_id>/list/",
-    # NOTE: unused
-    # path(
-    #     f"{APP_NAME}/annotations/<int:region_extraction_id>",
-    #     witness_sas_annotations,
-    #     name="witness-annotations",
-    # ),
-    # path(
-    #     f"test",
-    #     test,
-    #     name="test",
-    # ),
-    # path(
-    #     f"{APP_NAME}/test/<str:wit_ref>",
-    #     test,
-    #     name="test",
-    # ),
+    path(
+        f"{APP_NAME}/witness/<int:wid>/list/",
+        get_witness_img_list,
+        name="witness-list",
+    ),
     path(
         # digit_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}
         f"{APP_NAME}/iiif/<str:digit_ref>/manifest.json",
         manifest_digitization,
         name="manifest-digitization",
     ),
-    # NOTE: unused since switching to manifest-from-regions to manifest-from-annotations
-    # path(
-    #     # region_extraction_ref = {wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}
-    #     f"{APP_NAME}/iiif/<str:version>/<str:region_extraction_ref>/manifest.json",
-    #     manifest_region_extraction,
-    #     name="manifest-region-extraction",
-    # ),
     path(
         f"{APP_NAME}/iiif/populate/<int:regions_id>",
         populate_annotation,
@@ -168,7 +148,6 @@ urlpatterns = [
     ),
     path("retrieve_place_info/", retrieve_place_info, name="retrieve-place-info"),
     path("eida/iiif/auto/manuscript/<str:old_id>/manifest.json", legacy_manifest),
-    # path(f"{APP_NAME}/advanced-search/", advanced_search, name="advanced-search"),
     path(
         f"{APP_NAME}/autocomplete/edition/",
         EditionAutocomplete.as_view(),
@@ -311,14 +290,14 @@ urlpatterns += [
         f"{APP_NAME}/witness/<int:wid>/json", get_json_witness, name="get_json_witness"
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/extracted-regions",
-        get_json_regions,
-        name="get_json_regions",
+        f"{APP_NAME}/witness/<int:wid>/digitization/<int:did>/json/extracted-regions",
+        get_json_digit_regions,
+        name="get_json_digit_regions",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/similarities",
-        get_json_simil,
-        name="get_json_simil",
+        f"{APP_NAME}/document-set/<int:dsid>/json/similarities",
+        get_json_docset_simil,
+        name="get_json_docset_simil",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/json/vectorized-images",
@@ -335,6 +314,12 @@ urlpatterns += [
         export_docset,
         name="export_docset",
     ),
+    path(
+        f"{APP_NAME}/document-set/<int:dsid>/json/similarity",
+        get_json_docset_simil,
+        name="get_json_document_set_similarity",
+    ),
+    path(f"{APP_NAME}/raw/<str:model_name>/<int:rid>", get_json_record, name="record-raw"),
     path(
         f"{APP_NAME}/witness/select",
         witness_select_fields,
@@ -371,6 +356,11 @@ urlpatterns += [
     ),
     path("search/user/", search_user, name="search-user"),
     path("search/json-generation/", json_regeneration, name="regenerate_json"),
+    path(
+        "search/witness-json-generation/<int:wid>",
+        witness_json_regeneration,
+        name="witness-regenerate_json",
+    ),
 ]
 
 # SUPERADMIN VIEWS
@@ -378,17 +368,3 @@ urlpatterns += [
     path("superadmin/empty-works/", list_empty_works, name="empty-works"),
     path("superadmin/works/", list_works, name="list-works"),
 ]
-
-# TEST VIEWS
-# urlpatterns += [
-#     path(
-#         f"{APP_NAME}/test",
-#         test,
-#         name="test",
-#     ),
-#     path(
-#         f"{APP_NAME}/test/error",
-#         test_error,
-#         name="test-error",
-#     ),
-# ]

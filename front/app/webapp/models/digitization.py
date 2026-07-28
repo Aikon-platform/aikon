@@ -1,7 +1,6 @@
 import os
-from glob import glob
 from functools import partial
-from typing import Optional, List
+from glob import glob
 
 from iiif_prezi.factory import StructuralError
 from PIL import Image, UnidentifiedImageError
@@ -12,7 +11,7 @@ from django.db import models, transaction
 from django.db.models.signals import pre_delete, post_save
 from django.dispatch.dispatcher import receiver
 
-from app.config.settings import APP_URL, APP_NAME
+from app.config.settings import APP_URL, APP_NAME, ADDITIONAL_MODULES
 from app.webapp.models.digitization_source import DigitizationSource
 from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.utils.functions import get_fieldname
@@ -311,44 +310,46 @@ class Digitization(AbstractSearchableModel):
 
         prefix = f"temp_{self.get_wit_ref()}" if temp else f"{self.get_ref()}_"
         img_dir = TMP_PATH if temp else IMG_PATH
-        names = sorted(get_files_with_prefix(img_dir, prefix, "", only_one))
+        files = get_files_with_prefix(img_dir, prefix, "", only_one) or []
+        names = sorted(files if isinstance(files, list) else [files])
+        if only_one:
+            return names[0]
 
         if temp:
             path_prefix = f"{img_dir}/" if is_abs else ""
             return [f"{path_prefix}{n}" for n in names]
 
-        if not only_one:
-            self.update_imgs_json(names)
+        self.update_imgs_json(names)
 
         if with_meta:
             imgs = [e for e in (img_meta(n) for n in names) if e]
             return imgs[0] if only_one else imgs
         return names[0] if only_one else names
 
-    def update_imgs_json(self, imgs=None):
+    def update_imgs_json(self, imgs=None, force=False):
         """
         Merge new image filenames in self.json.imgs in a list of {name, h, w}
         """
         if not isinstance(imgs, list):
             imgs = get_files_with_prefix(IMG_PATH, f"{self.get_ref()}_", "")
 
-        existing = {}
-        for item in (self.json or {}).get("imgs", []):
-            if (
-                isinstance(item, dict)
-                and "name" in item
-                and "h" in item
-                and "w" in item
-            ):
-                existing[item["name"]] = item
+        str_p = lambda x: os.path.basename(str(x["name"] if isinstance(x, dict) else x))
+
+        existing = (
+            {}
+            if force
+            else {
+                str_p(item): {**item, "name": str_p(item)}
+                for item in (self.json or {}).get("imgs", [])
+                if isinstance(item, dict) and {"name", "h", "w"} <= item.keys()
+            }
+        )
 
         for i in imgs:
             if isinstance(i, dict) and "h" in i and "w" in i:
-                existing.setdefault(i["name"], i)
+                existing.setdefault(str_p(i), {**i, "name": str_p(i)})
 
-        new = {os.path.basename(i["name"] if isinstance(i, dict) else i) for i in imgs}
-        names = sorted(new | set(existing))
-
+        names = sorted({str_p(i) for i in imgs} | existing.keys())
         images = [e for e in (existing.get(n) or img_meta(n) for n in names) if e]
 
         if self.json is None:
@@ -483,7 +484,7 @@ class Digitization(AbstractSearchableModel):
 
 @receiver(post_save, sender=Digitization)
 def digitization_post_save(sender, instance, created, **kwargs):
-    if created:
+    if created and not getattr(instance, "_skip_post_save", False):
         from app.webapp.tasks import convert_digitization
 
         transaction.on_commit(lambda: convert_digitization.delay(instance.id))
@@ -494,22 +495,23 @@ def pre_delete_digit(sender, instance: Digitization, **kwargs):
     """
     - delete associated files (downloaded PDF)
     - delete IIIF manifest from aiiinotate
+    - delete RegionsPair on the digitization
     - delete all related Regions from db
     - delete all related annotations
     """
     from app.webapp.tasks import delete_digitization
-    from app.webapp.utils.iiif.annotation import (
-        destroy_region_extraction,
-        unindex_manifest,
-    )
+    from app.webapp.utils.iiif.annotation import destroy_region_extraction, unindex_manifest
 
     other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
     delete_digitization.delay(instance.get_ref(), other_media)
 
-    manifest_url = instance.get_manifest_url()
-    # NOTE: order is important here !
-    r_destroy_regions = [
-        destroy_region_extraction(r) for r in instance.get_region_extractions()
-    ]
-    r_unindex_manifest = unindex_manifest(manifest_url)
-    return all([r_unindex_manifest, *r_destroy_regions])
+    try:
+        if "similarity" in ADDITIONAL_MODULES:
+            from app.similarity.utils import reset_digit_similarity
+            reset_digit_similarity(instance)
+
+        results = [destroy_region_extraction(r) for r in instance.get_region_extractions()]
+        if not (unindex_manifest(instance.get_manifest_url()) and all(results)):
+            log(f"[pre_delete_digit] Cleanup incomplete for digit #{instance.id}")
+    except Exception as e:
+        log(f"[pre_delete_digit] Cleanup error for digit #{instance.id}", e)

@@ -42,7 +42,7 @@
 
 <Item {item} {recordsStore}>
     <div slot="buttons">
-        {#if !finished && item.api_tracking_id}
+        {#if !finished && (item.api_tracking_id || item.task_type === "import")}
             {@const cancelTitle = appLang === 'en' ? 'Cancel treatment' : 'Annuler le traitement'}
             <button class="button is-small is-rounded is-danger is-outlined px-2 py-1 mr-2"
                     title={cancelTitle} on:click={cancelTreatment}>

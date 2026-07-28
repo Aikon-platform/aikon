@@ -19,12 +19,12 @@ from app.config.settings import (
     AIIINOTATE_BASE_URL,
     APP_NAME,
     APP_URL,
+    APP_URL_FROM_DOCKER
 )
-from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref
+from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, maybe_dockerize
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.region_extraction import get_file_region_extraction
-
 
 # ********************************************
 # UTILS
@@ -36,7 +36,7 @@ IIIF_PRESENTATION_VERSION = 2
 
 def update_params(urlstr: str, q_params: Dict) -> str:
     """
-    update the url string `urlstr` with the dictionnary of query parameters `q_str` and return the updated url string.
+    update the url string `urlstr` with the dictionary of query parameters `q_str` and return the updated url string.
     https://coderivers.org/blog/python-url-replace/
     """
     url = urlparse(urlstr)
@@ -84,7 +84,7 @@ def string_to_color(s: str, saturation=0.9, lightness=0.5) -> str:
 
 def format_annotation(region_extraction: RegionExtraction, canvas_nb, xywh, tags=None):
     # regions.get_manifest_url returns digitization manifest
-    base_url = region_extraction.get_manifest_url(only_base=True)
+    base_url = maybe_dockerize(region_extraction.get_manifest_url(only_base=True))
     x, y, w, h = xywh
 
     canvas_id = f"{base_url}/canvas/c{canvas_nb}.json"
@@ -143,7 +143,7 @@ def split_ref(ref: str) -> Tuple[str, str | None]:
     return ref, None
 
 
-# TODO : use aiiinotate search-api.
+# NOTE unused
 def filter_annotations_by_tag(annotations: List[Dict], tag: str) -> List[Dict]:
     """Filter annotations that contain the specified tag in their resources."""
     if not tag:
@@ -458,6 +458,7 @@ def get_manifest_annotations(
             q_params["canvasMax"] = c_range[1]
 
     q_url = update_params(q_url, q_params)
+    print("****************************************", q_url)
     r = get_and_parse(q_url) if only_ids else get_paginated_annotations(q_url)
 
     # sanity check to preserve type consistency if there's been an error in `get_and_parse`
@@ -550,7 +551,8 @@ def get_record_annotations(
         min_c = min_c or 1
         max_c = max_c or digit_meta.get("img_nb")
         # { canvas_nb: {} }, canvas_nb is 1-indexed.
-        r_annos = {str(c): {} for c in range(min_c, max_c + 1)}
+        for c in range(min_c, max_c + 1):
+            r_annos.setdefault(str(c), {})
 
     # if record is a Regions, all annotations for the Regions.
     # otherwise, all nnotations for the Digitization
@@ -586,7 +588,7 @@ def get_record_annotations(
                     "class": "Region",
                     "type": get_name("RegionExtraction"),
                     "title": region_title(canvas, xywh_str),
-                    "url": gen_iiif_url(img, res=f"{xywh}/full/0"),
+                    "url": gen_iiif_url(img, res=f"{xywh_str}/full/0"),
                     "canvas": canvas,
                     "xywh": xywh,
                     "img": img,
@@ -694,8 +696,13 @@ def get_training_regions(region_extraction: RegionExtraction):
     return filenames_contents
 
 
-def get_regions_urls(region_extraction: RegionExtraction):
+def get_regions_urls(
+    record: RegionExtraction | Digitization,
+    min_c: int | None = None,
+    max_c: int | None = None,
+) -> Dict[str, str]:
     """
+    Flat { region_ref: iiif_url } map for a RegionExtraction or a Digitization
     {
         "wit1_man191_0009_166,1325,578,516": ""https://eida.obspm.fr/iiif/2/wit1_man191_0009.jpg/166,1325,578,516/full/0/default.jpg"",
         "wit1_man191_0027_1143,2063,269,245": "https://eida.obspm.fr/iiif/2/wit1_man191_0027.jpg/1143,2063,269,245/full/0/default.jpg",
@@ -703,22 +710,14 @@ def get_regions_urls(region_extraction: RegionExtraction):
         "img_name": "..."
     }
     """
-    folio_regions = {}
-
-    _, canvas_annotations = formatted_annotations(region_extraction)
-
-    for canvas_nb, annotations, img_name in canvas_annotations:
-        if len(annotations):
-            folio_regions.update(
-                {
-                    gen_img_ref(img_name, a[0]): gen_iiif_url(
-                        img_name, 2, f"{a[0]}/full/0"
-                    )
-                    for a in annotations
-                }
-            )
-
-    return folio_regions
+    canvas_annos = get_record_annotations(
+        record, as_json=True, min_c=min_c, max_c=max_c
+    )
+    return {
+        anno["ref"]: anno["url"]
+        for annos in canvas_annos.values()
+        for anno in annos.values()
+    }
 
 
 def get_images_annotations(region_extraction: RegionExtraction):
@@ -827,13 +826,10 @@ def index_annotations_on_canvas(regions: RegionExtraction, canvas_nb):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
 
-    formatted_annos = (
-        f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json"
-    )
     # POST request that index the annotations
     response = requests.post(
         f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",
-        json={"uri": formatted_annos},
+        json={"uri": maybe_dockerize(f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json")},
     )
 
     if not response.ok:
@@ -896,6 +892,7 @@ def index_manifest(manifest_url, reindex=False):
             f"{AIIINOTATE_BASE_URL}/manifests/{IIIF_PRESENTATION_VERSION}/create",
             json=manifest_content,
         )
+        # r.raise_for_status()
         if r.status_code != 200:
             log(
                 f"[index_manifest]: Failed to index manifest {manifest_url}."

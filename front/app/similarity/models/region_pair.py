@@ -4,6 +4,7 @@ import re
 from typing import List, NamedTuple
 
 from django.contrib.postgres.fields import ArrayField
+from django.core.exceptions import ValidationError
 from django.db import models, connection
 
 from app.webapp.utils.functions import cast
@@ -12,7 +13,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.region_extraction import RegionExtraction
 from app.similarity.models.similarity_parameters import SimilarityParameters
 
-IMG_RE = re.compile(r"^wit(\d+)_(\w{3})(\d+)_(\d+)(?:_([\d,]+))?\.jpg$")
+IMG_RE = re.compile(r"^wit(\d+)_(\w{3})(\d+)_(\d+)(?:_([\d.,]+))?\.jpg$")
 
 
 def get_region_digit_id(region_extraction_id: int) -> int | None:
@@ -60,11 +61,35 @@ class ImgRef(NamedTuple):
     wit: int
     digit_type: str
     digit: int
-    page: int
+    page: str
     bbox: str | None  # None = page-level
 
 
+def add_jpg(img: str) -> str:
+    return img if img.endswith(".jpg") else f"{img}.jpg"
+
+
+def norm_bbox(bbox: str | None) -> str | None:
+    return ",".join(c.split(".")[0] for c in bbox.split(",")) if bbox else None
+
+
+def norm_img(ref: ImgRef | str) -> str:
+    if not isinstance(ref, ImgRef):
+        ref = parse_img(add_jpg(ref))
+    suffix = f"_{ref.bbox}" if ref.bbox else ""
+    return f"wit{ref.wit}_{ref.digit_type}{ref.digit}_{ref.page}{suffix}.jpg"
+
+
+def norm_ref(ref: str) -> str:
+    # FIX to prevent IntegrityError on the `pair_ordering` check constraint
+    # Postgres ignores punctuation for string ordering whereas python does not:
+    # - Python   '5.868' > '534'
+    # - Postgres '5.868' < '534'
+    return ref.replace(".", "").replace(",", "")
+
+
 def parse_img(img: str) -> ImgRef:
+    img = add_jpg(img)
     m = IMG_RE.match(img)
     if not m:
         raise ValueError(f"Invalid image name: {img}")
@@ -72,8 +97,8 @@ def parse_img(img: str) -> ImgRef:
         wit=int(m.group(1)),
         digit_type=m.group(2),
         digit=int(m.group(3)),
-        page=int(m.group(4)),
-        bbox=m.group(5),
+        page=m.group(4),
+        bbox=norm_bbox(m.group(5)),
     )
 
 
@@ -87,10 +112,6 @@ class RegionPairTuple(NamedTuple):
     category_x: List[int]
     similarity_type: int
     similarity_hash: str
-
-
-def add_jpg(img: str) -> str:
-    return img if img.endswith(".jpg") else f"{img}.jpg"
 
 
 def get_name(fieldname, plural=False):
@@ -216,27 +237,27 @@ class RegionPair(models.Model):
 
     @classmethod
     def order_pair(
-        cls, pair: tuple | str, as_string: bool = False
+        cls, pair: tuple | str, as_string: bool = False, normalize: bool = False
     ) -> tuple[str, str] | str:
         """Return image names ordered consistently"""
         ref1, ref2 = pair.split("-") if isinstance(pair, str) else pair
-        if str(ref2) < str(ref1):
+        if normalize:
+            ref1, ref2 = norm_img(ref1), norm_img(ref2)
+        if norm_ref(ref2) < norm_ref(ref1):
             ref1, ref2 = ref2, ref1
         return f"{ref1}-{ref2}" if as_string else (ref1, ref2)
 
     def clean(self):
         super().clean()
-        self.img_1 = add_jpg(self.img_1)
-        self.img_2 = add_jpg(self.img_2)
+        ref1, ref2 = parse_img(self.img_1), parse_img(self.img_2)
+        self.img_1, self.img_2 = norm_img(ref1), norm_img(ref2)
+        self.digit_1, self.digit_2 = ref1.digit, ref2.digit
 
-        if self.img_2 < self.img_1:
+        if norm_ref(self.img_2) < norm_ref(self.img_1):
             self.img_1, self.img_2 = self.img_2, self.img_1
             self.regions_id_1, self.regions_id_2 = self.regions_id_2, self.regions_id_1
             self.anno_1, self.anno_2 = self.anno_2, self.anno_1
-
-        for side in ("1", "2"):
-            ref = parse_img(getattr(self, f"img_{side}"))
-            setattr(self, f"digit_{side}", ref.digit)
+            self.digit_1, self.digit_2 = self.digit_2, self.digit_1
 
     def save(self, validate=False, *args, **kwargs):
         if validate:
@@ -298,4 +319,4 @@ class RegionPair(models.Model):
         }
 
     def get_ref(self):
-        return "-".join(sorted([self.img_1, self.img_2]))
+        return RegionPair.order_pair((self.img_1, self.img_2), as_string=True)

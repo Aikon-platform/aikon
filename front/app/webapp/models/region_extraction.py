@@ -9,6 +9,7 @@ from app.config.settings import (
     MIRADOR_BASE_URL,
 )
 from app.webapp.models.digitization import Digitization
+from app.webapp.models.witness import Witness
 from app.webapp.models.searchable_models import AbstractSearchableModel
 from app.webapp.models.utils.constants import REG
 from app.webapp.models.utils.functions import get_fieldname
@@ -16,13 +17,13 @@ from app.webapp.utils.paths import REGIONS_PATH
 
 
 def get_name(fieldname, plural=False):
-    return get_fieldname(fieldname, {}, plural)
-
-
-def check_version(version):
-    if version != MANIFEST_V1 and version != MANIFEST_V2:
-        return MANIFEST_V1
-    return version
+    fields = {
+        "RegionExtraction": {
+            "en": "region extraction",
+            "fr": "extraction de régions",
+        },
+    }
+    return get_fieldname(fieldname, fields, plural)
 
 
 class RegionExtraction(AbstractSearchableModel):
@@ -80,14 +81,14 @@ class RegionExtraction(AbstractSearchableModel):
         return digit.get_manifest_url(only_base=only_base)
 
     def get_manifest_json(self):
-        digit = self.get_digit()
+        digit: Digitization = self.get_digit()
         if not digit:
             return None
 
         return digit.get_manifest_json()
 
     def gen_mirador_url(self):
-        return f"{MIRADOR_BASE_URL}/index.html?iiif-content={self.get_manifest_url()}"
+        return f"{MIRADOR_BASE_URL}/index.html?iiif-content={self.get_manifest_url()}&editMode=true&defaultForm=note"
 
     def get_ref(self):
         if digit := self.get_digit():
@@ -171,7 +172,7 @@ class RegionExtraction(AbstractSearchableModel):
 
         return get_record_annotations(self)
 
-    def get_imgs(self, is_abs=False, only_one=False, check_in_dir=True):
+    def get_imgs(self, is_abs=False, only_one=False, check_in_dir=False):
         if digit := self.get_digit():
             return digit.get_imgs(
                 is_abs=is_abs, only_one=only_one, check_in_dir=check_in_dir
@@ -187,3 +188,11 @@ class RegionExtraction(AbstractSearchableModel):
         )
 
         return mark_safe(btn)
+
+
+def get_witness_ids(document: Witness | Digitization | RegionExtraction) -> list[int]:
+    if isinstance(document, Witness):
+        return [document.id]
+    if isinstance(document, RegionExtraction):
+        return [document.get_digit().witness_id]
+    return [document.witness_id]

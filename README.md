@@ -1,50 +1,74 @@
 # <img alt="Aikon logo" src="https://raw.githubusercontent.com/Aikon-platform/aikon/refs/heads/main/front/app/webapp/static/favicon.ico" height="50" width="auto" style="display: inline; margin-bottom:-10px;"> AIKON platform
 
-**[Aikon](https://aikon-platform.github.io/)** is a modular computer vision platform that enables historians to build, process, and analyze
-visual corpora at scale. The platform guides users through a complete workflow from corpus construction
-to algorithmic processing and result validation, without requiring technical expertise. Built on IIIF
-standards and featuring a flexible data model, Aikon supports collaborative research while maintaining
-full user control over automatic processing. Its modular architecture allows easy integration of new
-computer vision algorithms and visualization tools, making it adaptable to diverse research needs across
-historical document analysis.
+[//]: # (<img src="https://media.springernature.com/full/springer-static/image/art%3A10.1007%2Fs10032-026-00581-x/MediaObjects/10032_2026_581_Fig1_HTML.png" alt="AIKON presentation" width="100%">)
 
-<img src="https://aikon-platform.github.io/aikon-platform.png" alt="" height="500" width="auto">
+Modular platform for the visual analysis of historical corpora, composed of a web application ([`front/`](front/README.md))
+and a computer vision API ([`api/`](https://github.com/Aikon-platform/aikon-api/blob/main/README.md)).
+Both can be deployed together or separately.
 
-This repository contains the code for the frontend platform, as well as a submodule for the worker API.
+## Requirements
 
-## General requirements
-
-> - **Sudo** privileges
-> - **Python** == 3.10
-> - **Git**:
->     - `sudo apt install git`
->     - Having configured [SSH access to GitHub](https://docs.github.com/en/authentication/connecting-to-github-with-ssh)
-
-## Install 🛠️
-
-Please refer to [front/README](front/README.md) and [api/README](https://github.com/Aikon-platform/aikon-api/blob/main/README.md) for detailed instructions (especially step-by-step install).
-
-1. To install the API and Front application inside the `front` and `api` folders, run:
-    ```bash
-    bash setup.sh
+- [Python](https://www.python.org/downloads/) >= 3.10
+- [Docker](https://docs.docker.com/engine/install/) with Compose v2
+- [Github](https://github.com/Segolene-Albouy/GIT-M2TNAH/blob/a41ffd3fb5ff340d09bfcca6adc5079c1ab60462/02-GitHub/02-Github.md#authentifier-son-ordinateur-pour-github): having configured SSH keys for GitHub
+- `dev` mode only:
+  - [uv](https://docs.astral.sh/uv/): `curl -LsSf https://astral.sh/uv/install.sh | sh` (MacOS & Linux)
+  - [Node.js](https://nodejs.org/fr/download): MacOS & Linux
     ```
-2. Define the `.env` variables to fit your requirements:
-    For front application (`front/app/conf/.env`), notably
-    ```bash
-    # Folder where the media files are stored
-    MEDIA_DIR=/home/path/to/aikon/front/app/mediafiles
-    ```
-    For the API (`api/.env`), notably
-    ```bash
-    # Folder where the data is stored
-    API_DATA_FOLDER=data/
-    ```
-3. To start everything in one killable process, run (after installing each part like advised in the subfolders):
-    ```bash
-    bash run.sh
+    curl -o- https://raw.githubusercontent.com/nvm-sh/nvm/v0.40.4/install.sh | bash
+    \. "$HOME/.nvm/nvm.sh"
+    nvm install 24
     ```
 
-## Acknowledgements
+## Install
+
+```bash
+git clone --recurse-submodules git@github.com:Aikon-platform/aikon.git && cd aikon
+python install.py
+```
+
+The script will ask you about the install mode, generate every configuration file and start the app:
+
+| mode    | purpose       | what runs where                               |
+|---------|---------------|-----------------------------------------------|
+| `local` | use the app   | everything in Docker, no prompt, DEBUG on     |
+| `dev`   | edit the code | services in Docker, front and api on the host |
+| `prod`  | deploy        | everything in Docker, DEBUG off               |
+
+## Run
+
+```bash
+python run.py         # start, Ctrl+C to stop processes, Ctrl+C again to stop Docker
+python run.py down    # stop everything
+python run.py logs    # follow the docker services logs
+```
+
+- `local`: app at `http://localhost:<NGINX_PORT>` (default 8080)
+- `dev`: app at `http://localhost:<FRONT_PORT>` (default 8000)
+- `prod`: served behind the host nginx at `https://<PROD_URL>` (SSL termination on the host, see [docker/nginx_external.conf.template](docker/nginx_external.conf.template))
+
+## Configuration
+
+The root [`.env`](.env.template) is the single source of truth: every other `.env` (front, cantaloupe, api, docker) is generated from it.
+To change a value, edit the root `.env` then run:
+
+```bash
+python scripts/generate_env.py
+```
+
+Passwords and secret keys left blank are auto-generated. In `dev`/`local`, busy ports are automatically replaced by the next free one.
+
+## Project
+
+> [!NOTE]
+> Historical document analysis has progressed to a point where the main bottleneck for many historical applications is
+> not algorithms, but relevant interfaces, that can support historians’ workflow. While specialized tools exist for text
+> processing and image search, we argue the community lacks a versatile collaborative platform enabling historians to
+> analyze their own corpora from a particular perspective. As a step in this direction, we present **[Aikon](https://aikon-platform.github.io/)**, a modular
+> web-platform designed to empower historians with computer vision tools. aikon implements a complete workflow for
+> historical document analysis, from corpus constitution to ai outputs validation and interpretation. It provides a
+> comprehensive research environment combining source management tools with automated processing capabilities as well
+> as multi-user validation and visualization interfaces.
 
 ***Aikon** is funded and supported by the Agence Nationale pour la Recherche and the European Research Council*
 - **VHS** [ANR-21-CE38-0008](https://anr.fr/Projet-ANR-21-CE38-0008): computer Vision and Historical analysis of Scientific illustration circulation
@@ -54,8 +78,8 @@ Please refer to [front/README](front/README.md) and [api/README](https://github.
 If you find this work useful, please consider citing:
 
 ```bibtex
-@article{albouy2025aikon,
-    title={{AIKON: A Modular Computer Vision Platform for Historical Corpora}},
+@article{albouy2026aikon,
+    title={{AIKON : A Modular Computer Vision Platform for Historical Corpora}},
     author={
         Albouy, Ségolène and
         Norindr, Somkeo and
@@ -69,11 +93,10 @@ If you find this work useful, please consider citing:
         Husson, Matthieu and
         Aubry, Mathieu
     },
-    url={https://hal.science/hal-05248250},
-    year={2025},
-    month={Sep},
-    number={hal-05248250},
-    journal={HAL Pre-Print},
+    url={https://doi.org/10.1007/s10032-026-00581-x},
+    year={2026},
+    month={June},
+    journal={International Journal on Document Analysis and Recognition (IJDAR)},
     keyword={Digital Humanities, Computer Vision, Historical Documents, Visual Analysis},
 }
 ```

@@ -5,7 +5,7 @@ from typing import List, Tuple
 import requests
 from django.contrib.auth.models import User
 
-from app.config.settings import APP_URL, APP_NAME, API_URL, APP_LANG
+from app.config.settings import APP_URL_FROM_API, APP_NAME, API_URL, APP_LANG
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.region_extraction import RegionExtraction
@@ -242,7 +242,7 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
             documents.extend(prepare_document(record, **parameters))
 
         if documents:
-            uids = [d.get("uid", "UID") for d in documents]
+            uids = [str(d.get("uid", "UID")) for d in documents]
             log(
                 f"[prepare_request] Found {len(documents)} documents to process: {', '.join(uids)}",
                 msg_type="info",
@@ -253,7 +253,7 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
                 "experiment_id": str(treatment_id),
                 "documents": documents,
                 # URL to which results and task notifications are sent back
-                "notify_url": f"{APP_URL}/{APP_NAME}/{ensure_legacy_regions(task_name)}/notify",
+                "notify_url": f"{APP_URL_FROM_API}/{APP_NAME}/{ensure_legacy_regions(task_name)}/notify",
                 **parameters,
             }
 

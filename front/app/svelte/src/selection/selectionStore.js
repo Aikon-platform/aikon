@@ -25,7 +25,7 @@ function createTypedSelectionStore(config) {
             ...rawData,
             selected: Object.fromEntries(
                 Object.entries(rawData.selected || {})
-                    .filter(([k]) => k !== "undefined")
+                    .filter(([k, v]) => k !== "undefined" && Object.keys(v || {}).length)
                     .map(([k, v]) => [k, typeof v === "object" && v !== null ? v : {}])
             )
         };
@@ -86,7 +86,12 @@ function createTypedSelectionStore(config) {
     }
 
     const loadSet = (setData) => selection.update(() => {
-        const newSet = setData.selection.id ? setData.selection : {...setData.selection, id: setData.id};
+        const newSet = {
+            ...parseStoredSelection(setData.selection),
+            id: setData.selection?.id ?? setData.id,
+            title: setData.title ?? title,
+            is_public: setData.is_public ?? false
+        };
         store(newSet);
         return newSet;
     });
@@ -96,6 +101,11 @@ function createTypedSelectionStore(config) {
         store(newSet);
         return newSet;
     });
+
+    const classOf = (set, itemId, hint) =>
+        set.selected[hint]?.[itemId]
+            ? hint
+            : Object.keys(set.selected).find(cls => set.selected[cls]?.[itemId]);
 
     return {
         type,
@@ -122,15 +132,19 @@ function createTypedSelectionStore(config) {
         }),
 
         remove: (itemId, itemType) => selection.update(set => {
-            if (!set.selected[itemType]?.[itemId]) return set;
-            const {[itemId]: _, ...rest} = set.selected[itemType];
-            set.selected[itemType] = rest;
+            const cls = classOf(set, itemId, itemType);
+            if (!cls) return set;
+            const {[itemId]: _, ...rest} = set.selected[cls];
+            set.selected[cls] = rest;
             store(set);
             return set;
         }),
 
         removeAll: (itemIds, itemType) => selection.update(set => {
-            itemIds.forEach(id => delete set.selected[itemType]?.[id]);
+            itemIds.forEach(id => {
+                const cls = classOf(set, id, itemType);
+                if (cls) delete set.selected[cls][id];
+            });
             store(set);
             return set;
         }),

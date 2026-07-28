@@ -67,24 +67,14 @@ urlpatterns = [
         name="get-region-extraction-title-regions-by-ref",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/add-region-pair",
+        f"{APP_NAME}/add-region-pair",
         add_region_pair,
         name="add-region-pair",
     ),
     path(
-        f"{APP_NAME}/witness/<int:wid>/regions/add-region-pair",
-        add_region_pair,
-        name="add-witness-region-pair",
-    ),
-    path(
-        f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/no-match",
+        f"{APP_NAME}/no-match",
         no_match,
         name="no-match",
-    ),
-    path(
-        f"{APP_NAME}/witness/<int:wid>/regions/no-match",
-        no_match,
-        name="witness-no-match",
     ),
     path(
         f"{APP_NAME}/similarity/delete-matches",

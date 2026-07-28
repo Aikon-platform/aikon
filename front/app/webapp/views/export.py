@@ -1,11 +1,12 @@
 import json
 import os
+import tempfile
+import zipfile
 from datetime import datetime
-from PIL import Image
+from pathlib import Path
 
-from django.http import JsonResponse
+from django.http import FileResponse, JsonResponse
 from django.shortcuts import get_object_or_404
-from django.db.models import F
 
 from app.config.settings import (
     APP_URL,
@@ -14,22 +15,37 @@ from app.config.settings import (
     ADDITIONAL_MODULES,
 )
 from app.webapp.utils.iiif import gen_iiif_url
-from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
-from app.webapp.models.utils.constants import PDF_ABBR, MAN_ABBR
+from app.webapp.models.digitization import Digitization
 from app.webapp.utils.functions import (
-    zip_files,
     zip_img,
     get_files_in_dir,
     get_files_with_prefix,
     parse_img_ref,
+    safe_int,
 )
-from app.webapp.utils.iiif.annotation import (
-    get_record_annotations,
+from app.webapp.utils.data_transfer import (
+    get_transfer_model,
+    serialize_record,
 )
+from app.webapp.utils.iiif.annotation import get_record_annotations
 from app.webapp.utils.paths import IMG_PATH
+from app.webapp.utils.logger import log
+from app.similarity.utils import export_pairs
+
+
+def get_json_record(request, model_name, rid):
+    """Raw serialization of any transferable record for cross-instance import"""
+    try:
+        model = get_transfer_model(model_name)
+    except (ValueError, LookupError):
+        return JsonResponse(
+            {"error": f"Unknown record type '{model_name}'"}, status=404
+        )
+    record = get_object_or_404(model, pk=rid)
+    return JsonResponse(serialize_record(record), safe=False)
 
 
 def export_region_extraction(request):
@@ -51,292 +67,156 @@ def export_region_extraction(request):
     return zip_img(urls_list)
 
 
-def export_docset(request, dsid):
+def iter_docset_files(doc_set):
     """
-    Prepares a ZIP export for a document set.
+    Yield (arcname, content) for every file of a document set export.
+    content is a Path (written from disk, never loaded in memory) or a str.
     Hierarchy:
     [Document set: Root folder]
     |-- [Witness: one folder each]
     |   |-- metadata.json
     |   |-- [digitizations]
-    |   |   |   |-- [each digit file (images + original format)]
+    |   |   |-- manifest{digit_id}.json
+    |   |   |-- [image files]
     |   |-- [RegionExtraction: one folder each]
-    |   |   |-- [annotations]
-    |   |   |   |-- manifest.json
-    |   |   |   |-- annotations.json
-    |   |   |-- [similarity]
-    |   |   |   |-- metadata.json
+    |   |   |-- annotations.json
+    |   |   |-- coco.json
     |   |   |-- [vectorization]
     |   |   |   |-- metadata.json
     |   |   |   |-- figure.svg [for each vectorized file]
+    |-- similarity/pairs.json [set-level, all digits inside the set]
     """
-    if request.method != "GET":
-        return JsonResponse({"error": "Invalid request method"}, status=400)
-    doc_set = get_object_or_404(DocumentSet, id=dsid)
-    file_contents = []
     for w in doc_set.all_witnesses():
-        # 1: Witness data (JSON)
-        # TODO: If witness is private, check if witness made by user of the same group
-        w_json = get_witness_data(w, json_cascade=False)
-        file_contents.append((f"witness{w.id}/metadata.json", json.dumps(w_json)))
+        # TODO: if witness is private, check if witness made by user of the same group
+        if not w.is_public:
+            continue
+        base = f"witness{w.id}"
+        yield f"{base}/metadata.json", json.dumps(serialize_record(w), default=str)
 
-        # 1.5: Digitizations (pdf/img/json?)
-        w_digits_ids = w.get_digits()
-        for d in w_digits_ids:
-            # Digits always have image files whatever the type
-            img_files = d.get_imgs()
-            for img in img_files:
-                with open(f"{IMG_PATH}/{img}", "rb") as i:
-                    file_contents.append(
-                        (f"witness{w.id}/digitizations/{img}", i.read())
-                    )
-            did = d.id
-            digit_type = d.get_digit_abbr()
-            if digit_type == PDF_ABBR:
-                with open(f"{d.pdf.path}", "rb") as p:
-                    file_contents.append(
-                        (
-                            f"witness{w.id}/digitizations/{d.pdf.path.split('/')[-1]}",
-                            p.read(),
-                        )
-                    )
-            elif digit_type == MAN_ABBR:
-                file_contents.append(
-                    (
-                        f"witness{w.id}/digitizations/manifest.json",
-                        d.get_manifest_json(),
-                    )
-                )
+        for d in w.get_digits():
+            yield f"{base}/digitizations/manifest{d.id}.json", json.dumps(
+                d.get_manifest_json()
+            )
+            for img in d.get_imgs():
+                yield f"{base}/digitizations/{img}", Path(f"{IMG_PATH}/{img}")
 
-        r_list = w.get_region_extractions()
-        for regions in r_list:
-            # 2: Annotation (JSON manifest+metadata)
+        for regions in w.get_region_extractions():
+            r_base = f"{base}/regions{regions.id}"
             if "region_extraction" in ADDITIONAL_MODULES:
-                file_contents.append(
-                    (
-                        f"witness{w.id}/regions{regions.id}/manifest.json",
-                        json.dumps(
-                            regions.get_manifest_json(),
-                            ensure_ascii=False,
-                            indent=2,
-                        ),
-                    )
-                )
                 r_json = get_region_data(w.id, regions.id)
-                file_contents.append(
-                    (
-                        f"witness{w.id}/regions{regions.id}/annotations.json",
-                        json.dumps(r_json),
-                    )
-                )
-                coco_r_json = gen_coco_data(w_json, r_json)
-                file_contents.append(
-                    (
-                        f"witness{w.id}/regions{regions.id}/coco.json",
-                        json.dumps(coco_r_json),
-                    )
-                )
+                yield f"{r_base}/annotations.json", json.dumps(r_json)
+                yield f"{r_base}/coco.json", json.dumps(gen_coco_data(w, r_json))
 
-            # 3: Vectorizations (SVG+JSON)
             if "vectorization" in ADDITIONAL_MODULES:
                 v_json = get_vecto_data(regions.id, include_svg=True)
                 for v in v_json:
-                    file_contents.append(
-                        (
-                            f"witness{w.id}/regions{regions.id}/vectorization/{v['filename']}",
-                            v["svg"],
-                        )
-                    )
-                    del v["svg"]
-                file_contents.append(
-                    (
-                        f"witness{w.id}/regions{regions.id}/vectorization/metadata.json",
-                        json.dumps(v_json),
-                    )
-                )
+                    yield f"{r_base}/vectorization/{v['filename']}", v.pop("svg") or ""
+                yield f"{r_base}/vectorization/metadata.json", json.dumps(v_json)
 
-            # 4: Similarity (JSON)
-            if "similarity" in ADDITIONAL_MODULES:
-                s_json = get_similarity_data(w, regions.id)
-                file_contents.append(
-                    (
-                        f"witness{w.id}/regions{regions.id}/similarity/metadata.json",
-                        json.dumps(s_json),
-                    )
-                )
+    if "similarity" in ADDITIONAL_MODULES:
+        yield "similarity/pairs.json", json.dumps(
+            export_pairs(doc_set.get_digit_ids())["pairs"]
+        )
+
+
+def export_docset(request, dsid):
+    """Streaming ZIP export of a document set"""
+    if request.method != "GET":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+    doc_set = get_object_or_404(DocumentSet, id=dsid)
+
+    tmp = tempfile.TemporaryFile()
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+        for arcname, content in iter_docset_files(doc_set):
+            try:
+                if isinstance(content, Path):
+                    z.write(content, arcname)
+                else:
+                    z.writestr(arcname, content)
+            except (FileNotFoundError, OSError) as e:
+                log(f"[export_docset] Could not add {arcname} to archive", e)
+    tmp.seek(0)
 
     timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
-    archive_name = f"export_docset{dsid}_{timestamp}"
-    return zip_files(file_contents, archive_name)
+    return FileResponse(
+        tmp,
+        as_attachment=True,
+        filename=f"export_docset{dsid}_{timestamp}.zip",
+        content_type="application/zip",
+    )
 
 
-def gen_coco_data(witness_data, regions_data):
+def gen_coco_data(witness, regions_data):
     """
-    Given resulting dicts from RegionExtraction and Witness data, shapes the RegionExtraction metadata as a COCO-formatted  object.
+    Given a Witness and its RegionExtraction data, shapes the extracted regions
+    as a COCO-formatted object (image dimensions read from digitization json)
     """
-    coco = {"images": [], "annotations": [], "categories": []}
+    images = [
+        {
+            "id": os.path.splitext(i["name"])[0],
+            "file_name": i["name"],
+            "width": i["w"],
+            "height": i["h"],
+        }
+        for d in witness.get_digits()
+        for i in d.get_imgs(with_meta=True)
+    ]
 
-    for (did, manifest_url) in witness_data["digitizations"].items():
-        w = get_object_or_404(Witness, id=witness_data["id"])
-        imgs = w.get_imgs()
-        for path in imgs:
-            img = Image.open(f"{IMG_PATH}/{path}")
-            try:
-                h, w = int(img["height"]), int(img["width"])
-            except TypeError:
-                h, w = img.height, img.width
-            image_entry = {
-                "id": os.path.splitext(path)[0],
-                "file_name": path,
-                "width": w,
-                "height": h,
-            }
-            coco["images"].append(image_entry)
-
-    # Not exacttly sure what to do with categories
+    # Not exactly sure what to do with categories
     category_id = 1
-    coco["categories"].append({"id": category_id, "name": "Extracted region"})
+    annotations = [
+        {
+            "id": crop["id"],
+            "image_id": crop["img"],
+            "category_id": category_id,
+            "bbox": list(map(int, crop["xywh"])),
+            "area": int(crop["xywh"][2]) * int(crop["xywh"][3]),
+            "iscrowd": 0,
+        }
+        for crop_dict in (regions_data.get("extracted_crops") or {}).values()
+        for crop in crop_dict.values()
+    ]
 
-    crops = regions_data.get("extracted_crops", {})
-    for canvas_id, crop_dict in crops.items():
-        for crop_key, crop_data in crop_dict.items():
-            xywh = list(map(int, crop_data["xywh"]))
-            bbox = xywh
-            area = bbox[2] * bbox[3]
-            annotation = {
-                "id": crop_data["id"],
-                "image_id": crop_data["img"],
-                "category_id": category_id,
-                "bbox": bbox,
-                "area": area,
-                "iscrowd": 0,
-            }
-            coco["annotations"].append(annotation)
-
-    return coco
+    return {
+        "images": images,
+        "annotations": annotations,
+        "categories": [{"id": category_id, "name": "Extracted region"}],
+    }
 
 
 def get_region_data(wid, rid):
     result = {}
     witness = get_object_or_404(Witness, id=wid)
     if witness.is_public:
-        annos = get_record_annotations(
-            record=get_object_or_404(RegionExtraction, id=rid), as_json=True
-        )
+        regions = get_object_or_404(RegionExtraction, id=rid)
         result = {
-            "manifest": get_object_or_404(RegionExtraction, pk=rid).get_manifest_url(),
-            "extracted_crops": annos,
+            "manifest": regions.get_manifest_url(),
+            "extracted_crops": get_record_annotations(record=regions, as_json=True),
         }
     return result
 
 
-def get_similarity_data(witness: Witness, region_id: str, user_id: int = None) -> dict:
-    from app.similarity.utils import (
-        get_best_pairs,
-        get_region_pairs_with,
-        get_compared_regions_ids,
-        get_regions_q_imgs,
+def get_json_digit_regions(request, wid, did):
+    """All bbox annotations on a digitization's canvases, with or without RegionExtraction"""
+    witness = get_object_or_404(Witness, id=wid)
+    if not witness.is_public:
+        return JsonResponse({})
+    digit = get_object_or_404(Digitization, id=did, witness=witness)
+    return JsonResponse(
+        {
+            "manifest": digit.get_manifest_url(),
+            "extracted_crops": get_record_annotations(digit, as_json=True),
+        }
     )
 
-    q_imgs_set = set()
-    keys = [
-        "score",
-        "img1",
-        "img2",
-        "regions1",
-        "regions2",
-        "category",
-        "category_x",
-        "manual",
-    ]
 
-    q_imgs_set.update(get_regions_q_imgs(region_id, witness.id))
-    q_imgs = sorted(list(q_imgs_set))
-
-    regions_ids = get_compared_regions_ids(region_id)
-
-    if not regions_ids:
-        return {}
-
-    result = {}
-    for q_img in q_imgs:
-        pairs = get_region_pairs_with(
-            q_img,
-            query_regions_ids=[region_id],
-            target_regions_ids=regions_ids,
-        )
-
-        best_pairs = get_best_pairs(
-            q_img,
-            pairs,
-            excluded_categories=set(),
-            user_id=user_id,
-            topk=None,
-            export=True,
-        )
-
-        dict_pairs = [dict(zip(keys, p)) for p in best_pairs]
-        result[q_img] = dict_pairs
-
-    return result
-
-
-def get_witness_data(witness, json_cascade=True):
-    wid = witness.id
-    w_json_raw = witness.json
-    fields = {
-        "id",
-        "img",
-        "iiif",
-        "user",
-        "user_id",
-        "title",
-        "metadata",
-        "is_public",
-        "updated_at",
-    }
-    w_json = {k: v for k, v in w_json_raw.items() if k in fields}
-
-    # Digitizations data (as manifests)
-    w_digits_ids = witness.get_digits()
-    w_digits_manifs = {
-        "digitizations": dict(
-            Digitization.objects.filter(id__in=w_digits_ids)
-            .annotate(manifest_json=F("json__url"))
-            .values_list("id", "manifest_json")
-        )
-    }
-
-    w_regions = witness.get_region_extractions()
-    w_reg_processes = {}
-    for r in w_regions:
-        # TODO change to use get_json()
-        reg_raw_json = r.to_json()
-        del reg_raw_json["class"]
-        del reg_raw_json["type"]
-        w_reg_processes[r.id] = reg_raw_json
-        w_reg_processes[r.id]["treatments"] = {}
-
-        if json_cascade:
-            # 3 : RegionExtraction/annotations data (endpoint URL)
-            if "region_extraction" in ADDITIONAL_MODULES:
-                w_reg_processes[r.id]["treatments"][
-                    "extracted_regions"
-                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/extracted-regions"
-
-            # 4 : Similarity data (endpoint URL)
-            if "similarity" in ADDITIONAL_MODULES:
-                w_reg_processes[r.id]["treatments"][
-                    "similarities"
-                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/similarities"
-
-            # 5 : Vectorizations (endpoint URL)
-            if "vectorization" in ADDITIONAL_MODULES:
-                w_reg_processes[r.id]["treatments"][
-                    "vectorizations"
-                ] = f"{APP_URL}/{APP_NAME}/witness/{wid}/regions/{r.id}/json/vectorized-images"
-
-    return w_json | w_digits_manifs | {"regions_extraction": w_reg_processes}
+def get_json_docset_simil(request, dsid):
+    if request.method != "GET":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+    doc_set = get_object_or_404(DocumentSet, id=dsid)
+    after_id = safe_int(request.GET.get("after")) or 0
+    limit = min(safe_int(request.GET.get("limit")) or 1000, 5000)
+    return JsonResponse(export_pairs(doc_set.get_digit_ids(), after_id, limit))
 
 
 def create_json_vecto_element(svg_filename, include_svg, subfolder_name=None):
@@ -379,66 +259,47 @@ def get_vecto_data(rid, include_svg=True):
     return v_imgs
 
 
-### JSON ENCLOSINGS ###
-
-
+### JSON ENCLOSING ###
 def get_json_regions(request, wid, rid):
     if request.method == "GET":
-        result = get_region_data(wid, rid)
-        return JsonResponse(result, safe=False)
-
-
-def get_json_simil(request, wid, rid):
-    if request.method == "GET":
-        witness = get_object_or_404(Witness, id=wid)
-        if witness.is_public:
-            # Partly taken from 'get_similar_images' in 'similarity/views.py'
-            try:
-                result = get_similarity_data(witness, rid, request.user.id)
-                return JsonResponse(result, safe=False)
-            except (json.JSONDecodeError, ValueError) as e:
-                return JsonResponse({"error": f"Invalid data: {str(e)}"}, status=400)
-            except Exception as e:
-                return JsonResponse(
-                    {"error": f"An error occurred: {str(e)}"}, status=500
-                )
-        else:
-            return JsonResponse({})
+        return JsonResponse(get_region_data(wid, rid), safe=False)
+    return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
 def get_json_witness(request, wid):
     if request.method == "GET":
         witness = get_object_or_404(Witness, id=wid)
-        if witness.is_public:
-            try:
-                result = get_witness_data(witness, json_cascade=True)
-                return JsonResponse(result, safe=False)
-            except (json.JSONDecodeError, ValueError) as e:
-                return JsonResponse({"error": f"Invalid data: {str(e)}"}, status=400)
-            except Exception as e:
-                return JsonResponse(
-                    {"error": f"An error occurred: {str(e)}"}, status=500
-                )
-        else:
+        if not witness.is_public:
             return JsonResponse({})
+        try:
+            return JsonResponse(serialize_record(witness), safe=False)
+        except Exception as e:
+            return JsonResponse({"error": f"An error occurred: {str(e)}"}, status=500)
+    return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
 def get_json_vecto(request, wid, rid):
     if request.method == "GET":
         witness = get_object_or_404(Witness, id=wid)
         if witness.is_public:
-            result = get_vecto_data(rid, include_svg=True)
-            return JsonResponse(result, safe=False)
-        else:
-            return JsonResponse({})
+            return JsonResponse(get_vecto_data(rid, include_svg=True), safe=False)
+    return JsonResponse({"error": "Invalid request method"}, status=400)
 
 
 def get_json_document_set(request, dsid):
     if request.method == "GET":
         doc_set = get_object_or_404(DocumentSet, id=dsid)
         ds_data = {
-            w.id: f"{APP_URL}/{APP_NAME}/witness/{w.id}/json"
-            for w in doc_set.all_witnesses()
-            if w.is_public
+            "title": doc_set.title,
+            **{
+                w.id: f"{APP_URL}/{APP_NAME}/witness/{w.id}/json"
+                for w in doc_set.all_witnesses()
+                if w.is_public
+            },
         }
+        if "similarity" in ADDITIONAL_MODULES and ds_data:
+            ds_data[
+                "similarity"
+            ] = f"{APP_URL}/{APP_NAME}/document-set/{dsid}/json/similarity"
         return JsonResponse(ds_data, safe=False)
+    return JsonResponse({"error": "Invalid request method"}, status=400)

@@ -14,8 +14,9 @@ DEBUG = ENV.bool("DEBUG", default=True)
 
 os.environ.setdefault("DJANGO_SETTINGS_MODULE", "app.config.settings")
 
-REDIS_HOST = os.environ.get("REDIS_HOST", "localhost")
-REDIS_PORT = os.environ.get("REDIS_PORT", "6379")
+REDIS_HOST = ENV.str("REDIS_HOST", default="localhost")
+REDIS_PORT = ENV.str("REDIS_PORT", default="6379")
+REDIS_URL = f"redis://{REDIS_HOST}:{REDIS_PORT}/{ENV.str('REDIS_DB_INDEX', default='0')}"
 
 ADDITIONAL_MODULES = ENV.list("INSTALLED_APPS", default=[])
 
@@ -25,8 +26,8 @@ for module in ADDITIONAL_MODULES:
 
 celery_app = Celery(
     "config",
-    broker=f"redis://{REDIS_HOST}:{REDIS_PORT}/0",
-    backend=f"redis://{REDIS_HOST}:{REDIS_PORT}/0",
+    broker=REDIS_URL,
+    backend=REDIS_URL,
     imports=imported_tasks,
 )
 
@@ -38,6 +39,7 @@ celery_app.conf.update(
     CELERY_ACCEPT_CONTENT=["json", "pickle"],
     CELERY_TASK_SERIALIZER="pickle",
     CELERY_RESULT_SERIALIZER="pickle",
+    CELERY_RESULT_EXPIRES=86400,
 )
 
 # Discover and register tasks automatically in Django applications

@@ -1,5 +1,15 @@
 import * as d3 from "d3";
 import { writable, get } from "svelte/store";
+import {i18n} from "../../utils.js";
+
+
+const menuLabels = {
+    rename:      { en: "Rename", fr: "Renommer" },
+    deleteNode:  { en: "Delete node", fr: "Supprimer le nœud" },
+    editEdge:    { en: "Qualify connection", fr: "Qualifier le lien" },
+    deleteEdge:  { en: "Delete connection", fr: "Supprimer le lien" },
+    reverseEdge: { en: "Reverse direction", fr: "Inverser la direction" },
+};
 
 export function createStemmaInteraction(stemmaStore) {
     const { updateNodePosition } = stemmaStore;
@@ -14,7 +24,8 @@ export function createStemmaInteraction(stemmaStore) {
         element = el;
         zoomBehavior = d3.zoom()
             .scaleExtent([0.2, 5])
-            .filter(e => !drag && (onZoomFilter ? onZoomFilter(e) : e.button === 0))
+            .filter(e => !drag && !get(drawingEdge) &&
+                (onZoomFilter ? onZoomFilter(e) : (e.type === "wheel" || !(e.shiftKey || e.metaKey))))
             .on("zoom", e => transform.set(e.transform));
         d3.select(el).call(zoomBehavior);
     }
@@ -68,14 +79,101 @@ export function createStemmaInteraction(stemmaStore) {
         d3.select(element).call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
     }
 
+    const drawingEdge = writable(null);
+
+    function enableEdgeDraw({ getNodeId, documents }) {
+        edgeDraw = { getNodeId, documents };
+    }
+    let edgeDraw = null;
+
+    function onPointerDown(e, node) {
+        if (e.button !== 0) return;
+        if (edgeDraw && (e.shiftKey || e.metaKey)) {
+            const { x, y } = toLocal(e);
+            drawingEdge.set({ sourceId: edgeDraw.getNodeId(node), x, y });
+            element.setPointerCapture(e.pointerId);
+            e.stopPropagation();
+        } else if (startDrag(e, node)) {
+            e.stopPropagation();
+            element.setPointerCapture(e.pointerId);
+        }
+    }
+
+    function onPointerMove(e) {
+        const cur = get(drawingEdge);
+        if (cur) {
+            const { x, y } = toLocal(e);
+            drawingEdge.set({ ...cur, x, y });
+            return;
+        }
+        moveDrag(e);
+    }
+
+    function onPointerUp(e) {
+        const cur = get(drawingEdge);
+        if (cur) {
+            const targetId = nodeIdAtClient(e.clientX, e.clientY);
+            if (targetId != null && targetId !== cur.sourceId) {
+                const src = edgeDraw.documents.find(d => d.id === cur.sourceId);
+                const tgt = edgeDraw.documents.find(d => d.id === targetId);
+                if (src && tgt) stemmaStore.addEdge(cur.sourceId, targetId, src, tgt);
+            }
+            drawingEdge.set(null);
+        }
+        endDrag();
+        element.releasePointerCapture?.(e.pointerId);
+    }
+
+    function nodeIdAtClient(cx, cy) {
+        const el = document.elementFromPoint(cx, cy);
+        const g = el?.closest("[data-node-id]");
+        return g ? Number(g.dataset.nodeId) : null;
+    }
+
     return {
         transform,
         dragOverride,
+        drawingEdge,
         attach,
+        enableEdgeDraw,
+        onPointerDown,
+        onPointerMove,
+        onPointerUp,
         startDrag,
         moveDrag,
         endDrag,
         positionCenter,
+        toLocal,
         isDragging: () => !!drag
     };
+}
+
+export function createStemmaMenu(stemmaStore, { onRename, onEditEdge }) {
+    const { removeNode, removeEdge, reverseEdge } = stemmaStore;
+    const menu = writable({ open: false, x: 0, y: 0, items: [] });
+
+    const open = (e, items) => {
+        e.preventDefault();
+        menu.set({ open: true, x: e.clientX, y: e.clientY, items });
+    };
+
+    function openNodeMenu(e, node, extraActions = [], addDefaultActions = true) {
+        open(e, [
+            ...extraActions,
+            ...(addDefaultActions ? [
+                { label: i18n("rename", menuLabels), icon: "pen", action: () => onRename(node) },
+                { label: i18n("deleteNode", menuLabels), icon: "trash", danger: true, action: () => removeNode(node.id ?? node.docId) },
+            ] : []),
+        ]);
+    }
+
+    function openEdgeMenu(e, edge) {
+        open(e, [
+            { label: i18n("editEdge", menuLabels), icon: "pen", action: () => onEditEdge(edge) },
+            { label: i18n("reverseEdge", menuLabels), icon: "arrows-h", action: () => reverseEdge(edge.source.id ?? edge.source.docId, edge.target.id ?? edge.target.docId) },
+            { label: i18n("deleteEdge", menuLabels), icon: "trash", danger: true, action: () => removeEdge(edge.source.id ?? edge.source.docId, edge.target.id ?? edge.target.docId) },
+        ]);
+    }
+
+    return { menu, openNodeMenu, openEdgeMenu };
 }

@@ -396,6 +396,10 @@ td.is-fullwidth {
     background-color: var(--contrasted) !important;
 }
 
+.is-unclickable {
+    cursor: default !important;
+}
+
 .menu-list a:hover {
     background-color: var(--contrasted);
 }
@@ -403,6 +407,10 @@ td.is-fullwidth {
 .is-256x256 {
     width: 256px;
     height: 256px;
+}
+
+.has-text-main {
+    color: var(--bulma-text) !important;
 }
 
 .hoverable {
@@ -474,4 +482,23 @@ td.is-fullwidth {
     display: grid;
     grid-template-rows: 100%;
     grid-template-columns: 1fr 5.7fr; /** make items seem horizontally centered with .ctrl-base .ctrl-block */
+}
+
+.vertical-addons {
+    flex-direction: column;
+    gap: 0;
+}
+
+.tags.vertical-addons .tag {
+    border-radius: 0;
+}
+
+.tags.vertical-addons .tag:first-child {
+    border-start-start-radius: var(--bulma-radius);
+    border-start-end-radius: var(--bulma-radius);
+}
+
+.tags.vertical-addons .tag:last-child {
+    border-end-end-radius: var(--bulma-radius);
+    border-end-start-radius: var(--bulma-radius);
 }

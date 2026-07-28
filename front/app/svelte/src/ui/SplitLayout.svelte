@@ -184,6 +184,7 @@
         flex-direction: column;
         flex: 1;
         min-height: 0;
+        overflow-x: hidden;
     }
     .scroll-area {
         flex: 1;

@@ -1,0 +1,27 @@
+# dev mode: the front (and api) run on the host, every service is reachable from localhost
+x-extra-hosts: &extra-hosts
+  extra_hosts:
+    - "host.docker.internal:host-gateway"
+
+
+services:
+  db:
+    ports:
+      - "${DB_PORT}:5432"
+  redis:
+    ports:
+      - "${REDIS_PORT}:6379"
+  mongo:
+    ports:
+      - "${MONGODB_PORT}:27017"
+  cantaloupe:
+    ports:
+      - "${CANTALOUPE_PORT}:${CANTALOUPE_PORT}"
+  aiiinotate:
+    ports:
+      - "${AIIINOTATE_PORT}:${AIIINOTATE_PORT}"
+    <<: *extra-hosts
+  mirador:
+    ports:
+      - "${MIRADOR_PORT}:${MIRADOR_PORT}"
+    <<: *extra-hosts

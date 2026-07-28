@@ -23,6 +23,6 @@
     "@mui/system": "^7.x"
   },
   "devDependencies": {
-    "aiiinotate": ">=0.10.3"
+    "aiiinotate": ">=0.11.0"
   }
 }

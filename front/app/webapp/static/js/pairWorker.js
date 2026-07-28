@@ -5,7 +5,7 @@
 
 const IMG_REGEX = /^(.+)_(\d+)_([\d,]+)\.jpg$/;
 // const weights = { 1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125 };
-const weights = { 1: 0, 2: 0.25, 3: 0.125, 4: -1.0, 5: 0.125 };
+const weights = { 0: 1, 1: 1, 2: 1.5, 3: 1.25, 4: -1.0, 5: 1.25 };
 const getDigitId = img => parseInt(img.match(/_(?:man|img|pdf)(\d+)/)?.[1]);
 
 let state = null;
@@ -68,6 +68,9 @@ function createState() {
         imgStats: createStatsObject(),
         docPStats: createStatsObject(),
         exactPairs: [],
+        manualPairs: [],
+        realScoreSum: 0,
+        realScoreCount: 0,
         maxWeightedScore: -Infinity, // TODO check if you can do better
     };
 }
@@ -84,8 +87,8 @@ function processBatch(batch) {
         categories[cat] = (categories[cat] || 0) + 1;
 
         const w = weights[cat] || 0;
-        const baseScore = p.score ?? w;
-        const weightedScore = Math.max(0.01, baseScore + baseScore * w);
+        const hasScore = p.score != null;
+        const weightedScore = hasScore ? Math.max(0.01, p.score * w) : 0;
 
         const digit1 = p.digit_1 ?? getDigitId(p.img_1) ?? p.regions_id_1;
         const digit2 = p.digit_2 ?? getDigitId(p.img_2) ?? p.regions_id_2;
@@ -105,11 +108,19 @@ function processBatch(batch) {
             category: cat,
             similarity_type: p.similarity_type,
             rank_1: 0,
-            rank_2: 0
+            rank_2: 0,
+            doc_rank_1: 0,
+            doc_rank_2: 0
         };
 
         pairs.push(processedPair);
-        if (weightedScore > state.maxWeightedScore) state.maxWeightedScore = weightedScore;
+        if (hasScore) {
+            state.realScoreSum += weightedScore; // could use p.score
+            state.realScoreCount++;
+            if (weightedScore > state.maxWeightedScore) state.maxWeightedScore = weightedScore;
+        } else {
+            state.manualPairs.push({ pair: processedPair, w });
+        }
         if (cat === 1) state.exactPairs.push(processedPair);
         updateStats(pStats, null, weightedScore);
 
@@ -132,15 +143,24 @@ function processBatch(batch) {
 function finalize() {
     const { pairs, imageMap, index, categories, pStats, docStats, imgStats, docPStats } = state;
 
+    const meanReal = state.realScoreCount ? state.realScoreSum / state.realScoreCount : 0;
+    for (const { pair, w } of state.manualPairs) pair.weightedScore = meanReal * w;
+
     const exactScore = state.maxWeightedScore * 1.25;
     for (const p of state.exactPairs) p.weightedScore = exactScore;
-    // for (const p of state.exactPairs) p.weightedScore = pStats.score.max * 1.25;
+
     pairs.sort((a, b) => b.weightedScore - a.weightedScore);
+    const rankGroups = new Map();
 
     for (const [imgId, imgPairs] of index.byImage) {
         imgPairs.sort((a, b) => b.weightedScore - a.weightedScore);
+
         for (let k = 0; k < imgPairs.length; k++) {
             const pair = imgPairs[k];
+
+            const other = pair.id_1 === imgId ? pair.digit_2 : pair.digit_1;
+            pushToMap(rankGroups, `${imgId}|${other}`, pair);
+
             const isSelf = pair.digit_1 === pair.digit_2;
             const isExact = pair.category === 1
             const rank = isSelf ? Infinity : (isExact ? 1 : k + 1);
@@ -148,6 +168,21 @@ function finalize() {
                 pair.rank_1 = rank;
             } else {
                 pair.rank_2 = rank;
+            }
+        }
+    }
+
+    // ranking of the pair relative to the document pair (digit_1, digit_2)
+    for (const [key, group] of rankGroups) {
+        const imgId = key.slice(0, key.lastIndexOf('|'));
+        group.sort((a, b) => b.weightedScore - a.weightedScore);
+        for (let k = 0; k < group.length; k++) {
+            const pair = group[k];
+            const rank = pair.digit_1 === pair.digit_2 ? Infinity : (pair.category === 1 ? 1 : k + 1);
+            if (pair.id_1 === imgId) {
+                pair.doc_rank_1 = rank;
+            } else {
+                pair.doc_rank_2 = rank;
             }
         }
     }

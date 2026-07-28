@@ -397,7 +397,7 @@ class Witness(AbstractSearchableModel):
                 return img
         return None
 
-    def get_imgs(self, is_abs=False, temp=False, check_in_dir=True):
+    def get_imgs(self, is_abs=False, temp=False, check_in_dir=False):
         imgs = []
         for digit in self.get_digits():
             imgs.extend(
@@ -512,3 +512,6 @@ class Witness(AbstractSearchableModel):
     def save(self, *args, **kwargs):
         self.slug = slugify(self.__str__())
         super().save(*args, **kwargs)
+
+
+# TODO add a pre_delete method to remove witnesses from document set (+do the same for series and work)

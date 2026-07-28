@@ -13,6 +13,7 @@ from app.webapp.utils.paths import IMG_PATH
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.utils.logger import console, log
+from app.webapp.utils.functions import maybe_dockerize
 
 # NOTE img name = "{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_{canvas_nb}.jpg"
 
@@ -103,9 +104,10 @@ def gen_manifest_json(digit: Digitization):
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
+    url_base = maybe_dockerize(digit.get_manifest_url(only_base=True))
     try:
         fac = ManifestFactory(
-            mdbase=digit.get_manifest_url(only_base=True),
+            mdbase=url_base,
             imgbase=f"{CANTALOUPE_APP_URL}/iiif/2/",
         )
     except Exception as e:

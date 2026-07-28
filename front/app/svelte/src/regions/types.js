@@ -44,8 +44,7 @@ export class RegionItem {
         this.canvas = data.canvas;
         this.ref = data.ref;
         this.type = data.type ?? regionsType;
-        this.class = data.type ?? regionsType;
-
+        this.class = regionsType;
         this._parsed = null;
     }
 
@@ -92,6 +91,12 @@ export class RegionItem {
     get canvasDigits() { return this.parsed.canvasDigits; }
     get imgRoot() { return this.parsed.imgRoot; }
     get coord() { return this.parsed.coord ?? this.xywh; }
+
+    get copyId() {
+        const xywh = Array.isArray(this.coord) ? this.coord.join(",") : this.coord;
+        const baseRef = this.imgRoot || this.ref || "";
+        return baseRef.replace(".jpg", xywh ? `_${xywh}` : "");
+    }
 
     canvasStr(canvasNb = this.canvasNb, digits = this.canvasDigits) {
         return String(canvasNb).padStart(digits, "0");
@@ -144,6 +149,6 @@ export class RegionItem {
     }
 
     urlForMirador(canvasNb = this.canvasNb){
-        return `${getMiradorUrl()}/index.html?iiif-content=${this.manifest()}&canvas=${canvasNb}`;
+        return `${getMiradorUrl()}/index.html?iiif-content=${this.manifest()}&canvas=${canvasNb}&editMode=true&defaultForm=note`;
     }
 }
