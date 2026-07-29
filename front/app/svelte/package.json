@@ -21,6 +21,7 @@
     "@sveltejs/vite-plugin-svelte": "^2.4.2",
     "choices.js": "^11.1.0",
     "d3": "^7.9.0",
+    "dom2svg": "github:Segolene-Albouy/dom2svg",
     "globals": "^17.3.0",
     "html-to-image": "^1.11.13",
     "nouislider": "^15.8.1",
