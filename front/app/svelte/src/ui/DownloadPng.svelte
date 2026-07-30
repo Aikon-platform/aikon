@@ -1,5 +1,5 @@
 <script>
-    import {toPng, toSvg} from "html-to-image";
+    import {toPng} from "html-to-image";
     import {showMessage, withLoading} from "../utils.js";
     import {appLang} from "../constants.js";
 
@@ -17,25 +17,43 @@
         filter: node => !node.classList?.contains?.("matrix-tooltip") && !node.classList?.contains?.("scatter-tooltip"),
     });
 
+    async function downloadSvg(el) {
+        const {domToSvg} = await import("dom2svg");
+        const res = await domToSvg(el, {
+            background: getComputedStyle(document.body).backgroundColor,
+            padding: 8,
+            compat: "inkscape",
+        });
+        res.download(`${filename}.svg`);
+    }
+
+    async function downloadPng(el){
+        const dataUrl = await toPng(el, {pixelRatio, ...options(el)});
+
+        const link = document.createElement("a");
+        link.download = `${filename}.png`;
+        link.href = dataUrl;
+        link.click();
+    }
+
     async function download() {
         const el = document.getElementById(targetId);
         if (!el) return;
 
         const asSvg = svgExport && await showMessage(
             appLang === "en" ? "Export as SVG? (Cancel for PNG)" : "Exporter en SVG ? (Annuler pour PNG)",
-            appLang === "en" ? "Export format" : "Format d'export", true);
+            appLang === "en" ? "Export format" : "Format d'export", true
+        );
 
         await withLoading(async () => {
             try {
-                const dataUrl = asSvg
-                    ? await toSvg(el, options(el))
-                    : await toPng(el, {pixelRatio, ...options(el)});
-
-                const link = document.createElement("a");
-                link.download = asSvg ? `${filename}.svg` : `${filename}.png`;
-                link.href = dataUrl;
-                link.click();
+                if (asSvg) {
+                    await downloadSvg(el);
+                } else {
+                    await downloadPng(el);
+                }
             } catch (error) {
+                console.error(error);
                 await showMessage(`Error generating export: ${error.message || error}`, appLang === "en" ? "Error" : "Erreur");
             }
         });
