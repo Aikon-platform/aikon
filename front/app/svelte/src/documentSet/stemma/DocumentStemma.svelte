@@ -154,7 +154,7 @@
     </svg>
 
     <button class="tag reset-btn" on:click={() => clearGraph()} title={i18n("reset", t)}>
-        <span class="icon is-small p-0"><i class="fas fa-undo"></i></span>
+        <span class="icon is-small p-0"><i class="fas fa-undo"/></span>
     </button>
 </div>
 
