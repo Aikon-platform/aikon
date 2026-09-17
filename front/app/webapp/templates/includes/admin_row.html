@@ -11,7 +11,7 @@
         {% endif %}
         <p class="is-size-7">{{ entity_desc }}</p>
         <div class="buttons is-center">
-            {% if entity != "document_set" %}
+            {% if entity != "document_set" and entity != "region_set" %}
             <a href="{{ add_url }}" class="button is-ghost">
                 <span class="icon-text">
                     <span class="icon"><i class="fas fa-plus-circle"></i></span>

@@ -49,6 +49,7 @@ class TreatmentForm(forms.ModelForm):
         fields = [
             "task_type",
             "document_set",
+            "region_set",
             "notify_email",
         ]
 
@@ -59,11 +60,18 @@ class TreatmentForm(forms.ModelForm):
                     "data-placeholder": SEARCH_MSG,
                 },
             ),
+            "region_set": autocomplete.ListSelect2(
+                url="webapp:region-set-autocomplete",
+                attrs={
+                    "data-placeholder": SEARCH_MSG,
+                },
+            ),
         }
 
     def __init__(self, *args, **kwargs):
         self._user = kwargs.pop("user", None)
         self._document_set = kwargs.pop("document_set", None)
+        self._region_set = kwargs.pop("region_set", None)
         self._task_type = kwargs.pop("task_type", None)
         self._notify_email = kwargs.pop("notify_email", None)
 
@@ -94,6 +102,8 @@ class TreatmentForm(forms.ModelForm):
     def _prefill(self):
         if self._document_set:
             self.initial["document_set"] = self._document_set
+        if self._region_set:
+            self.initial["region_set"] = self._region_set
         if self._task_type:
             self.initial["task_type"] = self._task_type
         if self._notify_email:
@@ -141,8 +151,11 @@ class TreatmentForm(forms.ModelForm):
         if not task_type:
             self.add_error("task_type", "A task type is required.")
 
-        if not cleaned_data.get("document_set") and task_type != "import":
-            self.add_error("document_set", "A document set is required.")
+        if not cleaned_data.get("document_set") or cleaned_data.get("region_set") and task_type != "import":
+            self.add_error("set", "A set is required.")
+
+        if cleaned_data.get("document_set") and cleaned_data.get("region_set"):
+            self.add_error("set", "You can select either a document set or a region set.")
 
         subform = self.subforms.get(task_type)
         # Only validate selected subtask form

@@ -188,12 +188,13 @@ def create_region_set_from_ids(
     return region_set, is_new
 
 def create_treatment(
-    records: List[Witness | Digitization | RegionExtraction],
+    records, # TODO voir formats List[Witness | Digitization | RegionExtraction] or List[region_ids],
     task_name,
     user: User = None,
 ) -> int:
     user = get_user(user)
     doc_set, is_new = create_doc_set(records, user)
+    region_set, is_new = create_region_set(records, user)
 
     try:
         from app.webapp.models.treatment import Treatment
@@ -202,11 +203,12 @@ def create_treatment(
             requested_by=user,
             task_type=task_name,
             document_set=doc_set,
+            region_set=region_set,
         )
         treatment.save()
     except Exception as e:
         log(
-            f"[create_treatment] Failed to create Treatment for document set #{doc_set.id}",
+            f"[create_treatment] Failed to create Treatment for set #{doc_set.id}{region_set.id}",
             e,
         )
         raise e
