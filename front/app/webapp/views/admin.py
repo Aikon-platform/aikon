@@ -8,22 +8,27 @@ from django.http import Http404
 from django.urls import reverse
 
 from app.similarity.forms import AVAILABLE_SIMILARITY_ALGORITHMS
+
 from app.webapp.models.document_set import DocumentSet
+from app.webapp.models.region_set import RegionSet
 from app.webapp.models.series import Series
 from app.webapp.models.work import Work
+from app.webapp.models.region_extraction import RegionExtraction
+from app.webapp.models.digitization import Digitization
+from app.webapp.models.treatment import Treatment
+from app.webapp.models.witness import Witness
+
 from app.webapp.search_filters import (
     WitnessFilter,
     TreatmentFilter,
     WorkFilter,
     SeriesFilter,
     DocumentSetFilter,
+    RegionSetFilter,
 )
 from app.webapp.forms import *
 from app.webapp.forms.treatment import TreatmentForm
-from app.webapp.models.region_extraction import RegionExtraction
-from app.webapp.models.digitization import Digitization
-from app.webapp.models.treatment import Treatment
-from app.webapp.models.witness import Witness
+
 from app.config.settings import APP_LANG
 
 
@@ -286,6 +291,7 @@ class TreatmentCreate(AbstractRecordCreate):
             self.request.user if self.request.user.is_authenticated else None
         )
         kwargs["document_set"] = self.request.GET.get("document_set")
+        kwargs["region_set"] = self.request.GET.get("region_set")
         kwargs["task_type"] = self.request.GET.get("task_type")
         kwargs["notify_email"] = self.request.GET.get("notify_email")
 
@@ -437,5 +443,19 @@ class DocumentSetView(AbstractRecordView):
     #
     #     return context
 
+class RegionSetList(AbstractRecordList):
+    model = RegionSet
 
-# TODO RegionExtractionSetList
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        context["search_fields"] = RegionSetFilter().to_form_fields()
+
+        return context
+
+class RegionSetView(AbstractRecordView):
+    # TODO RegionSet
+    model = RegionSet
+    template_name = "webapp/region_set.html"
+    fields = []
+
+

@@ -29,6 +29,8 @@ MODEL_NAMES = {
     "Group": {"en": "group", "fr": "groupe"},
     "Treatment": {"en": "treatment", "fr": "traitement"},
     "DocumentSet": {"en": "document set", "fr": "sélection de documents"},
+    "RegionSet": {"en": "region set", "fr": "sélection de regions"},
+
 }
 
 MAN = MODEL_NAMES["Manifest"][APP_LANG]
@@ -55,6 +57,7 @@ GRP = MODEL_NAMES["Group"][APP_LANG]
 TRMT = MODEL_NAMES["Treatment"][APP_LANG]
 SET = MODEL_NAMES["DocumentSet"][APP_LANG]
 PRFL = MODEL_NAMES["UserProfile"][APP_LANG]
+RSET = MODEL_NAMES["RegionSet"][APP_LANG]
 
 ENTITY_NAMES = {
     "MAN": MAN,
@@ -80,6 +83,7 @@ ENTITY_NAMES = {
     "GRP": GRP,
     "TRMT": TRMT,
     "SET": SET,
+    "RSET": RSET,
 }
 
 MODEL_DESC = {
@@ -96,12 +100,16 @@ MODEL_DESC = {
         "fr": "Ensemble de témoins liés par leur contexte de production et histoire de transmission, à l'instar des volumes d'une édition ou des fragments dispersés d'un manuscrit.",
     },
     "Treatment": {
-        "en": "Automated task applied to a witness or document set.",
-        "fr": "Tâche automatique appliquée à un témoin ou un set de documents.",
+        "en": "Automated task applied to a witness or set.",
+        "fr": "Tâche automatique appliquée à un témoin ou un set.",
     },
     "DocumentSet": {
         "en": "Personal collection of witnesses, works and series created by the user.",
         "fr": "Collection personnelle de témoins, oeuvres et séries constituée par un utilisateur.",
+    },
+    "RegionSet": {
+        "en": "Personal collection of regions created by the user.",
+        "fr": "Collection personnelle de régions constituée par un utilisateur.",
     },
 }
 
@@ -110,6 +118,7 @@ SER_DESC = MODEL_DESC["Series"][APP_LANG]
 WORK_DESC = MODEL_DESC["Work"][APP_LANG]
 TRMT_DESC = MODEL_DESC["Treatment"][APP_LANG]
 SET_DESC = MODEL_DESC["DocumentSet"][APP_LANG]
+RSET_DESC = MODEL_DESC["RegionSet"][APP_LANG]
 
 ENTITY_DESC = {
     "WIT_DESC": WIT_DESC,
@@ -117,6 +126,7 @@ ENTITY_DESC = {
     "WORK_DESC": WORK_DESC,
     "TRMT_DESC": TRMT_DESC,
     "SET_DESC": SET_DESC,
+    "RSET_DESC": RSET_DESC,
 }
 
 # ABBREVIATION

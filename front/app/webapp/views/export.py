@@ -16,6 +16,7 @@ from app.config.settings import (
 )
 from app.webapp.utils.iiif import gen_iiif_url
 from app.webapp.models.document_set import DocumentSet
+from app.webapp.models.region_set import RegionSet
 from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.models.digitization import Digitization
@@ -119,6 +120,16 @@ def iter_docset_files(doc_set):
         )
 
 
+def iter_region_set_files(doc_set):
+    """
+    Yield (arcname, content) for every file of a region set export.
+    content is a Path (written from disk, never loaded in memory) or a str.
+    Hierarchy:
+    [Region set: Root folder]
+    """
+    #TODO RegionSet voir hiérarchie de l'export en fonction des données d'un RegionSet
+
+
 def export_docset(request, dsid):
     """Streaming ZIP export of a document set"""
     if request.method != "GET":
@@ -142,6 +153,33 @@ def export_docset(request, dsid):
         tmp,
         as_attachment=True,
         filename=f"export_docset{dsid}_{timestamp}.zip",
+        content_type="application/zip",
+    )
+
+
+def export_region_set(request, rsid):
+    """Streaming ZIP export of a region set"""
+    if request.method != "GET":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+    region_set = get_object_or_404(RegionSet, id=rsid)
+
+    tmp = tempfile.TemporaryFile()
+    with zipfile.ZipFile(tmp, "w", zipfile.ZIP_DEFLATED) as z:
+        for arcname, content in iter_region_set_files(region_set):
+            try:
+                if isinstance(content, Path):
+                    z.write(content, arcname)
+                else:
+                    z.writestr(arcname, content)
+            except (FileNotFoundError, OSError) as e:
+                log(f"[export_region_set] Could not add {arcname} to archive", e)
+    tmp.seek(0)
+
+    timestamp = datetime.now().strftime("%Y%m%d_%H%M%S")
+    return FileResponse(
+        tmp,
+        as_attachment=True,
+        filename=f"export_region_set{rsid}_{timestamp}.zip",
         content_type="application/zip",
     )
 
@@ -217,6 +255,15 @@ def get_json_docset_simil(request, dsid):
     after_id = safe_int(request.GET.get("after")) or 0
     limit = min(safe_int(request.GET.get("limit")) or 1000, 5000)
     return JsonResponse(export_pairs(doc_set.get_digit_ids(), after_id, limit))
+
+
+def get_json_region_set_simil(request, rsid):
+    if request.method != "GET":
+        return JsonResponse({"error": "Invalid request method"}, status=400)
+    region_set = get_object_or_404(RegionSet, id=rsid)
+    after_id = safe_int(request.GET.get("after")) or 0
+    limit = min(safe_int(request.GET.get("limit")) or 1000, 5000)
+    return JsonResponse(export_pairs(region_set.region_ids, after_id, limit))
 
 
 def create_json_vecto_element(svg_filename, include_svg, subfolder_name=None):
@@ -302,4 +349,21 @@ def get_json_document_set(request, dsid):
                 "similarity"
             ] = f"{APP_URL}/{APP_NAME}/document-set/{dsid}/json/similarity"
         return JsonResponse(ds_data, safe=False)
+    return JsonResponse({"error": "Invalid request method"}, status=400)
+
+
+def get_json_region_set(request, rsid):
+    if request.method == "GET":
+        region_set = get_object_or_404(RegionSet, id=rsid)
+        rs_data = {
+            "title": region_set.title,
+            **{
+                #TODO RegionSet voir ce qu'on met ici
+            },
+        }
+        if "similarity" in ADDITIONAL_MODULES and rs_data:
+            rs_data[
+                "similarity"
+            ] = f"{APP_URL}/{APP_NAME}/region-set/{rsid}/json/similarity"
+        return JsonResponse(rs_data, safe=False)
     return JsonResponse({"error": "Invalid request method"}, status=400)

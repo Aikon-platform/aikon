@@ -25,10 +25,13 @@
             </div>
         </div>
         <div class="columns is-fluid">
-            <div class="column is-6">
+            <div class="column is-4">
                 {% include "includes/admin_row.html" with entity="document_set" entity_title=SET entity_desc=SET_DESC %}
             </div>
-            <div class="column is-6">
+            <div class="column is-4">
+                {% include "includes/admin_row.html" with entity="region_set" entity_title=RSET entity_desc=RSET_DESC %}
+            </div>
+            <div class="column is-4">
                 {% include "includes/admin_row.html" with entity_title=TRMT entity_desc=TRMT_DESC %}
             </div>
         </div>

@@ -928,6 +928,7 @@ def export_pairs(digit_ids, after_id: int = 0, limit: int | None = None) -> dict
     (self-contained: every reference resolves on re-import).
     Cursor-paginated on pk. limit=None returns all rows.
     """
+    # TODO RegionSet modifier pour pouvoir aussi exporter à partir de region_ids pour get_json_region_set_simil
     if not digit_ids:
         return {"pairs": [], "next_cursor": None, "count": 0}
 

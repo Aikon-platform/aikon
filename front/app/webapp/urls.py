@@ -2,9 +2,6 @@ from django.urls import path, reverse_lazy
 from django.contrib.auth import views as auth_views
 
 from app.webapp.views import *
-from app.webapp.views.users import *
-from webapp.views.region import save_region
-
 
 app_name = "webapp"
 
@@ -127,6 +124,11 @@ urlpatterns = [
         name="document-set-autocomplete",
     ),
     path(
+        f"{APP_NAME}/autocomplete/region-set/",
+        RegionSetAutocomplete.as_view(),
+        name="region-set-autocomplete",
+    ),
+    path(
         f"{APP_NAME}/autocomplete/witness/",
         WitnessAutocomplete.as_view(),
         name="witness-autocomplete",
@@ -171,6 +173,11 @@ urlpatterns += [
         f"{APP_NAME}/documentset/<str:rec_id>/delete",
         delete_doc_set,
         name="delete-doc_set",
+    ),
+    path(
+        f"{APP_NAME}/regionset/<str:rec_id>/delete",
+        delete_region_set,
+        name="delete-region_set",
     ),
     path(
         f"{APP_NAME}/work/<str:rec_id>/delete",
@@ -232,6 +239,14 @@ urlpatterns += [
         DocumentSetView.as_view(),
         name="document_set_view",
     ),
+    path(
+        f"{APP_NAME}/region-set/", RegionSetList.as_view(), name="region_set_list"
+    ),
+    path(
+        f"{APP_NAME}/region-set/<str:id>",
+        RegionSetView.as_view(),
+        name="region_set_view",
+    ),
 ]
 
 # ENDPOINTS
@@ -250,6 +265,21 @@ urlpatterns += [
         f"document-set/<int:dsid>/info",
         get_document_set_info,
         name="document-set-info",
+    ),
+    path(
+        f"region-set/new",
+        save_region_set,
+        name="new-region-set",
+    ),
+    path(
+        f"region-set/<int:rsid>/edit",
+        save_region_set,
+        name="change-region-set",
+    ),
+    path(
+        f"region-set/<int:rsid>/info",
+        get_region_set_info,
+        name="region-set-info",
     ),
     path(
         f"{APP_NAME}/witness/<int:wid>/regions/<int:rid>/canvas",
@@ -319,6 +349,21 @@ urlpatterns += [
         get_json_docset_simil,
         name="get_json_document_set_similarity",
     ),
+    path(
+        f"{APP_NAME}/region-set/<int:rsid>/json",
+        get_json_region_set,
+        name="get_json_region_set",
+    ),
+    path(
+        f"{APP_NAME}/region-set/<int:rsid>/zip",
+        export_region_set,
+        name="export_region_set",
+    ),
+    path(
+        f"{APP_NAME}/region-set/<int:rsid>/json/similarity",
+        get_json_region_set_simil,
+        name="get_json_region_set_similarity",
+    ),
     path(f"{APP_NAME}/raw/<str:model_name>/<int:rid>", get_json_record, name="record-raw"),
     path(
         f"{APP_NAME}/witness/select",
@@ -330,16 +375,6 @@ urlpatterns += [
         witness_update,
         name="witness_update",
     ),
-    path(
-        f"{APP_NAME}/regions/<int:reid>/region/add",
-        save_region,
-        name="new-region",
-    ),
-    path(
-        f"{APP_NAME}/regions/<int:reid>/region/<int:rid>/edit",
-        save_region,
-        name="change-region",
-    ),
 ]
 
 # SEARCH
@@ -350,6 +385,7 @@ urlpatterns += [
     path("search/work/", search_works, name="search-works"),
     path("search/series/", search_series, name="search-series"),
     path("search/documentset/", search_document_set, name="search-document-sets"),
+    path("search/regionset/", search_region_set, name="search-region-sets"),
     path("search/digitization/", search_digitizations, name="search-digitizations"),
     path(
         "search/regions/", search_region_extractions, name="search-region-extractions"

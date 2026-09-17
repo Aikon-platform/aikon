@@ -9,6 +9,7 @@ from app.config.settings import APP_URL_FROM_API, APP_NAME, API_URL, APP_LANG
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.region_extraction import RegionExtraction
+from app.webapp.models.region_set import RegionSet
 from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
 from app.webapp.utils.functions import ensure_legacy_regions
@@ -134,6 +135,57 @@ def create_doc_set_from_ids(
 
     return doc_set, is_new
 
+
+def create_region_set(
+    region_list: list | dict,
+    user: User = None,
+    shared_with: list = None,
+    is_public: bool = False,
+) -> Tuple[RegionSet, bool]:
+    if not len(region_list):
+        log(
+            f"[create_region_set] Failed to create Region Set from empty list of regions",
+        )
+        raise Exception("No regions to create Region Set")
+
+    user = get_user(user)
+    return create_region_set_from_ids(region_list, user, shared_with, is_public)
+
+
+def create_region_set_from_ids(
+    ids: dict,
+    user: User = None,
+    shared_with: list = None,
+    is_public: bool = False,
+):
+    # TODO RegionSet voir formattage
+    """
+    ids: {
+        "region_ids": List[str],
+    }
+    """
+    is_new = False
+    user = get_user(user)
+    try:
+        region_set = RegionSet.objects.filter(user=user, **ids).first()
+        if not region_set:
+            region_set = RegionSet.objects.create(
+                title="Region set",
+                user=user,
+                **ids,
+                is_public=is_public,
+                shared_with=shared_with,
+            )
+            region_set.save()
+            is_new = True
+    except Exception as e:
+        log(
+            f"[create_region_set] Failed to create Region Set for regions {ids}",
+            e,
+        )
+        raise e
+
+    return region_set, is_new
 
 def create_treatment(
     records: List[Witness | Digitization | RegionExtraction],

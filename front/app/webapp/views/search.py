@@ -118,6 +118,30 @@ def search_document_set(request):
 
 
 @require_GET
+def search_region_set(request):
+    user = request.user
+
+    region_len = Coalesce(ArrayLength("region_ids"), Value(0))
+
+    base_queryset = (
+        RegionSet.objects.all()
+        .annotate(set_len=region_len)
+        .filter(set_len__gt=1)
+    )
+
+    if user.is_superuser:
+        queryset = base_queryset
+    else:
+        queryset = base_queryset.filter(
+            Q(shared_with__contains=[user.id]) | Q(user=user) | Q(is_public=True)
+        ).distinct()
+
+    region_sets = RegionSetFilter(request.GET, queryset=queryset.order_by("-id"))
+
+    return JsonResponse(paginated_records(request, region_sets.qs))
+
+
+@require_GET
 def search_user(request):
     q = request.GET.get("q", "")
 

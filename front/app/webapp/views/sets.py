@@ -2,30 +2,9 @@ import json
 from django.http import JsonResponse
 
 from app.webapp.models.document_set import DocumentSet
+from app.webapp.models.region_set import RegionSet
 from app.webapp.utils.tasking import create_doc_set
-from app.webapp.tasks import generate_all_json, regenerate_witness_json
-from webapp.utils.logger import log
-
-
-# TODO ORGANISE THESE VIEWS BETTER
-
-
-def json_regeneration(request):
-    task = generate_all_json.delay()
-    return JsonResponse(
-        {"message": "JSON regeneration task started", "task_id": str(task.id)}
-    )
-
-
-def witness_json_regeneration(request, wid):
-    try:
-        task = regenerate_witness_json.delay(wid)
-    except Exception as e:
-        log(f"[witness_json_regeneration] failed for #{wid}", e)
-        return JsonResponse({"error": str(e)})
-    return JsonResponse(
-        {"message": "Witness JSON regeneration task started", "task_id": str(task.id)}
-    )
+from app.webapp.utils.tasking import create_region_set
 
 
 def get_document_set_info(request, dsid=None):
@@ -194,5 +173,80 @@ def save_document_set(request, dsid=None):
         except Exception as e:
             return JsonResponse(
                 {"message": f"Error saving score files: {e}"}, status=500
+            )
+    return JsonResponse({"message": "Invalid request"}, status=400)
+
+
+def get_region_set_info(request, rsid=None):
+    if rsid is None:
+        return JsonResponse({"error": "No region set id provided"}, status=400)
+
+    try:
+        rs = RegionSet.objects.get(id=rsid)
+    except RegionSet.DoesNotExist:
+        return JsonResponse(
+            {"error": f"Region set #{rsid} does not exist"}, status=404
+        )
+    # TODO RegionSet voir quoi retourner
+    return
+
+
+def save_region_set(request, rsid=None):
+    """
+    Endpoint used to create/update a region set
+    """
+    if request.method == "POST":
+        try:
+            data = json.loads(request.body.decode("utf-8"))
+
+            selection = data.get("selection", [])
+            set_name = data.get("title", None)
+            region_ids = data.get("Region", [])
+            shared_with = data.get("User", [])
+            is_public = data.get("is_public", False)
+
+            if len(region_ids) == 0:
+                return JsonResponse(
+                    {"error": "No regions to save in the set"}, status=400
+                )
+
+            try:
+                keep_title = False
+                if rsid:
+                    rs = RegionSet.objects.get(id=rsid)
+                    rs.region_ids = region_ids
+                    rs.shared_with = shared_with
+                    rs.is_public = is_public
+                else:
+                    rs, is_new = create_region_set(
+                        {
+                            "region_ids": region_ids,
+                        },
+                        user=request.user,
+                        shared_with=shared_with,
+                        is_public=is_public,
+                    )
+                    keep_title = not is_new
+
+                rs.selection = selection
+                title = rs.title if keep_title else set_name
+                rs.title = f"{title} #{rs.id}" if "#" not in title else title
+
+                rs.save()
+
+            except Exception as e:
+                return JsonResponse(
+                    {"error": f"Failed to save region set: {e}"}, status=500
+                )
+            return JsonResponse(
+                {
+                    "message": "Region set saved successfully",
+                    "region_set_id": rs.id,
+                    "region_set_title": rs.title,
+                }
+            )
+        except Exception as e:
+            return JsonResponse(
+                {"message": f"Error: {e}"}, status=500
             )
     return JsonResponse({"message": "Invalid request"}, status=400)

@@ -7,6 +7,7 @@ from app.webapp.models.series import Series
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.webapp.models.work import Work
+from app.webapp.models.region_set import RegionSet
 
 #######################################
 #            DELETE VIEWS             #
@@ -38,6 +39,11 @@ def delete_treatment(request, rec_id):
 @csrf_exempt
 def delete_doc_set(request, rec_id):
     return delete_record(rec_id, DocumentSet)
+
+
+@csrf_exempt
+def delete_region_set(request, rec_id):
+    return delete_record(rec_id, RegionSet)
 
 
 @csrf_exempt

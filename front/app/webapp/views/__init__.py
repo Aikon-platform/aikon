@@ -1,11 +1,11 @@
 from app.webapp.views.views import *
 from app.webapp.views.admin import *
 from app.webapp.views.users import *
-from app.webapp.views.endpoints import *
+from app.webapp.views.json import *
 from app.webapp.views.search import *
 from app.webapp.views.superadmin import *
 from app.webapp.views.delete import *
 from app.webapp.views.autocomplete import *
 from app.webapp.views.region_extraction import *
-
+from app.webapp.views.sets import *
 from app.webapp.views.export import *

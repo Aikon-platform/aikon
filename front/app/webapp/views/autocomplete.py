@@ -2,6 +2,7 @@ from dal import autocomplete
 
 from django.http import HttpResponse, JsonResponse
 from app.webapp.models.document_set import DocumentSet
+from app.webapp.models.region_set import RegionSet
 from app.webapp.models.series import Series
 from app.webapp.models.work import Work
 from app.config.settings import (
@@ -101,6 +102,26 @@ class DocumentSetAutocomplete(autocomplete.Select2QuerySetView):
             return DocumentSet.objects.none()
 
         qs = DocumentSet.objects.all()
+        qs = qs.filter(user=self.request.user).all()
+
+        if self.q:
+            if self.q.isdigit():
+                qs = qs.filter(id=int(self.q))
+            else:
+                qs = qs.filter(title__icontains=self.q)
+
+        return qs
+
+    def get_result_label(self, result):
+        return f"{result}"
+
+
+class RegionSetAutocomplete(autocomplete.Select2QuerySetView):
+    def get_queryset(self):
+        if not self.request.user.is_authenticated:
+            return RegionSet.objects.none()
+
+        qs = RegionSet.objects.all()
         qs = qs.filter(user=self.request.user).all()
 
         if self.q:

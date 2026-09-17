@@ -332,6 +332,17 @@ class DocumentSetFilter(RecordFilter):
         return queryset
 
 
+class RegionSetFilter(RecordFilter):
+    class Meta:
+        model = DocumentSet
+        fields = {
+            "title": ["icontains"],
+        }
+        labels = {
+            "title": work_name("title"),
+        }
+
+
 class DigitizationFilter(RecordFilter):
     witness = ModelChoiceFilter(
         queryset=Witness.objects.all(),

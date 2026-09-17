@@ -20,6 +20,7 @@ from app.config.settings import (
 )
 
 from app.webapp.models.document_set import DocumentSet
+from app.webapp.models.region_set import RegionSet
 from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
 from app.webapp.models.utils.constants import TRMT_STATUS, NO_USER, TASK_TYPE
 from app.webapp.models.utils.functions import get_fieldname
@@ -59,6 +60,9 @@ class Treatment(AbstractSearchableModel):
 
         if self.document_set:
             return f"{task} | {self.document_set.title}"
+
+        if self.region_set:
+            return f"{task} | {self.region_set.title}"
         # TODO add source url for import treatments
         return task
 
@@ -99,6 +103,14 @@ class Treatment(AbstractSearchableModel):
         blank=True,
         null=True,
     )
+    region_set = models.ForeignKey(
+        RegionSet,
+        related_name="treatments",  # to access all the treatments from RegionSet
+        verbose_name=get_name("RegionSet"),
+        on_delete=models.SET_NULL,
+        blank=True,
+        null=True,
+    )
     treated_objects = models.JSONField(blank=True, null=True)
     api_tracking_id = models.UUIDField(null=True, editable=False)
     api_parameters = models.JSONField(blank=True, null=True)
@@ -107,16 +119,20 @@ class Treatment(AbstractSearchableModel):
     _internal_save = False
 
     def get_objects_name(self):
-        if not self.document_set:
-            return []
-        # TODO display treated_objects instead of document_set ?
-        return self.document_set.document_names
+        # TODO display treated_objects instead of document_set/region_set ?
+        if self.document_set:
+            return self.document_set.document_names
+        elif self.region_set:
+            return self.region_set.region_names
+        return []
 
     def get_objects(self):
-        if not self.document_set:
-            return []
-        # TODO display treated_objects instead of document_set ?
-        return self.document_set.documents
+        # TODO display treated_objects instead of document_set/region_set ?
+        if self.document_set:
+            return self.document_set.documents
+        elif self.region_set:
+            return self.region_set.regions
+        return []
 
     def get_witnesses(self):
         if not self.document_set:
@@ -124,13 +140,20 @@ class Treatment(AbstractSearchableModel):
         # TODO display treated_objects instead of document_set ?
         return self.document_set.all_witnesses()
 
+    def get_regions(self):
+        if not self.region_set:
+            return []
+        # TODO display treated_objects instead of region_set ?
+        return self.region_set.regions
+
     def get_cancel_url(self):
         return f"{API_URL}/{self.task_type}/{self.api_tracking_id}/cancel"
 
     def get_query_parameters(self):
-        if not self.document_set:
+        set_parameter = f"document_set={self.document_set.id}" if self.document_set else f"region_set={self.region_set.id}" if self.region_set else None
+        if set_parameter:
             return ""
-        return f"?document_set={self.document_set.id}&task_type={self.task_type}&notify_email={self.notify_email}"
+        return f"?{set_parameter}&task_type={self.task_type}&notify_email={self.notify_email}"
 
     def get_absolute_edit_url(self):
         return ""
@@ -206,31 +229,39 @@ class Treatment(AbstractSearchableModel):
             if not self.requested_by and user:
                 self.requested_by = user
 
-            if not self.document_set:
-                if self.task_type != "import":
-                    log(f"[treatment_save] No document set for treatment {self.id}, aborting.")
-                    self.status = "ERROR"
-                super().save(*args, **kwargs)
-                return
+            if self.document_set:
+                self.treated_objects = {
+                    "witnesses": {
+                        "total": len(self.document_set.wit_ids or []),
+                        "ids": self.document_set.wit_ids or None,
+                    },
+                    "series": {
+                        "total": len(self.document_set.ser_ids or []),
+                        "ids": self.document_set.ser_ids or None,
+                    },
+                    "works": {
+                        "total": len(self.document_set.work_ids or []),
+                        "ids": self.document_set.work_ids or None,
+                    },
+                    "digitizations": {
+                        "total": len(self.document_set.digit_ids or []),
+                        "ids": self.document_set.digit_ids or None,
+                    },
+                }
 
-            self.treated_objects = {
-                "witnesses": {
-                    "total": len(self.document_set.wit_ids or []),
-                    "ids": self.document_set.wit_ids or None,
-                },
-                "series": {
-                    "total": len(self.document_set.ser_ids or []),
-                    "ids": self.document_set.ser_ids or None,
-                },
-                "works": {
-                    "total": len(self.document_set.work_ids or []),
-                    "ids": self.document_set.work_ids or None,
-                },
-                "digitizations": {
-                    "total": len(self.document_set.digit_ids or []),
-                    "ids": self.document_set.digit_ids or None,
-                },
-            }
+            elif self.region_set:
+                self.treated_objects = {
+                    "regions": {
+                        "total": len(self.region_set.region_ids or []),
+                        "ids": self.region_set.region_ids or None,
+                    }
+                }
+
+            elif self.task_type != "import":
+                log(f"[treatment_save] No set for treatment {self.id}, aborting.")
+                self.status = "ERROR"
+            super().save(*args, **kwargs)
+            return
 
         super().save(*args, **kwargs)
 
