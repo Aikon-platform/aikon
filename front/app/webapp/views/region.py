@@ -3,7 +3,6 @@ import json
 from django.http import JsonResponse
 from django.shortcuts import get_object_or_404
 
-from app.webapp.models.region import Region
 from app.webapp.models.region_extraction import RegionExtraction
 
 
