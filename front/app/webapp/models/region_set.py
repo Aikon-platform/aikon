@@ -41,7 +41,7 @@ class RegionSet(AbstractSearchableModel):
     title = models.CharField(max_length=50)
     is_public = models.BooleanField(default=False)
 
-    region_ids = ArrayField(models.IntegerField(), default=list, blank=True, null=True)
+    region_ids = ArrayField(models.CharField(max_length=50), default=list, blank=True, null=True)
 
     created_at = models.DateTimeField(blank=True, null=True, auto_now_add=True)
     updated_at = models.DateTimeField(blank=True, null=True, auto_now=True)
@@ -76,19 +76,19 @@ class RegionSet(AbstractSearchableModel):
         # TODO RegionSet voir quoi retourner
         return [self.regions]
 
-    # def get_region_metadata(self):
+    def get_region_metadata(self):
         # TODO RegionSet voir quoi retourner
-        # def obj_meta(obj):
-        #     return {
-        #         "id": obj.id,
-        #         "title": obj.__str__(),
-        #         "url": obj.get_absolute_view_url(),
-        #     }
-        #
-        # selection = {
-        #     "Regions": {wit.id: obj_meta(wit) for wit in self.witnesses},
-        # }
-        # return selection
+        def obj_meta(obj):
+            return {
+                "id": obj.id,
+                "title": obj.__str__(),
+                "url": obj.get_absolute_view_url(),
+            }
+
+        selection = {
+            "Regions": {},
+        }
+        return selection
 
     def get_treatment_metadata(self):
         def meta(treatment):

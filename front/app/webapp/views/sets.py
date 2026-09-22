@@ -198,10 +198,12 @@ def save_region_set(request, rsid=None):
     if request.method == "POST":
         try:
             data = json.loads(request.body.decode("utf-8"))
+            print(data.get("selection", []))
+            print(data.get("RegionExtraction", []))
 
             selection = data.get("selection", [])
             set_name = data.get("title", None)
-            region_ids = data.get("Region", [])
+            region_ids = data.get("RegionExtraction", [])
             shared_with = data.get("User", [])
             is_public = data.get("is_public", False)
 

@@ -6,7 +6,9 @@ function createTypedSelectionStore(config) {
         type,
         modelName,
         title,
-        extractMeta = (item) => item // by default, keep item as it is
+        extractMeta = (item) => item, // by default, keep item as it is
+        dataId = `${type}_id`,
+        dataTitle = `${type}_title`,
     } = config;
 
     const template = {
@@ -42,8 +44,8 @@ function createTypedSelectionStore(config) {
 
     function save() {
         selection.update(set => {
-            if (type !== "documentSet") {
-                console.error("Document set management is the only type currently supported for saving.");
+            if (type === "clusterSet") {
+                console.error("Cluster set management is not currently supported.");
                 return set;
             }
 
@@ -70,10 +72,9 @@ function createTypedSelectionStore(config) {
             })
                 .then(res => res.json())
                 .then(data => {
-                    if (!data?.document_set_id) throw new Error("Failed to save");
                     selection.update(current => {
-                        current.id = data.document_set_id;
-                        current.title = data.document_set_title;
+                        current.id = data.dataId;
+                        current.title = data.dataTitle;
                         current.is_public = data.is_public;
                         store(current, true);
                         return current;
@@ -223,14 +224,18 @@ export const recordsSelection = createTypedSelectionStore({
     type: "documentSet",
     modelName: "document-set",
     title: appLang === "en" ? "Document set" : "Set de documents",
-    extractMeta: (item) => ({title: item.title, url: item.url})
+    extractMeta: (item) => ({title: item.title, url: item.url}),
+    dataId: "document_set_id",
+    dataTitle: "document_set_title",
 });
 
 export const regionsSelection = createTypedSelectionStore({
-    type: "regionsSet",
-    modelName: "regions-set",
-    title: appLang === "en" ? "Regions set" : "Set de régions",
-    extractMeta: (item) => item
+    type: "regionSet",
+    modelName: "region-set",
+    title: appLang === "en" ? "Region set" : "Set de régions",
+    extractMeta: (item) => ({aid: item.id, img: ref(item.ref), xywh: item.xywh, title: item.title}),
+    dataId: "region_set_id",
+    dataTitle: "region_set_title",
 });
 
 function ref(imgRef) {
@@ -242,5 +247,7 @@ export const clusterSelection = createTypedSelectionStore({
     type: "clusterSet",
     modelName: "cluster-set",
     title: appLang === "en" ? "Selected regions" : "Régions sélectionnées",
-    extractMeta: (item) => ({imgRef: item.id, clusterId: item.clusterId, title: item.title, xywh: item.xywh, img: ref(item.id)})
+    extractMeta: (item) => ({imgRef: item.id, clusterId: item.clusterId, title: item.title, xywh: item.xywh, img: ref(item.id)}),
+    dataId: "cluster_set_id",
+    dataTitle: "cluster_set_title",
 });

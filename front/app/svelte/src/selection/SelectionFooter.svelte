@@ -4,7 +4,8 @@
     const { isSaved, selection } = selectionStore;
     import {appLang, appName} from "../constants";
 
-    export let isRegion = selectionStore.type !== "documentSet";
+    export let isRegion = selectionStore.type === "regionSet";
+    export let isDocument = selectionStore.type === "documentSet";
 </script>
 
 <footer class="modal-card-foot is-center">
@@ -12,7 +13,7 @@
         <button class="button button-close is-link is-light" on:click={() => selectionStore.empty()}>
             {appLang === "en" ? "Clear selection" : "Vider la sélection"}
         </button>
-        {#if $isSaved && !isRegion}
+        {#if $isSaved && isDocument}
             <a class="button is-link" href="/{appName}/treatment/add/?document_set={$selection?.id}">
                 <span>
                     <i class="fa-solid fa-gear"/>
@@ -23,6 +24,13 @@
                 <span>
                     <i class="fa-solid fa-file-export"></i>
                     {appLang === 'en' ? 'Explore corpus' : 'Explorer le corpus'}
+                </span>
+            </a>
+        {:else if $isSaved && isRegion}
+            <a class="button is-link" href="/{appName}/treatment/add/?region_set={$selection?.id}">
+                <span>
+                    <i class="fa-solid fa-gear"/>
+                    {appLang === "en" ? "Go to treatment" : "Accéder au traitement"}
                 </span>
             </a>
         {:else}

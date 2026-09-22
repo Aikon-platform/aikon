@@ -73,8 +73,6 @@
     }
 </script>
 
-<!--TODO if isSaved, and documentSet add link to view-->
-
 <div id="selection-modal" class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
     <div class="modal-background"/>
 

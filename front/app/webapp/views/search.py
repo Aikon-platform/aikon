@@ -8,6 +8,7 @@ from django.contrib.auth.models import User
 
 from app.webapp.search_filters import *
 from app.webapp.utils.constants import PAGE_LEN
+from app.webapp.models.region_set import RegionSet
 
 
 def paginated_records(request, records):
