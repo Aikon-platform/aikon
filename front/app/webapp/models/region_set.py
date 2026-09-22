@@ -56,10 +56,7 @@ class RegionSet(AbstractSearchableModel):
     )
 
     def length(self):
-        return sum(
-            len(field or [])
-            for field in self.region_ids
-        )
+        return len(self.region_ids)
 
     def get_treatments(self):
         return self.treatments.all()

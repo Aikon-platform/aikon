@@ -44,8 +44,16 @@
                     <a href="{% url 'webapp:witness_list' %}" class="navbar-item is-capitalized">{{ WIT }}</a>
                     <a href="{% url 'webapp:series_list' %}" class="navbar-item is-capitalized">{{ SER }}</a>
                     <a href="{% url 'webapp:work_list' %}" class="navbar-item is-capitalized">{{ WORK }}</a>
-                    <hr class="navbar-divider">
+                </div>
+            </div>
+            <div class="navbar-item has-dropdown is-hoverable pl-2">
+                <a class="navbar-link">
+                    {% if APP_LANG == "en" %}Manage sets{% else %}Gérer les sets{% endif %}
+                </a>
+
+                <div class="navbar-dropdown">
                     <a href="{% url 'webapp:document_set_list' %}" class="navbar-item is-capitalized">{{ SET }}</a>
+                    <a href="{% url 'webapp:region_set_list' %}" class="navbar-item is-capitalized">{{ RSET }}</a>
                 </div>
             </div>
             <div class="navbar-item has-dropdown is-hoverable pl-2">

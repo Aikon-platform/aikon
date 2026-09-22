@@ -73,8 +73,8 @@ function createTypedSelectionStore(config) {
                 .then(res => res.json())
                 .then(data => {
                     selection.update(current => {
-                        current.id = data.dataId;
-                        current.title = data.dataTitle;
+                        current.id = data[dataId];
+                        current.title = data[dataTitle];
                         current.is_public = data.is_public;
                         store(current, true);
                         return current;
