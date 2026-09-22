@@ -1,13 +1,12 @@
 <script>
     import Item from "./Item.svelte";
-	import Modal from "../Modal.svelte";
     import {appLang, appName} from "../constants.js";
-    import { showMessage } from "../utils";
 
     export let item;
     export let recordsStore;
 
     import { recordsSelection } from "../selection/selectionStore.js";
+    import {refToIIIF} from "../utils.js";
     const { isSetSelected } = recordsSelection;
     $: setSelected = $isSetSelected(item);
 
@@ -21,7 +20,14 @@
         if (status === "SUCCESS") return "is-success";
         return "is-dark";
     }
+
+    import {getColNb} from "../utils.js";
+
+    let innerWidth = 0;
+    $: colNb = getColNb(innerWidth);
 </script>
+
+<svelte:window bind:innerWidth/>
 
 <Item {item} {recordsStore}>
     <div slot="buttons">
@@ -66,18 +72,47 @@
             {/each}
         </div>
 
-        <div class="grid">
-            {#each Object.entries(item.selection?.selected || {}) as [modelName, selectedRecords]}
-                {#if modelName !== "User"}
+        {#if item.selection.type === "documentSet"}
+            <div class="grid">
+                {#each Object.entries(item.selection?.selected || {}).filter(([modelName]) => modelName !== "User") as [modelName, selectedRecords]}
                     {#each Object.entries(selectedRecords) as [id, meta]}
                         <div>
                             <span class="tag is-rounded is-accent">{modelName} #{id}</span>
                             {meta.title}
                         </div>
                     {/each}
+                {/each}
+            </div>
+        {:else if item.selection.type === "regionSet"}
+            {@const regions = Object.entries(item.selection?.selected || {})
+                .filter(([modelName]) => modelName !== "User")
+                .flatMap(([, selectedRecords]) => Object.entries(selectedRecords))}
+            <div class="fixed-grid has-{colNb * 2}-cols is-center">
+                <div class="grid mb-0">
+                    {#each regions.slice(0, colNb * 2) as [id, meta]}
+                        <figure class="image is-64x64 card">
+                            <img class="region-icon" src={refToIIIF(meta.img)} alt="Extracted region"/>
+                        </figure>
+                    {/each}
+                </div>
+                {#if regions.length > colNb * 2}
+                    <div class="tag">
+                        {regions.length - colNb * 2}
+                        {#if appLang === "en"}
+                            more regions
+                        {:else}
+                            régions supplémentaires
+                        {/if}
+                    </div>
                 {/if}
-            {/each}
-        </div>
-
+            </div>
+        {/if}
     </div>
 </Item>
+
+<style>
+    .region-icon {
+        object-fit: contain;
+        height: 100%;
+    }
+</style>

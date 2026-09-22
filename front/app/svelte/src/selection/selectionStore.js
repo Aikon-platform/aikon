@@ -110,6 +110,7 @@ function createTypedSelectionStore(config) {
 
     return {
         type,
+        modelName,
         subscribe: selection.subscribe,
 
         add: (item) => selection.update(set => {
