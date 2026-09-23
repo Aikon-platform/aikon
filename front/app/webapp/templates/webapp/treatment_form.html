@@ -107,10 +107,38 @@
                 });
 
                 const docSetField = document.getElementById("id_document_set")?.closest(".field");
+                const regionSetField = document.getElementById("id_region_set")?.closest(".field");
+                const docSetSelect = document.getElementById("id_document_set");
+                const regionSetSelect = document.getElementById("id_region_set");
+
+                function toggleSets() {
+                    const hasDocSet = docSetSelect?.value !== "";
+                    const hasRegionSet = regionSetSelect?.value !== "";
+
+                    if (regionSetField) {
+                        regionSetField.style.display = hasDocSet ? "none" : "";
+                        disabled_hidden(regionSetField, !hasDocSet);
+                    }
+
+                    if (docSetField) {
+                        docSetField.style.display = hasRegionSet ? "none" : "";
+                        disabled_hidden(docSetField, !hasRegionSet);
+                    }
+                }
+
+                $(docSetSelect).on("select2:select select2:clear", toggleSets);
+                $(regionSetSelect).on("select2:select select2:clear", toggleSets);
+                toggleSets();
+
                 if (docSetField) {
                     const isImport = selectedTask === "import";
                     docSetField.style.display = isImport ? "none" : "";
                     disabled_hidden(docSetField, !isImport);
+                }
+                if (regionSetField) {
+                    const isImport = selectedTask === "import";
+                    regionSetField.style.display = isImport  ? "none" : "";
+                    disabled_hidden(regionSetField, !isImport);
                 }
             }
 
@@ -153,13 +181,6 @@
                 el.querySelectorAll("input, select, textarea").forEach(input => {
                     input.disabled = !isVisible;
                 });
-            }
-
-            const docSetField = document.getElementById("id_document_set")?.closest(".field");
-            if (docSetField) {
-                const isImport = selectedTask === "import";
-                docSetField.style.display = isImport ? "none" : "";
-                disabled_hidden(docSetField, !isImport);
             }
         });
     </script>
