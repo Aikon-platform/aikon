@@ -5,7 +5,7 @@
 
     import { createWitnessStore } from "./witnessStore.js";
     import { regionsSelection } from "../selection/selectionStore.js";
-    const { selected, nbSelected, remove } = regionsSelection;
+    const { nbSelected: nbRegionSelected } = regionsSelection;
     import { regionsStore } from "../regions/regionsStore.js";
     const { allRegions, fetchAll } = regionsStore;
 
@@ -18,12 +18,12 @@
     import ActionButtons from "../regions/ActionButtons.svelte";
     import Similarity from "../regions/similarity/Similarity.svelte";
     import PageRegions from "../regions/PageRegions.svelte";
-    import SelectionModal from "../selection/SelectionModal.svelte";
     import Vectorization from "../regions/vectorization/Vectorization.svelte";
     import Viewer from "../witness/ViewerIframe.svelte";
     import ExportButtons from "../regions/vectorization/ExportButtons.svelte";
     import Regions from "../regions/Regions.svelte";
     import { activeLayout } from "../ui/tabStore.js";
+    import RegionsSelectionModal from "../regions/RegionsSelectionModal.svelte";
 
     export let isValidated = false;
     export let witness = {};
@@ -35,9 +35,7 @@
     setContext("witness", witness);
     setContext("isValidated", isValidated);
 
-    $: selectedRegions = $selected;
-    $: selectionLength = $nbSelected;
-    $: areSelectedRegions = selectionLength > 0;
+    $: regionSelectionLength = $nbRegionSelected;
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentRegionId = parseInt(baseUrl.split("regions/")[1].replace("/", ""));
@@ -60,7 +58,9 @@
 
 <Modal/>
 
-<SelectionBtn {selectionLength}/>
+<div class="set-container">
+    <SelectionBtn {regionSelectionLength} selectionType="region-set"/>
+</div>
 
 <Layout {tabList}>
     <div slot="sidebar">
@@ -120,42 +120,16 @@
     </div>
 </Layout>
 
-<SelectionModal {selectionLength} selectionStore={regionsSelection}>
-    {#if areSelectedRegions}
-        <div class="fixed-grid has-6-cols">
-            <div class="grid is-gap-2">
-                {#each Object.entries(selectedRegions) as [type, selectedItems]}
-                    {#each Object.entries(selectedItems) as [id, meta]}
-                        <div class="selection cell">
-                            <figure class="image is-64x64 card">
-                                <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt=""/>
-                                <div class="overlay is-center">
-                                    <span class="overlay-desc">{meta.title}</span>
-                                </div>
-                            </figure>
-                            <button class="delete region-btn"
-                                on:click={() => remove(id, regionsType)}/>
-                        </div>
-                    {/each}
-                {/each}
-            </div>
-        </div>
-    {:else}
-        <div>{appLang === "en" ? "No regions in selection" : "Aucune région sélectionnée"}</div>
-    {/if}
-</SelectionModal>
+<RegionsSelectionModal selectionLength={regionSelectionLength} selectionStore={regionsSelection} selectionType="region-set"/>
 
 <style>
-    .selection {
-        position: relative;
-        width: 64px;
-    }
-    .selection .delete {
-        position: absolute;
-        top: -0.75rem;
-        right: -0.75rem;
-    }
-    .overlay {
-        font-size: 50%;
+    .set-container {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        z-index: 10;
     }
 </style>

@@ -2,9 +2,9 @@
     import {refToIIIF} from "../utils.js";
     import {appLang} from "../constants.js";
     import SelectionModal from "../selection/SelectionModal.svelte";
-    import SelectionBtn from "../selection/SelectionBtn.svelte";
 
     export let selectionStore;
+    export let selectionType;
     const { selected } = selectionStore;
 
     // $selected = {"Regions"/"Cluster" : {id: {S}, id: {E}, id: {L}, id: {E}, id: {C}, id: {T}}}
@@ -13,9 +13,7 @@
     $: areSelectedRegions = selectionLength > 0;
 </script>
 
-<SelectionBtn {selectionLength}/>
-
-<SelectionModal {selectionLength} {selectionStore}>
+<SelectionModal {selectionLength} {selectionStore} {selectionType}>
     {#if areSelectedRegions}
         <div class="fixed-grid has-6-cols">
             <div class="grid is-gap-2">

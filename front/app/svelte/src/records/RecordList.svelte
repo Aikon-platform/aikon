@@ -1,12 +1,14 @@
 <script>
     import Record from "./Record.svelte";
 
-    import {recordsSelection} from "../selection/selectionStore.js";
-    const { selected, nbSelected } = recordsSelection;
+    import {recordsSelection, regionsSelection} from "../selection/selectionStore.js";
+    const { selected: docSelected, nbSelected: nbDocSelected } = recordsSelection;
+    const { selected: regionSelected, nbSelected: nbRegionSelected } = regionsSelection;
 
     import SelectionBtn from "../selection/SelectionBtn.svelte";
     import { appLang, appName, webappName, model2title } from "../constants";
     import SelectionModal from "../selection/SelectionModal.svelte";
+    import RegionsSelectionModal from "../regions/RegionsSelectionModal.svelte";
     import RecordSearch from "./RecordSearch.svelte";
     import Pagination from "../Pagination.svelte";
     import Modal from "../Modal.svelte";
@@ -26,8 +28,11 @@
     const recordsStore = createRecordsStore(modelName);
     const { pageRecords, resultPage, resultNumber } = recordsStore;
 
-    $: selectedRecords = $selected;
-    $: selectionLength = $nbSelected;
+    $: selectedRecords = $docSelected;
+    $: docSelectionLength = $nbDocSelected;
+
+    $: selectedRegions = $regionSelected;
+    $: regionSelectionLength = $nbRegionSelected;
 
     export let searchFields = [];
     // TODO make result count appear + filter name
@@ -38,7 +43,10 @@
 
 <Modal/>
 
-<SelectionBtn {selectionLength}/>
+<div class="set-container">
+    <SelectionBtn {regionSelectionLength} selectionType="region-set"/>
+    <SelectionBtn {docSelectionLength} selectionType="document-set"/>
+</div>
 
 <RecordSearch {recordsStore} {searchFields}/>
 
@@ -86,7 +94,9 @@
     </div>
 {/await}
 
-<SelectionModal {selectionLength} selectionStore={recordsSelection}>
+<RegionsSelectionModal selectionLength={regionSelectionLength} selectionStore={regionsSelection} selectionType="region-set"/>
+
+<SelectionModal selectionLength={docSelectionLength} selectionStore={recordsSelection} selectionType="document-set">
     {#each Object.entries(selectedRecords) as [type, selectedItems]}
         {#if Object.values(selectedItems).length > 0 && type in model2title && type !== "User"}
 
@@ -105,12 +115,6 @@
                             <button class="delete" aria-label="close" on:click={() => recordsSelection.remove(id, type)}/>
                         </td>
                     </tr>
-                    <!--{:else}-->
-                    <!--    <tr>-->
-                    <!--        <td>-->
-                    <!--            {appLang === 'en' ? 'No documents in selection' : 'Aucun document sélectionné'}-->
-                    <!--        </td>-->
-                    <!--    </tr>-->
                 {/each}
                 </tbody>
             </table>
@@ -123,3 +127,15 @@
         </tr>
     {/each}
 </SelectionModal>
+
+<style>
+    .set-container {
+        display: flex;
+        justify-content: flex-end;
+        gap: 10px;
+        position: fixed;
+        bottom: 0;
+        right: 0;
+        z-index: 10;
+    }
+</style>

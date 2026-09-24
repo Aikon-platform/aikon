@@ -8,6 +8,7 @@
 
     export let selectionStore;
     export let selectionLength = false;
+    export let selectionType;
 
     const { selectionTitle, updateTitle, updatePublic, save } = selectionStore;
 
@@ -73,7 +74,7 @@
     }
 </script>
 
-<div id="selection-modal" class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
+<div id={`${selectionType}-modal`} class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
     <div class="modal-background"/>
 
     <div class="modal-content">
