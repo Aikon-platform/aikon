@@ -30,6 +30,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.region_extraction import RegionExtraction, get_witness_ids
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
+from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.functions import delete_path
 from app.webapp.utils.logger import log
 from config.settings import APP_LANG
@@ -352,7 +353,9 @@ def get_doc_refs_from_records(records, source_type=SourceType.REGIONS) -> list[s
     return refs
 
 
-def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
+def get_existing_pairs(
+    doc_refs: list[str], parameters: dict
+) -> set[str]:
     """
     Check which document pairs already have similarity results for given parameters.
     Returns set of pair identifiers like "ref1-ref2" (sorted alphabetically).
@@ -370,11 +373,22 @@ def get_existing_pairs(doc_refs: list[str], parameters: dict) -> set[str]:
     param_hash = generate_hash(params)
     log(f"[get_existing_pairs] Checking existing pairs for hash {param_hash}")
 
+    def is_computed(ref1, ref2):
+        return any(
+            (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists()
+            for pair_ref in [f"{ref1}-{ref2}", f"{ref2}-{ref1}"]
+        )
+
     existing = set()
     for ref1, ref2 in combinations_with_replacement(sorted(set(doc_refs)), 2):
-        for pair_ref in [f"{ref1}-{ref2}", f"{ref2}-{ref1}"]:
-            if (Path(SCORES_PATH) / pair_ref / f"{param_hash}.json").exists():
-                existing.add(pair_ref)
+        if is_computed(ref1, ref2):
+            existing.add(RegionPair.order_pair((ref1, ref2), as_string=True))
+
+    # score folder named after witness ids
+    for ref1, ref2 in combinations_with_replacement(sorted(set(doc_refs)), 2):
+        wid1, wid2 = (str(parse_ref(r)["wit"][1]) for r in (ref1, ref2))
+        if is_computed(wid1, wid2):
+            existing.add(RegionPair.order_pair((wid1, wid2), as_string=True))
 
     return existing
 
