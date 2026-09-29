@@ -273,7 +273,7 @@ class Treatment(AbstractSearchableModel):
         api_query = requests.post(
             url,
             data=gzip.compress(json.dumps(parameters).encode()),
-            headers={"Content-Type": "application/json", "Content-Encoding": "gzip"},
+            headers={"Content-Type": "application/octet-stream", "Content-Encoding": "gzip"},
         )
 
         try:
