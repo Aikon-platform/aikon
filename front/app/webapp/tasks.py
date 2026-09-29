@@ -130,6 +130,9 @@ def start_import(treatment_id):
         )
         return
 
+    if not source_url.rstrip("/").endswith("/json"):
+        source_url = source_url.rstrip("/") + "/json"
+
     try:
         wit_urls, similarity_url, title = resolve_source(source_url, ctx)
         ctx.opts["similarity_url"] = similarity_url
