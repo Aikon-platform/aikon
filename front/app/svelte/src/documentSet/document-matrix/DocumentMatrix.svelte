@@ -11,7 +11,7 @@
     export let clusterStore;
 
     const {
-        sortedDocumentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
+        visibleDocuments, pairIndex, filteredDocPairStats, filteredDocStats,
         imageCountMap, visiblePairIds, coverageData, buildMatchesForAnchor, hideEmpty, pairCat
     } = documentSetStore;
 
@@ -40,11 +40,11 @@
     let navState = null;
     let modalActive = false;
     let scatterData = null;
-    let percentageMode = false;
     let viewMode = "matches";
 
-    $: documents = $sortedDocumentNodes.map(([, meta]) => meta)
-        .filter(d => !$hideEmpty || ($filteredDocStats.scoreCount?.get(d.id)?.count || 0) > 0);
+    $: documents = $visibleDocuments;
+    $: if (selectedCell && [selectedCell.doc1, selectedCell.doc2].some(d => !documents.some(v => v.id === d.id))) selectedCell = null;
+
     $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $visiblePairIds) : [];
     $: matchesData = selectedCell
         ? buildMatchesForAnchor(selectedCell.doc1, [selectedCell.doc2], null, false, true)
@@ -150,4 +150,4 @@
     active={modalActive} {scatterData} {navState} pairCat={$pairCat}
     on:navigate={handleModalNavigate}
     on:close={handleModalClose}
-/> <!--on:categorize={() => allPairs.update(p => p)} pairs={pairsForSelection}-->
+/>

@@ -1,6 +1,5 @@
 <script>
-    import {onMount} from "svelte";
-    import {setContext} from "svelte";
+    import {onDestroy, setContext} from "svelte";
     import { activeLayout } from "../ui/tabStore.js";
 
     import {appLang} from "../constants";
@@ -23,37 +22,48 @@
     const documentSetStore = createDocumentSetStore(docSet.id);
     const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode, docSort, hideEmpty} = documentSetStore;
 
-    let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode, syncDocSort, syncHideEmpty;
-    onMount(() => {
-        syncDocs = syncStoreWithURL(selectedDocuments, "doc", "set");
-        syncCategories = syncStoreWithURL(selectedCategories, "categories", "array", [1]);
-        syncThreshold = syncStoreWithURL(threshold, "threshold", "number");
-        syncTopK = syncStoreWithURL(topK, "topk", "number");
-        syncMutualTopK = syncStoreWithURL(mutualTopK, "mutual", "boolean");
-        syncScoreMode = syncStoreWithURL(scoreMode, "mode", "string");
-        syncDocSort = syncStoreWithURL(docSort, "sort", "string");
-        syncHideEmpty = syncStoreWithURL(hideEmpty, "hideEmpty", "boolean");
-
-        const unsubDocs = selectedDocuments.subscribe(syncDocs);
-        const unsubCategories = selectedCategories.subscribe(syncCategories);
-        const unsubThreshold = threshold.subscribe(syncThreshold);
-        const unsubTopK = topK.subscribe(syncTopK);
-        const unsubMutualTopK = mutualTopK.subscribe(syncMutualTopK);
-        const unsubScoreMode = scoreMode.subscribe(syncScoreMode);
-        const unsubDocSort = docSort.subscribe(syncDocSort);
-        const unsubHideEmpty = hideEmpty.subscribe(syncHideEmpty);
-
-        return () => {
-            unsubDocs();
-            unsubCategories();
-            unsubThreshold();
-            unsubTopK();
-            unsubMutualTopK();
-            unsubScoreMode();
-            unsubDocSort();
-            unsubHideEmpty();
-        };
-    });
+    // let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode, syncDocSort, syncHideEmpty;
+    // onMount(() => {
+    //     syncDocs = syncStoreWithURL(selectedDocuments, "doc", "set");
+    //     syncCategories = syncStoreWithURL(selectedCategories, "categories", "array", [1]);
+    //     syncThreshold = syncStoreWithURL(threshold, "threshold", "number");
+    //     syncTopK = syncStoreWithURL(topK, "topk", "number");
+    //     syncMutualTopK = syncStoreWithURL(mutualTopK, "mutual", "boolean");
+    //     syncScoreMode = syncStoreWithURL(scoreMode, "mode", "string");
+    //     syncDocSort = syncStoreWithURL(docSort, "sort", "string");
+    //     syncHideEmpty = syncStoreWithURL(hideEmpty, "hideEmpty", "boolean");
+    //
+    //     const unsubDocs = selectedDocuments.subscribe(syncDocs);
+    //     const unsubCategories = selectedCategories.subscribe(syncCategories);
+    //     const unsubThreshold = threshold.subscribe(syncThreshold);
+    //     const unsubTopK = topK.subscribe(syncTopK);
+    //     const unsubMutualTopK = mutualTopK.subscribe(syncMutualTopK);
+    //     const unsubScoreMode = scoreMode.subscribe(syncScoreMode);
+    //     const unsubDocSort = docSort.subscribe(syncDocSort);
+    //     const unsubHideEmpty = hideEmpty.subscribe(syncHideEmpty);
+    //
+    //     return () => {
+    //         unsubDocs();
+    //         unsubCategories();
+    //         unsubThreshold();
+    //         unsubTopK();
+    //         unsubMutualTopK();
+    //         unsubScoreMode();
+    //         unsubDocSort();
+    //         unsubHideEmpty();
+    //     };
+    // });
+    const unsubs = [
+        [selectedDocuments, "doc", "set"],
+        [selectedCategories, "categories", "array", [1]],
+        [threshold, "threshold", "number"],
+        [topK, "topk", "number"],
+        [mutualTopK, "mutual", "boolean"],
+        [scoreMode, "mode", "string"],
+        [docSort, "sort", "string"],
+        [hideEmpty, "hideEmpty", "boolean"],
+    ].map(([store, ...args]) => store.subscribe(syncStoreWithURL(store, ...args)));
+    onDestroy(() => unsubs.forEach(u => u()));
 
     import {clusterSelection} from "../selection/selectionStore.js";
     import FriezeView from "./frieze/FriezeView.svelte";

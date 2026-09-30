@@ -17,7 +17,8 @@
         selectedCategories,
         toggleCategory,
         selectedDocuments,
-        selectAllDocuments,
+        toggleAllDocuments,
+        regionCounts,
         toggleDoc,
         threshold,
         setThreshold,
@@ -129,7 +130,8 @@
 
             <hr>
 
-            <Legend sortedDocs={$sortedDocumentNodes} {docSort} selectedDocuments={$selectedDocuments} {toggleDoc} {selectAllDocuments}/>
+            <Legend sortedDocs={$sortedDocumentNodes} {docSort} selectedDocuments={$selectedDocuments}
+                    regionCounts={$regionCounts} {toggleDoc} {toggleAllDocuments}/>
 
             <hr>
 
