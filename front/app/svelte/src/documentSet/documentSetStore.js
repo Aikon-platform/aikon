@@ -310,13 +310,20 @@ export function createDocumentSetStore(documentSetId) {
         if (!$pairs?.length) return {scoreCount, scoreRange: {min: 0, max: 0, range: 0}};
 
         let min = Infinity, max = -Infinity;
+        const used = new Set();
         for (const p of $pairs) {
             const key = p.digit_1 < p.digit_2
                 ? `${p.digit_1}-${p.digit_2}`
                 : `${p.digit_2}-${p.digit_1}`;
-            const entry = scoreCount.get(key) || {score: 0, count: 0};
+            const entry = scoreCount.get(key) || {score: 0, count: 0, matchScore: 0, matchCount: 0};
             entry.score += p.weightedScore || 0;
             entry.count++;
+            const u1 = `${key}:${p.id_1}`, u2 = `${key}:${p.id_2}`;
+            if (!used.has(u1) && !used.has(u2)) {
+                used.add(u1).add(u2);
+                entry.matchScore += p.weightedScore || 0;
+                entry.matchCount++;
+            }
             scoreCount.set(key, entry);
         }
 

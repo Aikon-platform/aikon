@@ -17,7 +17,7 @@
     const docTitle = `${meta.title} #${id}`;
 
     const t = {
-        nbImg: {en: "Number of images for this region extraction", fr: "Nombre d'images extraites pour ce document"},
+        nbImg: {en: "Number of images in the displayed similarity pairs", fr: "Nombre d'images dans les paires de similarité affichées"},
         toggle: {en: "Toggle document pairs visibility", fr: "Activer/désactiver la visibilité des paires du document"},
     };
 </script>

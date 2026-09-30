@@ -107,7 +107,7 @@
         <p class="has-text-grey is-size-7 p-3">{i18n("none", t)}</p>
     {:else if displayMatches.length === 1}
         {#if displayMatches[0].length !== 1}
-            <CategoryToolbar visibleCategories={[1,2,3]}
+            <CategoryToolbar visibleCategories={[1,2,3,4]}
                 selectedCategory={rowCategory(displayMatches[0], pairCat)}
                 toggleFct={cat => categorizeRow(displayMatches[0], cat)}
                 userToggleFct={() => userToggleRow(displayMatches[0])}/>
