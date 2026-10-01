@@ -9,7 +9,7 @@
     export let q;
     export let s;
     export let keep;
-    export let indexed;
+    // export let indexed;
     export let iou = null;
     export let deletion = null;
     export let conflicts = [];
@@ -60,7 +60,7 @@
                      on:click={() => keep = img} on:keyup={null}>
                     <RegionCard item={RegionItem.fromImg(img)} height={250} isInModal={true} selectable={false} downloadable={false}
                                 borderColor={img === keep ? "var(--bulma-link)" : null}/>
-                    <span class="tag is-light" class:is-link={indexed[img]}>{i18n(indexed[img] ? "indexed" : "notIndexed", t)}</span>
+                    <!--<span class="tag is-light" class:is-link={indexed[img]}>{i18n(indexed[img] ? "indexed" : "notIndexed", t)}</span>-->
                 </div>
             {/each}
         </div>
