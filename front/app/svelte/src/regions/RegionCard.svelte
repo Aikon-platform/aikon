@@ -1,12 +1,10 @@
 <script>
     import { createEventDispatcher } from "svelte";
-    import { fade } from "svelte/transition";
-    import { appLang } from "../constants";
     import { RegionItem } from "./types.js";
     import { regionsStore } from "./regionsStore.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     import ModalOpener from "./modal/ModalOpener.svelte";
-    import {i18n} from "../utils.js";
+    import {i18n, loadWitnessTitle, witnessTitles} from "../utils.js";
     const { clipBoard } = regionsStore;
 
     export let selectionStore;
@@ -43,6 +41,7 @@
     $: currentRegion = new RegionItem(item);
     $: isCopied = currentRegion.copyId === $clipBoard;
     $: imgSrc = url ?? currentRegion.url(null, height === "full" ? "full" : isSquare ? `${height},` : `,${height}`);
+    $: isInModal && loadWitnessTitle(currentRegion.witnessId);
 
     const dispatch = createEventDispatcher();
     const openModal = () => isInModal ? null : dispatch("openModal", { index });
@@ -67,7 +66,7 @@
             on:click={() => selectable ? toggleSelection(currentRegion) : openModal()} on:keyup={null}>
         <img class="region-img" src={imgSrc} alt="Extracted region"/>
         <div class="overlay is-center">
-            <span class="overlay-desc">{@html currentRegion.title}</span>
+            <span class="overlay-desc">{@html isInModal ? currentRegion.label($witnessTitles[currentRegion.witnessId]) : currentRegion.title}</span>
         </div>
     </figure>
 

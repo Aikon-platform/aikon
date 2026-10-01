@@ -1,28 +1,37 @@
 <script>
     import LegendItem from "./LegendItem.svelte";
-    import {appLang} from "../../constants.js";
     import {i18n} from "../../utils.js";
 
     export let sortedDocs;
     export let docSort;
     export let selectedDocuments;
     export let toggleDoc;
-    export let selectAllDocuments;
+    export let toggleAllDocuments;
+    export let regionCounts;
 
     let isExpanded = true;
 
+    const t = {
+        visibleDocs: {en: "Visible documents", fr: "Documents visibles"},
+        sortBy: {en: "Sort documents by", fr: "Trier les documents par"},
+        selectAll: {en: "Select all", fr: "Tout sélectionner"},
+        unselectAll: {en: "Unselect all", fr: "Tout désélectionner"},
+    };
+
     $: selectedDocs = sortedDocs.filter(([id]) => selectedDocuments.has(parseInt(id)));
+    $: allSelected = selectedDocs.length === sortedDocs.length;
+    $: selectLabel = i18n(allSelected ? "unselectAll" : "selectAll", t);
 </script>
 
 <div>
     <h3 class="title mb-3">
-        {appLang === "en" ? "Visible documents" : "Documents visibles"} ({selectedDocs.length || 0})
+        {i18n("visibleDocs", t)} ({selectedDocs.length || 0})
     </h3>
     <div class="level is-mobile mb-4">
         <div class="level-left">
             <div class="level-item">
                 <div class="level-item mb-0 field has-addons is-small">
-                    <p class="control mb-0" title={appLang === "en" ? "Sort documents by" : "Trier les documents par"}>
+                    <p class="control mb-0" title={i18n("sortBy", t)}>
                         <span class="select is-small">
                             <select bind:value={$docSort}>
                                 <option value="id">ID</option>
@@ -32,11 +41,11 @@
                             </select>
                         </span>
                     </p>
-                    <p class="control" title={appLang === "en" ? "Select all documents" : "Sélectionner tous les documents"}>
-                        <button class="button is-small is-shadowless" on:click={() => selectAllDocuments()}>
-                            {appLang === "en" ? "Select all" : "Tout sélectionner"}
+                    <p class="control" title={selectLabel}>
+                        <button class="button is-small is-shadowless" on:click={() => toggleAllDocuments(!allSelected)}>
+                            {selectLabel}
                             <span class="icon is-small has-text-link pl-5 pr-1">
-                                <i class="fas fa-check"/>
+                                <i class="fas fa-{allSelected ? 'times' : 'check'}"/>
                             </span>
                         </button>
                     </p>
@@ -63,7 +72,7 @@
 
     <div class:is-condensed={!isExpanded} class:is-expanded={isExpanded}>
         {#each sortedDocs as [id, meta]}
-            <LegendItem {id} {meta}
+            <LegendItem {id} {meta} imgCount={regionCounts.get(+id)}
                 isActive={selectedDocuments.has(parseInt(id))}
                 toggle={() => toggleDoc(parseInt(id))}
                 onlyColor={!isExpanded}/>

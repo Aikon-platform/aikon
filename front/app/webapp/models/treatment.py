@@ -1,4 +1,6 @@
+import gzip
 import importlib
+import json
 import uuid
 import requests
 
@@ -268,7 +270,11 @@ class Treatment(AbstractSearchableModel):
         # if api_param := self.api_parameters:
         #     parameters.update(api_param)
 
-        api_query = requests.post(url, json=parameters)
+        api_query = requests.post(
+            url,
+            data=gzip.compress(json.dumps(parameters).encode()),
+            headers={"Content-Type": "application/octet-stream", "Content-Encoding": "gzip"},
+        )
 
         try:
             api_query.raise_for_status()

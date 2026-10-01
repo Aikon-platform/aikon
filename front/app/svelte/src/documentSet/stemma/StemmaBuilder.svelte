@@ -16,7 +16,7 @@
     export let clusterStore;
 
     const {
-        normalizeByImages, visiblePairs, sortedDocumentNodes, documentNodes, imageNodes, hideEmpty,
+        visiblePairs, visibleDocuments, documentNodes, imageNodes, hideEmpty,
         filteredDocPairStats, filteredDocStats, imageCountMap, coverageData, selectedDocuments, pairCat
     } = documentSetStore;
 
@@ -85,9 +85,7 @@
     function handleModalNavigate(e) { navState = { ...e.detail }; }
     function handleModalClose() { modalActive = false; }
 
-    $: fullDocuments = $sortedDocumentNodes
-        .map(([, meta]) => meta)
-        .filter(d => !$hideEmpty || ($filteredDocStats.scoreCount?.get(d.id)?.count || 0) > 0);
+    $: fullDocuments = $visibleDocuments;
     $: fullScoreData = $filteredDocPairStats?.scoreCount || new Map();
     $: fullDocStats = $filteredDocStats?.scoreCount || new Map();
     $: friezeDocuments = (() => {

@@ -2,7 +2,7 @@
     import {i18n} from "../../utils.js";
     import DownloadPng from "../../ui/DownloadPng.svelte";
     import SplitLayout from "../../ui/SplitLayout.svelte";
-    import DocumentSetMatrix from "./DocumentSetMatrix.svelte";
+    import DocumentSetMatrix, {viewModes} from "./DocumentSetMatrix.svelte";
     import DocumentPairMatrix from "./DocumentPairMatrix.svelte";
     import PairDetailModal from "./PairDetailModal.svelte";
     import Matches from "../Matches.svelte";
@@ -11,7 +11,7 @@
     export let clusterStore;
 
     const {
-        sortedDocumentNodes, pairIndex, filteredDocPairStats, filteredDocStats,
+        visibleDocuments, pairIndex, filteredDocPairStats, filteredDocStats,
         imageCountMap, visiblePairIds, coverageData, buildMatchesForAnchor, hideEmpty, pairCat
     } = documentSetStore;
 
@@ -31,6 +31,7 @@
         filteredPairs: {en: "Filtered pairs", fr: "Paires après filtrage"},
         filtering: {en: "Source of image pairs for the visualizations", fr: "Source des paires d'images pour les visualisations"},
         matches: {en: "Matches", fr: "Correspondances"},
+        viewMode: {en: "Matrix display mode", fr: "Mode d'affichage de la matrice"},
     };
 
     let selectedCell = null;
@@ -39,10 +40,11 @@
     let navState = null;
     let modalActive = false;
     let scatterData = null;
-    let percentageMode = false;
+    let viewMode = "matches";
 
-    $: documents = $sortedDocumentNodes.map(([, meta]) => meta)
-        .filter(d => !$hideEmpty || ($filteredDocStats.scoreCount?.get(d.id)?.count || 0) > 0);
+    $: documents = $visibleDocuments;
+    $: if (selectedCell && [selectedCell.doc1, selectedCell.doc2].some(d => !documents.some(v => v.id === d.id))) selectedCell = null;
+
     $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $visiblePairIds) : [];
     $: matchesData = selectedCell
         ? buildMatchesForAnchor(selectedCell.doc1, [selectedCell.doc2], null, false, true)
@@ -80,14 +82,13 @@
         <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
         <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
             <DownloadPng targetId="matrix-viz" filename="document-matrix" svgExport={true}/>
-<!--            <label title={i18n("normalization", t)} class="checkbox is-size-7 is-flex is-align-items-center">-->
-<!--                <input type="checkbox" checked={$normalizeByImages} on:change={e => normalizeByImages.set(e.target.checked)}>-->
-<!--                <span class="pl-1">{i18n("normalize", t)}</span>-->
-<!--            </label>-->
-            <label title={i18n("percentageView", t)} class="checkbox is-size-7 is-flex is-align-items-center">
-                <input type="checkbox" checked={percentageMode} on:change={e => percentageMode = e.target.checked}>
-                <span class="pl-1">{i18n("percentage", t)}</span>
-            </label>
+            <div class="select is-small" title={i18n("viewMode", t)}>
+                <select bind:value={viewMode}>
+                    {#each Object.keys(viewModes) as m}
+                        <option value={m}>{i18n(m, viewModes)}</option>
+                    {/each}
+                </select>
+            </div>
         </div>
     </div>
     <div slot="left-scroll" id="matrix-viz">
@@ -96,12 +97,10 @@
             scoreData={$filteredDocPairStats.scoreCount}
             docStats={$filteredDocStats.scoreCount}
             imageCountMap={$imageCountMap}
-            normalize={!percentageMode}
-            {percentageMode}
+            mode={viewMode}
             on:cellselect={handleCellSelect}
             {coverageData}
         />
-        <!--normalize={$normalizeByImages}-->
     </div>
 
     <div slot="bottom-left-title" class="is-flex is-justify-content-space-between">
@@ -151,4 +150,4 @@
     active={modalActive} {scatterData} {navState} pairCat={$pairCat}
     on:navigate={handleModalNavigate}
     on:close={handleModalClose}
-/> <!--on:categorize={() => allPairs.update(p => p)} pairs={pairsForSelection}-->
+/>

@@ -8,6 +8,7 @@
     import {regionsSelection} from "../selection/selectionStore.js";
     import QueryExpansionView from "./modal/QueryExpansionView.svelte";
     import {i18n} from "../utils.js";
+    import DuplicatesView from "./modal/DuplicatesView.svelte";
     export let selectionStore = regionsSelection;
 
     /** @type {RegionItemType[]} */
@@ -33,6 +34,7 @@
         { id: "region", label: i18n("mainView") },
         { id: "page", label: i18n("pageView") },
         { id: "matches", label: i18n("matchesView") },
+        { id: "duplicates", label: i18n("duplicatesView") }
     ];
 </script>
 
@@ -55,6 +57,8 @@
                 {#key currentItem.img}
                     <QueryExpansionView item={currentItem}/>
                 {/key}
+            {:else if activeTab === "duplicates"}
+                <DuplicatesView item={currentItem}/>
             {/if}
         </Tabs>
     </svelte:fragment>
