@@ -70,10 +70,12 @@ export class RegionItem {
         return this.imgRoot.replace(".jpg", `_${coordStr}.jpg`);
     }
 
-    get getTitle() {
+    get getTitle() { return this.label(); }
+
+    label(witness = `${i18n("Witness")} #${this.witnessId}`) {
         const c = this.coord;
         const coordStr = c ? (Array.isArray(c) ? c.join(",") : c) : "full";
-        return `Canvas ${this.canvasNb} - ${coordStr} - ${i18n("Witness")} #${this.witnessId}`
+        return `Canvas ${this.canvasNb} - ${coordStr} - ${witness}`;
     }
 
     get parsed() {

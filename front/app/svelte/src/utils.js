@@ -1,5 +1,5 @@
 import { writable } from "svelte/store";
-import {miradorUrl, cantaloupeUrl, appName, appLang, aiiinotateUrl, model2title, csrfToken} from "./constants";
+import {miradorUrl, cantaloupeUrl, appName, appLang, aiiinotateUrl, model2title, csrfToken, appUrl} from "./constants";
 
 export const loading = writable(false);
 export const errorMsg = writable("");
@@ -451,4 +451,16 @@ export function syncStoreWithURL(store, paramName, type = "string", defaultValue
         };
     }
     return () => {};
+}
+
+export const witnessTitles = writable({});
+const requested = new Set();
+
+export function loadWitnessTitle(id) {
+    if (id == null || requested.has(id)) return;
+    requested.add(id);
+    fetch(`${appUrl}/search/witness/?id=${id}&field=title`)
+        .then(r => r.json())
+        .then(({ results }) => results[0]?.title && witnessTitles.update(t => ({ ...t, [id]: results[0].title })))
+        .catch(() => requested.delete(id));
 }
