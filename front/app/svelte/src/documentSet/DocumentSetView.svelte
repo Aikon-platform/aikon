@@ -22,37 +22,6 @@
     const documentSetStore = createDocumentSetStore(docSet.id);
     const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode, docSort, hideEmpty} = documentSetStore;
 
-    // let syncDocs, syncCategories, syncThreshold, syncTopK, syncMutualTopK, syncScoreMode, syncDocSort, syncHideEmpty;
-    // onMount(() => {
-    //     syncDocs = syncStoreWithURL(selectedDocuments, "doc", "set");
-    //     syncCategories = syncStoreWithURL(selectedCategories, "categories", "array", [1]);
-    //     syncThreshold = syncStoreWithURL(threshold, "threshold", "number");
-    //     syncTopK = syncStoreWithURL(topK, "topk", "number");
-    //     syncMutualTopK = syncStoreWithURL(mutualTopK, "mutual", "boolean");
-    //     syncScoreMode = syncStoreWithURL(scoreMode, "mode", "string");
-    //     syncDocSort = syncStoreWithURL(docSort, "sort", "string");
-    //     syncHideEmpty = syncStoreWithURL(hideEmpty, "hideEmpty", "boolean");
-    //
-    //     const unsubDocs = selectedDocuments.subscribe(syncDocs);
-    //     const unsubCategories = selectedCategories.subscribe(syncCategories);
-    //     const unsubThreshold = threshold.subscribe(syncThreshold);
-    //     const unsubTopK = topK.subscribe(syncTopK);
-    //     const unsubMutualTopK = mutualTopK.subscribe(syncMutualTopK);
-    //     const unsubScoreMode = scoreMode.subscribe(syncScoreMode);
-    //     const unsubDocSort = docSort.subscribe(syncDocSort);
-    //     const unsubHideEmpty = hideEmpty.subscribe(syncHideEmpty);
-    //
-    //     return () => {
-    //         unsubDocs();
-    //         unsubCategories();
-    //         unsubThreshold();
-    //         unsubTopK();
-    //         unsubMutualTopK();
-    //         unsubScoreMode();
-    //         unsubDocSort();
-    //         unsubHideEmpty();
-    //     };
-    // });
     const unsubs = [
         [selectedDocuments, "doc", "set"],
         [selectedCategories, "categories", "array", [1]],

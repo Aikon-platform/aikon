@@ -9,6 +9,7 @@
     import { appName, csrfToken } from "../constants.js";
     import QueryExpansionView from "../regions/modal/QueryExpansionView.svelte";
     import CategoryToolbar from "../regions/similarity/CategoryToolbar.svelte";
+    import DuplicatesView from "../regions/modal/DuplicatesView.svelte";
 
     export let matches = [];
     export let columns = [];
@@ -68,6 +69,7 @@
         { id: "region", label: i18n("mainView") },
         { id: "page", label: i18n("pageView") },
         { id: "matches", label: i18n("matchesView") },
+        { id: "duplicates", label: i18n("duplicatesView") }
     ];
 
     let modalOpen = false;
@@ -209,6 +211,8 @@
                 {#key currentItem.img}
                     <QueryExpansionView item={currentItem}/>
                 {/key}
+            {:else if activeTab === "duplicates"}
+                <DuplicatesView item={currentItem}/>
             {/if}
         </Tabs>
     </svelte:fragment>

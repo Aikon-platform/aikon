@@ -124,17 +124,15 @@ function processBatch(batch) {
         if (cat === 1) state.exactPairs.push(processedPair);
         updateStats(pStats, null, weightedScore);
 
-        const pairKey = p.digit_1 < p.digit_2
-            ? `${p.digit_1}-${p.digit_2}`
-            : `${p.digit_2}-${p.digit_1}`;
+        const pairKey = digit1 < digit2 ? `${digit1}-${digit2}` : `${digit2}-${digit1}`;
 
         pushToMap(index.byDocPair, pairKey, processedPair);
         updateStats(docPStats, pairKey, weightedScore);
 
         pushToMap(index.byImage, img1.id, processedPair);
         pushToMap(index.byImage, img2.id, processedPair);
-        pushToMap(index.byDoc, p.digit_1, processedPair);
-        pushToMap(index.byDoc, p.digit_2, processedPair);
+        pushToMap(index.byDoc, digit1, processedPair);
+        pushToMap(index.byDoc, digit2, processedPair);
     }
 
     self.postMessage({ type: 'progress', count: pairs.length });

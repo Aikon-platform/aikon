@@ -88,10 +88,12 @@ def norm_ref(ref: str) -> str:
     return ref.replace(".", "").replace(",", "")
 
 
-def parse_img(img: str) -> ImgRef:
+def parse_img(img: str, no_error=False) -> ImgRef | None:
     img = add_jpg(img)
     m = IMG_RE.match(img)
     if not m:
+        if no_error:
+            return None
         raise ValueError(f"Invalid image name: {img}")
     return ImgRef(
         wit=int(m.group(1)),

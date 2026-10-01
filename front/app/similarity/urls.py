@@ -86,7 +86,7 @@ urlpatterns = [
         delete_pair,
         name="delete-pair",
     ),
-    path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
+    # path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
     path(f"{APP_NAME}/categorize-batch", categorize_batch, name="categorize-batch"),
     path(
         f"{APP_NAME}/uncategorize-batch",
@@ -136,4 +136,7 @@ urlpatterns = [
         stream_document_set_pairs,
         name="stream-document-set-pairs",
     ),
+    path(f"{APP_NAME}/similarity/duplicates/<str:img>", get_region_duplicates, name="region-duplicates"),
+    path(f"{APP_NAME}/similarity/merge-preview", merge_regions_preview, name="merge-preview"),
+    path(f"{APP_NAME}/similarity/merge-regions", merge_regions, name="merge-regions"),
 ]

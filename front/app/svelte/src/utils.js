@@ -18,7 +18,8 @@ const u = {
     "pageView": {en: "Page view", fr: "Vue de la page"},
     "matchesView": {en: "Matches", fr: "Correspondances"},
     "similarityView": {en: "Comparison", fr: "Comparaison"},
-    "expansionView": {en: "Query Expansion", fr: "Expansion de requête"}
+    "expansionView": {en: "Query Expansion", fr: "Expansion de requête"},
+    "duplicatesView": {en: "Duplicates", fr: "Doublons"},
 }
 
 export const i18n = (key, t = null) => {
@@ -74,7 +75,8 @@ export const sendTo = async (endpoint, body, failText="", method="POST") => {
             body: JSON.stringify(body)
         }));
         if (!response.ok) {
-            await showMessage(failText ?? i18n("errored"), i18n("error"));
+            const { error } = await response.json().catch(() => ({}));
+            await showMessage(error || failText || i18n("errored"), i18n("error"));
             return false;
         }
         return response.status === 204 ? true : await response.json();

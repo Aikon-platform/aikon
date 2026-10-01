@@ -12,7 +12,7 @@
 import {appLang, appName, regionsType} from "../constants.js";
 import {extractNb, getCantaloupeUrl, getMiradorUrl, i18n} from "../utils.js";
 
-const IMG_REF_REGEX = /^(?:(\d+)_)?wit(\d+)_([a-z]{3})(\d+)(?:_anno(\d+))?_(\d+)(?:_([\d,]+))?(?:\.jpg)?$/;
+const IMG_REF_REGEX = /^(?:(\d+)_)?wit(\d+)_([a-z]{3})(\d+)(?:_anno(\d+))?_(\d+)(?:_([\d.,]+))?(?:\.jpg)?$/;
 
 export function parseImgRef(imgRef) {
     if (!imgRef) return null;
