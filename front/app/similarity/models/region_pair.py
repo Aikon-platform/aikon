@@ -12,6 +12,7 @@ from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.region_extraction import RegionExtraction
 from app.similarity.models.similarity_parameters import SimilarityParameters
+from app.similarity import ImgRef
 
 IMG_RE = re.compile(r"^wit(\d+)_(\w{3})(\d+)_(\d+)(?:_([\d.,]+))?\.jpg$")
 
@@ -55,14 +56,6 @@ def get_digit_region_extraction_id(
             )
 
     return region_extraction.id
-
-
-class ImgRef(NamedTuple):
-    wit: int
-    digit_type: str
-    digit: int
-    page: str
-    bbox: str | None  # None = page-level
 
 
 def add_jpg(img: str) -> str:

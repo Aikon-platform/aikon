@@ -1,7 +1,6 @@
 import os
 import re
 from collections import defaultdict
-from enum import IntEnum
 
 import numpy as np
 
@@ -23,6 +22,7 @@ from app.similarity.models.region_pair import (
 from app.similarity.models.similarity_parameters import (
     SimilarityParameters,
 )
+from app.similarity import SourceType, SIM_DEFAULTS, SimilarityType, Priority, SimilarityCategory
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.region_extraction import RegionExtraction, get_witness_ids
@@ -31,47 +31,8 @@ from app.webapp.utils import tasking
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.functions import delete_path
 from app.webapp.utils.logger import log
-from app.similarity.dedupe import parse_bbox, fetch_distinct_images, close
+from app.similarity.dedupe import fetch_distinct_images, close, parse_bbox
 from app.webapp.utils.iiif.annotation import get_canvas_annotations, get_coord_from_annotation
-
-
-class SimilarityType(IntEnum):
-    AUTO = 1
-    MANUAL = 2
-    PROPAGATED = 3
-
-
-class SimilarityCategory(IntEnum):
-    EXACT_MATCH = 1
-    PARTIAL_MATCH = 2
-    SEMANTIC_MATCH = 3
-    NO_MATCH = 4
-    USER_MATCH = 5
-
-
-class SourceType:
-    REGIONS = "regions"
-    PAGES = "pages"
-
-
-class Priority(IntEnum):
-    MANUAL = 0
-    PROPAGATED = 1
-    CATEGORIZED = 2
-    AUTO = 3
-    NO_MATCH = 4
-    NONE = 5
-
-
-SIM_DEFAULTS = {
-    "algorithm": "cosine",
-    "feat_net": "dinov2_vitb14",
-    "cosine_n_filter": 10,
-    "segswap_prefilter": True,
-    "segswap_n": 10,
-    "transpositions": ["none"],
-    "source_type": SourceType.REGIONS,
-}
 
 
 ################################################################

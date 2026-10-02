@@ -7,6 +7,29 @@
     import RegionCard from "../RegionCard.svelte";
     import MergeOverlay from "./MergeOverlay.svelte";
 
+    /**
+     * DEDUPLICATION LOGIC
+     * 1. List (`get_region_duplicates`):
+     * Retrieve list of images in region_pairs of the same digitization with IoU > 0.5 with query image
+     *
+     * 2. Preview (`merge_regions_preview`, read-only):
+     * Retrieve
+     *    - the region to keep (the one in aiiinotate) otherwise the query image;
+     *    - their IoU;
+     *    - whether the dropped annotation will be deleted:
+     *          -> automatically if both are annotated and IoU ≥ 0.9
+     *          -> otherwise the user is asked;
+     *    - the pairs whose categories would conflict.
+     *
+     * 3. Merge (`merge_regions`):
+     *    - merges the pairs in the same digitization;
+     *    - resolves category conflicts with the user's choice or the lowest category;
+     *    - updates aiiinotate:
+     *          -> if both regions are annotated, the dropped annotation is deleted;
+     *          -> if only the dropped one is, its `xywh` is overwritten with bbox of the kept region;
+     *    - rolls everything back if aiiinotate cannot be updated.
+     * **/
+
     /** @type {import("../types.js").RegionItemType} */
     export let item;
 
