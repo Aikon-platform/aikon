@@ -12,6 +12,7 @@ from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.region_extraction import RegionExtraction
 from app.similarity.models.similarity_parameters import SimilarityParameters
+from app.similarity import ImgRef
 
 IMG_RE = re.compile(r"^wit(\d+)_(\w{3})(\d+)_(\d+)(?:_([\d.,]+))?\.jpg$")
 
@@ -55,14 +56,6 @@ def get_digit_region_extraction_id(
             )
 
     return region_extraction.id
-
-
-class ImgRef(NamedTuple):
-    wit: int
-    digit_type: str
-    digit: int
-    page: str
-    bbox: str | None  # None = page-level
 
 
 def add_jpg(img: str) -> str:
@@ -114,6 +107,21 @@ class RegionPairTuple(NamedTuple):
     category_x: List[int]
     similarity_type: int
     similarity_hash: str
+
+    @classmethod
+    def of(cls, row, q_img: str) -> RegionPairTuple:
+        is_q1 = row.img_1 == q_img
+        return cls(
+            score=row.score,
+            q_img=q_img,
+            s_img=row.img_2 if is_q1 else row.img_1,
+            q_digit=row.digit_1 if is_q1 else row.digit_2,
+            s_digit=row.digit_2 if is_q1 else row.digit_1,
+            category=row.category,
+            category_x=row.category_x or [],
+            similarity_type=row.similarity_type,
+            similarity_hash=row.similarity_hash,
+        )
 
 
 def get_name(fieldname, plural=False):
@@ -273,37 +281,20 @@ class RegionPair(models.Model):
         return SimilarityParameters.get_params(self.similarity_hash)
 
     def get_info(self, q_img=None, as_json=False) -> RegionPairTuple | dict:
-        if q_img is None:
-            q_img = self.img_1
-        is_q1 = self.img_1 == q_img
-        s_img = self.img_2 if is_q1 else self.img_1
-        q_digit = self.digit_1 if is_q1 else self.digit_2
-        s_digit = self.digit_2 if is_q1 else self.digit_1
+        info = RegionPairTuple.of(self, q_img or self.img_1)
+        return info._asdict() if as_json else info
 
-        info = (
-            self.score,
-            q_img,
-            s_img,
-            q_digit,
-            s_digit,
-            self.category,
-            self.category_x or [],
-            self.similarity_type,
-            self.similarity_hash,
+    @classmethod
+    def build(cls, img_1: str, img_2: str, **fields) -> RegionPair:
+        """Unsaved pair with normalized, ordered names and the digitizations they encode"""
+        img_1, img_2 = cls.order_pair((img_1, img_2), normalize=True)
+        return cls(
+            img_1=img_1,
+            img_2=img_2,
+            digit_1=parse_img(img_1).digit,
+            digit_2=parse_img(img_2).digit,
+            **fields
         )
-        if as_json:
-            return {
-                "score": info[0],
-                "q_img": info[1],
-                "s_img": info[2],
-                "q_digit": info[3],
-                "s_digit": info[4],
-                "category": info[5],
-                "category_x": info[6],
-                "similarity_type": info[7],
-                "similarity_hash": info[8],
-            }
-        return info
 
     def to_dict(self) -> dict:
         return {

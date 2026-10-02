@@ -4,7 +4,7 @@ from pathlib import Path
 
 from django.core.management import BaseCommand
 
-from similarity.dedupe import load_plan, build_mapping, save_plan, apply_mapping, DEFAULT_THRESHOLD
+from app.similarity.dedupe import load_plan, build_mapping, save_plan, apply_mapping, DEFAULT_THRESHOLD, BATCH_SIZE
 
 
 class Command(BaseCommand):
@@ -12,6 +12,31 @@ class Command(BaseCommand):
         "Merge near-duplicate region bboxes (IoU >= threshold) of a same scan page into a single "
         "canonical name in RegionPair, then align categories of rows sharing the same images."
     )
+
+    """
+    1. Cluster
+    On each page, group the regions with IoU ≥ `--threshold` (default 0.9)
+    
+    2. Name
+    Each group takes the canonical name of its largest region → mapping `{duplicate: canonical}`
+    the mapping can be saved or reloaded with `--plan`
+    
+    3. Merge pairs (one locked transaction)
+    - renamed images take the `anno_id` and `regions_id` of the canonical region
+    - regionPairs describing the 2 same images with the same hash are merged: 
+        → TYPE manual > automatic > propagated
+        → SCORE the merged pairs keeps the highest score
+        → CATEGORY keep the lowest category and the union of user matches (category_x)
+    - self-pairs are deleted (img_1 = img_2)
+    
+    4. Align categories
+    RegionPairs with the same images but different hashes (different similarity computation parameters)
+    get the same categories. Conflicting categories are left unchanged
+    
+    The command runs as a dry run unless `--apply` is passed
+    `--digits` restricts it to some digitizations
+    aiiinotate is never modified
+    """
 
     def add_arguments(self, parser):
         parser.add_argument(
@@ -38,7 +63,7 @@ class Command(BaseCommand):
             default=None,
             help="Comma-separated digitization ids to restrict the dedupe to (skips the NULL-hash pass).",
         )
-        parser.add_argument("--batch-size", type=int, default=10000)
+        parser.add_argument("--batch-size", type=int, default=BATCH_SIZE)
 
     def handle(self, *args, **opts):
         log = (lambda s: self.stdout.write(str(s))) if opts["verbosity"] else (lambda s: None)
