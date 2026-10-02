@@ -3,7 +3,7 @@ import re
 from collections import OrderedDict
 from typing import List
 
-from django.db.models import Q, Count
+from django.db.models import Q
 from django.shortcuts import get_object_or_404
 from django.http import StreamingHttpResponse, JsonResponse
 from django.views.decorators.csrf import csrf_exempt
@@ -38,7 +38,6 @@ from app.similarity.utils import (
     update_category_x,
     filter_pairs,
     SimilarityType,
-    build_pairs_query,
     stream_pairs_ndjson,
     normalize_pair,
     SimilarityCategory,
@@ -103,7 +102,7 @@ def send_similarity(request, region_extraction_refs):
         error = f"[send_similarity] Couldn't send request for {region_extraction_refs}"
         log(error, e)
 
-        return JsonResponse({"response": error, "reason": e}, safe=False)
+        return JsonResponse({"response": error, "reason": f"{e}"}, safe=False)
 
 
 @csrf_exempt
@@ -390,7 +389,7 @@ def get_region_extraction_title_by_ref(
             {"error": f"Error retrieving region extraction title: {e}"}, status=500
         )
 
-
+# todo use @json_post decorator
 def add_region_pair(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=400)
@@ -458,6 +457,7 @@ def add_region_pair(request):
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
+# todo use @json_post decorator
 def no_match(request):
     """categorize all region pairs containing q_img and the specified regions id in `s_regions` as no match (category=4)"""
     if request.method != "POST":
@@ -481,6 +481,7 @@ def no_match(request):
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
+# todo use @json_post decorator
 @user_passes_test(is_superuser)
 def delete_matches(request):
     if request.method != "POST":
@@ -499,6 +500,7 @@ def delete_matches(request):
     )
 
 
+# todo use @json_post decorator
 def delete_pair(request):
     if request.method != "POST":
         return JsonResponse({"error": "Invalid request method"}, status=405)
@@ -546,6 +548,7 @@ def get_query_images(request, wid, rid=None):
         )
 
 
+# todo use @json_post decorator
 def add_user_to_pair(request):
     """
     Toggle the current user in the category_x list of all region pairs
@@ -879,7 +882,7 @@ def get_regions_pairs(request, wid, rid=None):
     digit_ids.update(r.digitization_id for r in region_extractions)
 
     try:
-        pairs = filter_pairs(
+        pairs = [p.to_dict() for p in filter_pairs(
             digit_ids,
             exclusive=bool(witness_ids_param or digit_ids_param),
             min_score=safe_float(request.GET.get("minScore")),
@@ -887,39 +890,7 @@ def get_regions_pairs(request, wid, rid=None):
             topk=safe_int(request.GET.get("topk")),
             exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
             categories=parse_list(request.GET.get("category")) or [],
-        )
-        return JsonResponse(pairs, status=200, safe=False)
-    except Exception as e:
-        return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
-
-
-def get_document_set_pairs(request, dsid=None):
-    if dsid is None:
-        return JsonResponse({"error": "No document set id provided"}, status=400)
-
-    document_set = DocumentSet.objects.get(id=dsid)
-    if document_set is None:
-        return JsonResponse(
-            {"error": f"Document set #{dsid} does not exist"}, status=400
-        )
-
-    digit_ids = document_set.digit_ids
-    if not digit_ids:
-        return JsonResponse(
-            {"error": f"No digitizations found for this document set #{dsid}"},
-            status=400,
-        )
-
-    try:
-        pairs = filter_pairs(
-            digit_ids,
-            exclusive=True,
-            min_score=safe_float(request.GET.get("minScore")),
-            max_score=safe_float(request.GET.get("maxScore")),
-            topk=safe_int(request.GET.get("topk")),
-            exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
-            categories=parse_list(request.GET.get("category")),
-        )
+        )]
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
@@ -960,10 +931,8 @@ def stream_document_set_pairs(request, dsid=None):
         "exclude_self": safe_bool(request.GET.get("excludeSelf")) or False,
     }
 
-    sql, sql_params = build_pairs_query(digit_ids, **params)
-
     response = StreamingHttpResponse(
-        stream_pairs_ndjson(sql, sql_params), content_type="application/x-ndjson"
+        stream_pairs_ndjson(filter_pairs(digit_ids, **params)), content_type="application/x-ndjson"
     )
 
     # Nginx streaming headers
