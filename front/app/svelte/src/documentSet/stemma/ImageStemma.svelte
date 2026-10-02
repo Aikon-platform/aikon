@@ -202,7 +202,7 @@ Propagation logic:
         const nodeMap = new Map(nodes.map(n => [n.docId, n]));
         const renderedEdges = edges.flatMap(e => {
             const src = nodeMap.get(e.source), tgt = nodeMap.get(e.target);
-            return src && tgt ? [{source: src, target: tgt, label: e.label}] : [];
+            return src && tgt ? [{source: src, target: tgt, label: e.label, undirected: e.undirected}] : [];
         });
 
         return {nodes, edges: [...renderedEdges, ...extra.edges]};
@@ -323,7 +323,7 @@ Propagation logic:
                         <line class="edge" {x1} {y1} {x2} {y2}
                               stroke={edge.extra ? "transparent" : "var(--bulma-body-color)"}
                               stroke-width={2 / $transform.k}
-                              marker-end={edge.extra ? null : "url(#arrowhead)"}/>
+                              marker-end={edge.extra || edge.undirected ? null : "url(#arrowhead)"}/>
                     </g>
                     {#if edge.label}
                         <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 4 / $transform.k}
