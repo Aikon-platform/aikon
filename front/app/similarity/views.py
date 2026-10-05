@@ -743,7 +743,6 @@ def uncategorize_batch(request):
 
     try:
         data = json.loads(request.body)
-
         pairs = set()
         for p in data.get("pairs", []):
             pairs.add(normalize_pair(p.get("img_1"), p.get("img_2")))
@@ -890,6 +889,7 @@ def get_regions_pairs(request, wid, rid=None):
             topk=safe_int(request.GET.get("topk")),
             exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
             categories=parse_list(request.GET.get("category")) or [],
+            user_id=request.user.id,
         )]
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
@@ -905,7 +905,6 @@ def stream_document_set_pairs(request, dsid=None):
         minScore, maxScore: score range filter
         topk: limit results
         excludeSelf: exclude same-document pairs
-        compress: if 'true', return gzip-compressed response
     """
     if dsid is None:
         return JsonResponse({"error": "No document set id provided"}, status=400)
@@ -929,16 +928,19 @@ def stream_document_set_pairs(request, dsid=None):
         "max_score": safe_float(request.GET.get("maxScore")),
         "topk": safe_int(request.GET.get("topk")),
         "exclude_self": safe_bool(request.GET.get("excludeSelf")) or False,
+        "user_id": request.user.id,
     }
 
+    qs = filter_pairs(digit_ids, **params)
     response = StreamingHttpResponse(
-        stream_pairs_ndjson(filter_pairs(digit_ids, **params)), content_type="application/x-ndjson"
+        stream_pairs_ndjson(qs if params["topk"] else qs.order_by(), params["user_id"]), content_type="application/x-ndjson"
     )
 
     # Nginx streaming headers
     response["X-Accel-Buffering"] = "no"
     response["Cache-Control"] = "no-cache, no-store"
     response["X-Content-Type-Options"] = "nosniff"
+    response["Content-Encoding"] = "gzip"
 
     return response
 

@@ -12,7 +12,7 @@
     export let active = false;
     export let scatterData = null;
     export let navState = null; // {idx1, idx2}
-    export let pairCat = new Map();
+    export let pairCat = () => null;
     let fullPage = false;
     $: if (scatterData?.mode !== 'image') fullPage = false;
 
@@ -25,7 +25,7 @@
     };
 
     function findCat(img1, img2) {
-        return pairCat.get(`${img1}-${img2}`) ?? pairCat.get(`${img2}-${img1}`) ?? null;
+        return pairCat(img1, img2);
     }
 
     async function categorize(category) {
