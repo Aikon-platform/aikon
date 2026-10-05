@@ -19,7 +19,8 @@ services:
       - ../app/config/.env
       - ./.env
     extra_hosts:
-      - "smtp.gmail.com:74.125.206.109"
+      #- "smtp.gmail.com:74.125.206.109"
+      - "host.docker.internal:host-gateway"
     ports:
       - "${DJANGO_PORT}:8000"
     depends_on:

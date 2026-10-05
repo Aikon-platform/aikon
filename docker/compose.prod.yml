@@ -4,7 +4,7 @@ x-prod-hosts: &prod-hosts
   extra_hosts:
     - "host.docker.internal:host-gateway"
     # container-to-host email config, to be able to send a mail from the host
-    - "smtp:host-gateway"    
+    # - "smtp:host-gateway"    
     # Fixes container-to-app failures: maps ${PROD_URL} to the host gateway
     # so requests reach the host nginx directly, bypassing public DNS.
     - "${PROD_URL}:host-gateway"
