@@ -1,8 +1,7 @@
 import {derived, writable, get} from "svelte/store";
-import {extractNb, generateColor} from "../utils.js";
 import { streamPairsToWorker } from "./pairStreamReader.js";
 
-import {appUrl} from "../constants.js";
+import {appUrl, aiiinotateUrl} from "../constants.js";
 
 // TO DELETE
 // const appUrl = "https://vhs.huma-num.fr";
@@ -78,6 +77,16 @@ export function createDocumentSetStore(documentSetId) {
     const dsInfoPromise = fetch(`${appUrl}/document-set/${documentSetId}/info`)
         .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
         .catch(e => { error.set(`Error fetching document set info: ${e}`); return null; });
+
+    const regionCounts = writable(new Map());
+    dsInfoPromise.then(info => Promise.all(
+        Object.values(info?.Digitization || {}).map(({id, ref}) =>
+            fetch(`${aiiinotateUrl}/annotations/2/count?manifestShortId=${ref}`)
+                .then(r => r.ok ? r.json() : Promise.reject(r.statusText))
+                .then(({count}) => [id, count])
+                .catch(e => { console.error(`Error fetching region count for ${ref}`, e); return [id, null]; })
+        )
+    )).then(entries => regionCounts.set(new Map(entries)));
 
     const pairStats = writable({});
     const documentStats = writable({});
@@ -310,13 +319,20 @@ export function createDocumentSetStore(documentSetId) {
         if (!$pairs?.length) return {scoreCount, scoreRange: {min: 0, max: 0, range: 0}};
 
         let min = Infinity, max = -Infinity;
+        const used = new Set();
         for (const p of $pairs) {
             const key = p.digit_1 < p.digit_2
                 ? `${p.digit_1}-${p.digit_2}`
                 : `${p.digit_2}-${p.digit_1}`;
-            const entry = scoreCount.get(key) || {score: 0, count: 0};
+            const entry = scoreCount.get(key) || {score: 0, count: 0, matchScore: 0, matchCount: 0};
             entry.score += p.weightedScore || 0;
             entry.count++;
+            const u1 = `${key}:${p.id_1}`, u2 = `${key}:${p.id_2}`;
+            if (!used.has(u1) && !used.has(u2)) {
+                used.add(u1).add(u2);
+                entry.matchScore += p.weightedScore || 0;
+                entry.matchCount++;
+            }
             scoreCount.set(key, entry);
         }
 
@@ -351,6 +367,18 @@ export function createDocumentSetStore(documentSetId) {
 
         return {scoreCount, countRange: {min, max, range: max - min}};
     });
+
+    const hideEmpty = writable(false);
+    const visibleDocuments = derived(
+        [sortedDocumentNodes, selectedDocuments, hideEmpty, filteredPairs],
+        ([$nodes, $selected, $hide, $pairs]) => {
+            const linked = new Set();
+            if ($hide) for (const p of $pairs) if (p.digit_1 !== p.digit_2) linked.add(p.digit_1).add(p.digit_2);
+            return $nodes
+                .map(([, meta]) => meta)
+                .filter(d => $selected.has(d.id) && (!$hide || linked.has(d.id)));
+        }
+    );
 
     function calculateLinkProps(score, scoreRange, minDistance = 10, maxDistance = 200, minWidth = 2, maxWidth = 25) {
         if (!scoreRange) return {strength: 0.5, distance: 100, width: 2};
@@ -616,9 +644,8 @@ export function createDocumentSetStore(documentSetId) {
         });
     }
 
-    function selectAllDocuments() {
-        const allIds = Array.from(get(documentNodes).keys());
-        selectedDocuments.set(new Set(allIds));
+    function toggleAllDocuments(select = true) {
+        selectedDocuments.set(new Set(select ? get(documentNodes).keys() : []));
     }
 
     function applyDefaultThreshold() {
@@ -655,15 +682,9 @@ export function createDocumentSetStore(documentSetId) {
         return map;
     });
 
-    const imageCountMap = derived(documentNodes, ($docs) => {
-        const map = new Map();
-        for (const [id, doc] of $docs) {
-            map.set(id, Math.max(1, doc.images?.length || doc.img_nb || 1));
-        }
-        return map;
-    });
-
-    const hideEmpty = writable(false);
+    const imageCountMap = derived([documentNodes, regionCounts], ([$docs, $counts]) =>
+        new Map([...$docs].map(([id, doc]) => [id, Math.max(1, $counts.get(id) ?? 0, doc.images.length)]))
+    );
 
     /** Map<"id1-id2", category> for all loaded pairs; updated in-place by patchPairs */
     const pairCat = writable(new Map());
@@ -703,6 +724,7 @@ export function createDocumentSetStore(documentSetId) {
 
         allPairs,
         visiblePairs: filteredPairs,
+        visibleDocuments,
         pairCat,
         pairIndex,
         imageNodes,
@@ -724,7 +746,7 @@ export function createDocumentSetStore(documentSetId) {
         updateSelectedNodes: (nodes) => selectedNodes.set(nodes),
         toggleCategory,
         toggleDoc,
-        selectAllDocuments,
+        toggleAllDocuments,
         getFilteredPairsForDocPair,
         buildMatchesForAnchor,
         buildFriezeMatches,
@@ -747,6 +769,7 @@ export function createDocumentSetStore(documentSetId) {
         filteredDocStats,
 
         normalizeByImages,
+        regionCounts,
         imageCountMap,
         visiblePairIds,
         coverageData,

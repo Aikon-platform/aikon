@@ -23,15 +23,6 @@ export function createStemmaStore(documentSetStore) {
         }));
     }
 
-    function updateEdgeLabel(source, target, label) {
-        stemmaGraph.update($g => ({
-            ...$g,
-            edges: $g.edges.map(e =>
-                e.source === source && e.target === target ? { ...e, label } : e
-            )
-        }));
-    }
-
     const filteredDocuments = derived(
         [documentNodes, selectedDocuments],
         ([$documentNodes, $selectedDocuments]) =>
@@ -258,6 +249,14 @@ export function createStemmaStore(documentSetStore) {
         return ids.length > 0;
     }
 
+    const patchEdge = (source, target, patch) => stemmaGraph.update($g => ({
+        ...$g,
+        edges: $g.edges.map(e => e.source === source && e.target === target ? { ...e, ...patch(e) } : e)
+    }));
+
+    const updateEdgeLabel = (source, target, label) => patchEdge(source, target, () => ({ label }));
+    const toggleEdgeDirection = (source, target) => patchEdge(source, target, e => ({ undirected: !e.undirected }));
+
     return {
         selectedNodes,
         edges,
@@ -270,6 +269,7 @@ export function createStemmaStore(documentSetStore) {
         matches,
         updateNodeTitle,
         updateEdgeLabel,
+        toggleEdgeDirection,
         filteredDocuments,
         addEdge,
         removeEdge,

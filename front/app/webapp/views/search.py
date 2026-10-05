@@ -12,17 +12,21 @@ from app.webapp.utils.constants import PAGE_LEN
 
 def paginated_records(request, records):
     paginator = Paginator(records, PAGE_LEN)
-    page_number = request.GET.get("p", 1)
-    page_obj = paginator.get_page(page_number)
+    page_obj = paginator.get_page(request.GET.get("p", 1))
+    fields = list(
+        dict.fromkeys(f for v in request.GET.getlist("field") for f in v.split(",") if f)
+    )
 
     results = []
     for obj in page_obj:
         if json_obj := obj.get_json(request_user=request.user):
-            results.append(json_obj)
+            results.append(
+                {k: json_obj[k] for k in fields if k in json_obj} if fields else json_obj
+            )
 
     return {
         "results": results,
-        "count": records.count() if hasattr(records, "count") else len(records),
+        "count": paginator.count,
         # "num_pages": paginator.num_pages,
         "current_page": page_obj.number,
     }

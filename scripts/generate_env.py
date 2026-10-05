@@ -23,6 +23,8 @@ import socket
 import sys
 from pathlib import Path
 
+# CONSTANTS *******************************************************
+
 ROOT = Path(__file__).resolve().parent.parent
 TEMPLATE = ROOT / ".env.template"
 ROOT_ENV = ROOT / ".env"
@@ -57,6 +59,7 @@ PROMPTED = {
         "POSTGRES_DB",
         "POSTGRES_USER",
         "EMAIL_HOST",
+        "EMAIL_USE_TLS",
         "EMAIL_HOST_USER",
         "EMAIL_HOST_PASSWORD",
         "DEFAULT_FROM_EMAIL",
@@ -74,6 +77,44 @@ HEADER = (
     "# Edit the root .env then rerun: python scripts/generate_env.py\n\n"
 )
 
+ENV_CONSTANTS = {
+    "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0,web,nginx,host.docker.internal",
+    "AIIINOTATE_HOST": "0.0.0.0",
+    "AIIINOTATE_SCHEME": "http",
+    "AIIINOTATE_LOG_TARGET": "stdout",
+    "AIIINOTATE_LOG_DIR": "",
+    "AIIINOTATE_LOG_LEVEL": "debug",
+    "AIIINOTATE_PAGE_SIZE": "5000",
+    "AIIINOTATE_STRICT_MODE": "true"  # in lowercase to be properly parsed by aiiinotate's JS
+}
+
+
+REQUIRED = {
+    "front/app/config/.env": (
+        "SECRET_KEY", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD",
+        "DB_HOST", "DB_PORT", "REDIS_HOST", "REDIS_PORT", "REDIS_DB_INDEX",
+        "API_URL", "BASE_URL", "MEDIA_DIR", "CANTALOUPE_BASE_URI",
+        "AIIINOTATE_BASE_URL", "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
+        "AIIINOTATE_STRICT_MODE", "MIRADOR_BASE_URL",
+    ),
+    "front/cantaloupe/.env": (
+        "CANTALOUPE_BASE_URI", "CANTALOUPE_IMG",
+        "CANTALOUPE_PORT", "CANTALOUPE_PORT_HTTPS",
+    ),
+    "docker/.env": (
+        "DATA_FOLDER", "USERID", "COMPOSE_FILE",
+        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_DB", "MONGODB_CONNSTRING",
+        "AIIINOTATE_PORT", "AIIINOTATE_HOST", "AIIINOTATE_SCHEME",
+        "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
+        "AIIINOTATE_PAGE_SIZE", "AIIINOTATE_PUBLIC_URL", "AIIINOTATE_BASE_URL",
+        "MIRADOR_PORT", "CANTALOUPE_PORT", "NGINX_PORT",
+        "NGINX_MAX_BODY_SIZE", "NGINX_TIMEOUT",
+        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_DB", "MONGODB_CONNSTRING",
+        "MONGODB_DB_TEST", "MONGODB_CONNSTRING_TEST",
+    ),
+}
+
+# HELPERS *******************************************************
 
 def parse_env(path: Path) -> dict:
     """{key: (value, description)} in declaration order."""
@@ -105,6 +146,7 @@ def prompt(key: str, default: str, desc: str) -> str:
 
 
 def resolve_values(mode: str, assume_yes: bool) -> dict:
+    """set the base .env values, prompting only if necessary"""
     template = parse_env(TEMPLATE)
     current = (
         {k: v for k, (v, _) in parse_env(ROOT_ENV).items()} if ROOT_ENV.exists() else {}
@@ -153,7 +195,10 @@ def write_root_env(v: dict) -> None:
 
 
 def derive(v: dict, mode: str, in_docker: bool) -> dict:
-    """Values that depend on where the reader runs (host vs container)."""
+    """
+    set values that depend on where the reader runs (host vs container)
+    and add constans (`ENV_CONSTANTS`), without prompting the user
+    """
     host = lambda svc: svc if in_docker else "localhost"
     port = lambda key: INTERNAL_PORTS[key] if in_docker else v[key]
     prod = mode == "prod"
@@ -164,7 +209,7 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
         else f"http://localhost:{v['NGINX_PORT'] if nginx else v['FRONT_PORT']}"
     )
 
-    return {
+    env_dict = {
         "MODE": mode,
         "DEBUG": str(not prod),
         "DOCKER": str(in_docker),
@@ -196,42 +241,10 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
         "MONGODB_CONNSTRING": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}",
         "MONGODB_DB_TEST": f"{v['MONGODB_DB']}_test",
         "MONGODB_CONNSTRING_TEST": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}_test",
-
-        # TODO : move these to a defaults dict.
-        "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0,web,nginx,host.docker.internal",
-        "AIIINOTATE_HOST": "0.0.0.0",
-        "AIIINOTATE_SCHEME": "http",
-        "AIIINOTATE_LOG_TARGET": "stdout",
-        "AIIINOTATE_LOG_DIR": "",
-        "AIIINOTATE_LOG_LEVEL": "debug",
-        "AIIINOTATE_PAGE_SIZE": "5000",
-        "AIIINOTATE_STRICT_MODE": "true"  # in lowercase to be properly parsed by aiiinotate's JS
     }
 
-REQUIRED = {
-    "front/app/config/.env": (
-        "SECRET_KEY", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD",
-        "DB_HOST", "DB_PORT", "REDIS_HOST", "REDIS_PORT", "REDIS_DB_INDEX",
-        "API_URL", "BASE_URL", "MEDIA_DIR", "CANTALOUPE_BASE_URI",
-        "AIIINOTATE_BASE_URL", "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
-        "AIIINOTATE_STRICT_MODE", "MIRADOR_BASE_URL",
-    ),
-    "front/cantaloupe/.env": (
-        "CANTALOUPE_BASE_URI", "CANTALOUPE_IMG",
-        "CANTALOUPE_PORT", "CANTALOUPE_PORT_HTTPS",
-    ),
-    "docker/.env": (
-        "DATA_FOLDER", "USERID", "COMPOSE_FILE",
-        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_DB", "MONGODB_CONNSTRING",
-        "AIIINOTATE_PORT", "AIIINOTATE_HOST", "AIIINOTATE_SCHEME",
-        "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
-        "AIIINOTATE_PAGE_SIZE", "AIIINOTATE_PUBLIC_URL", "AIIINOTATE_BASE_URL",
-        "MIRADOR_PORT", "CANTALOUPE_PORT", "NGINX_PORT",
-        "NGINX_MAX_BODY_SIZE", "NGINX_TIMEOUT",
-        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_DB", "MONGODB_CONNSTRING",
-        "MONGODB_DB_TEST", "MONGODB_CONNSTRING_TEST",
-    ),
-}
+    env_dict = env_dict | ENV_CONSTANTS
+    return env_dict
 
 
 def write_env(path: Path, variables: dict) -> None:
@@ -257,8 +270,10 @@ def generate_nginx_conf(v: dict) -> None:
         out.write_text(text)
         print(f"  wrote {out.relative_to(ROOT)}")
 
+# RUN *******************************************************
 
 def generate(mode: str, assume_yes: bool) -> None:
+    """create the .env"""
     v = resolve_values(mode, assume_yes)
     write_root_env(v)
 
@@ -267,7 +282,7 @@ def generate(mode: str, assume_yes: bool) -> None:
     # front: perspective of the Django process (container in local/prod, host in dev)
     write_env(ROOT / "front/app/config/.env", v | derive(v, mode, front_in_docker))
 
-    # cantaloupe: always a container
+    # create the cantaloupe .env (cantaloupe always runs in a container)
     d = derive(v, mode, in_docker=True)
     write_env(
         ROOT / "front/cantaloupe/.env",
