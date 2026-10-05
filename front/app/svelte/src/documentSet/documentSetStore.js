@@ -1,9 +1,9 @@
 import {derived, writable, get} from "svelte/store";
-import { streamPairsToWorker } from "./pairStreamReader.js";
 
 import {appUrl, aiiinotateUrl} from "../constants.js";
 
 // TO DELETE
+// import {aiiinotateUrl} from "../constants.js";
 // const appUrl = "https://vhs.huma-num.fr";
 // TO DELETE
 
@@ -47,7 +47,6 @@ export function createDocumentSetStore(documentSetId) {
 
     // web worker for processing pairs
     let worker;
-    let abortController = null;
 
     const pairIndex = writable({
         byImage: new Map(),
@@ -105,142 +104,123 @@ export function createDocumentSetStore(documentSetId) {
             return;
         }
 
-        if (worker) worker.terminate() && (worker = null);
-        if (abortController) abortController.abort();
-        abortController = new AbortController();
+        worker?.terminate();
 
         const loadPromise = new Promise((resolve, reject) => {
             loading.set(true);
             loadingProgress.set({ loaded: 0, done: false });
             error.set(null);
 
-            const run = async () => {
-                try {
-                    worker = createWorker();
+            worker = createWorker();
 
-                    worker.onmessage = async (e) => {
-                        const { type } = e.data;
+            worker.onmessage = async (e) => {
+                const { type } = e.data;
 
-                        if (type === "progress") {
-                            loadingProgress.set({ loaded: e.data.count, done: false });
-                            return;
-                        }
-
-                        if (type !== "complete") return;
-
-                        const {
-                            allPairs: sorted,
-                            imageNodes: imgMap,
-                            pairIndex: idx,
-                            categories: cats,
-                            stats
-                        } = e.data;
-
-                        pairIndex.set(idx);
-                        pairStats.set(stats.pairStats);
-                        applyDefaultThreshold();
-                        documentStats.set(stats.documentStats);
-                        imageStats.set(stats.imageStats);
-                        docPairStats.set(stats.docPairStats);
-
-                        const dsInfo = await dsInfoPromise;
-                        const digits = dsInfo?.Digitization || {};
-
-                        const digitIds = Object.keys(digits).map(Number);
-                        if (get(selectedDocuments).size === 0) {
-                            selectedDocuments.set(new Set(digitIds));
-                        }
-
-                        const docMap = new Map();
-                        digitIds.forEach(id => {
-                            docMap.set(id, {
-                                images: [],
-                                title: `Digitization ${id}`,
-                                color: "hsl(0, 0%, 50%)",
-                                ...digits[id] || {},
-                            });
-                        });
-
-                        docMap.forEach(doc => {
-                            const range = [doc.min_date, doc.max_date].filter(Boolean);
-                            if (range.length) doc.title += ` (${[...new Set(range)].join("–")})`;
-                        });
-
-                        if (dsInfo) {
-                            witnessNodes.set(new Map(Object.values(dsInfo.Witness).map(w => [w.id, w])));
-                            seriesNodes.set(new Map(Object.values(dsInfo.Series).map(s => [s.id, s])));
-                        }
-
-                        imgMap.forEach(img => {
-                            const doc = docMap.get(img.digit);
-                            if (doc) {
-                                img.color = doc.color;
-                                img.title = `${doc.title} | Page ${img.canvas}`;
-                                doc.images.push(img);
-                            }
-                        });
-
-                        // TODO add normalizedScore = totalScore / images.length
-
-                        docMap.forEach(doc => {
-                            doc.images.sort((a, b) => {
-                                if (a.canvas !== b.canvas) return a.canvas - b.canvas;
-                                return (parseInt(a.xywh?.[1]) || 0) - (parseInt(b.xywh?.[1]) || 0);
-                            })
-                        });
-
-                        imageNodes.set(imgMap);
-                        documentNodes.set(docMap);
-
-                        docSetNumber.set({
-                            documents: digitIds.length,
-                            pairs: sorted.length,
-                            images: imgMap.size,
-                            categories: cats
-                        });
-
-                        allPairs.set(sorted);
-                        pairCat.set(new Map(sorted.map(p => [`${p.id_1}-${p.id_2}`, p.category])));
-
-                        loading.set(false);
-                        loadingProgress.set({ loaded: sorted.length, done: true });
-
-                        worker.terminate();
-                        worker = null;
-                        resolve(sorted.length);
-                    };
-
-                    worker.onerror = (err) => {
-                        console.error("Worker error", err);
-                        error.set(`Worker error: ${err.message}`);
-                        loading.set(false);
-                        reject(err);
-                    };
-
-                    const url = `${appUrl}/document-set/${documentSetId}/pairs/stream?category=${$cats.join(",")}`;
-
-                    await streamPairsToWorker(url, worker, {
-                        signal: abortController.signal,
-                        onProgress: (loaded, done) => {
-                            loadingProgress.set({ loaded, done });
-                        },
-                        onError: (err) => {
-                            error.set(`Stream error: ${err.message}`);
-                        }
-                    });
-
-                } catch (e) {
-                    if (e.name === "AbortError") {
-                        console.log("Request aborted");
-                        return;
-                    }
-                    error.set(`Fetch error: ${e.message}`);
-                    loading.set(false);
-                    reject(e);
+                if (type === "progress") {
+                    loadingProgress.set({ loaded: e.data.count, done: false });
+                    return;
                 }
+
+                if (type === "error") return worker.onerror(e.data);
+
+                if (type !== "complete") return;
+
+                const {
+                    allPairs: sorted,
+                    imageIds,
+                    imageNodes: imgMap,
+                    pairIndex: idx,
+                    categories: cats,
+                    stats
+                } = e.data;
+                for (const p of sorted) {
+                    p.id_1 = imageIds[p.id_1];
+                    p.id_2 = imageIds[p.id_2];
+                }
+
+                pairIndex.set(idx);
+                pairStats.set(stats.pairStats);
+                applyDefaultThreshold();
+                documentStats.set(stats.documentStats);
+                imageStats.set(stats.imageStats);
+                docPairStats.set(stats.docPairStats);
+
+                const dsInfo = await dsInfoPromise;
+                const digits = dsInfo?.Digitization || {};
+
+                const digitIds = Object.keys(digits).map(Number);
+                if (get(selectedDocuments).size === 0) {
+                    selectedDocuments.set(new Set(digitIds));
+                }
+
+                const docMap = new Map();
+                digitIds.forEach(id => {
+                    docMap.set(id, {
+                        images: [],
+                        title: `Digitization ${id}`,
+                        color: "hsl(0, 0%, 50%)",
+                        ...digits[id] || {},
+                    });
+                });
+
+                docMap.forEach(doc => {
+                    const range = [doc.min_date, doc.max_date].filter(Boolean);
+                    if (range.length) doc.title += ` (${[...new Set(range)].join("–")})`;
+                });
+
+                if (dsInfo) {
+                    witnessNodes.set(new Map(Object.values(dsInfo.Witness).map(w => [w.id, w])));
+                    seriesNodes.set(new Map(Object.values(dsInfo.Series).map(s => [s.id, s])));
+                }
+
+                imgMap.forEach(img => {
+                    const doc = docMap.get(img.digit);
+                    if (doc) {
+                        img.color = doc.color;
+                        img.title = `${doc.title} | Page ${img.canvas}`;
+                        doc.images.push(img);
+                    }
+                });
+
+                // TODO add normalizedScore = totalScore / images.length
+
+                docMap.forEach(doc => {
+                    doc.images.sort((a, b) => {
+                        if (a.canvas !== b.canvas) return a.canvas - b.canvas;
+                        return (parseInt(a.xywh?.[1]) || 0) - (parseInt(b.xywh?.[1]) || 0);
+                    })
+                });
+
+                imageNodes.set(imgMap);
+                documentNodes.set(docMap);
+
+                docSetNumber.set({
+                    documents: digitIds.length,
+                    pairs: sorted.length,
+                    images: imgMap.size,
+                    categories: cats
+                });
+
+                allPairs.set(sorted);
+                catOverrides.clear();
+                pairCat.set(findCategory);
+
+                loading.set(false);
+                loadingProgress.set({ loaded: sorted.length, done: true });
+
+                worker.terminate();
+                worker = null;
+                resolve(sorted.length);
             };
 
-            run();
+            worker.onerror = (err) => {
+                console.error("Worker error", err);
+                error.set(`Worker error: ${err.message}`);
+                loading.set(false);
+                reject(err);
+            };
+
+            worker.postMessage({ url: `${appUrl}/document-set/${documentSetId}/pairs/stream?category=${$cats.join(",")}` });
         });
 
         set(loadPromise);
@@ -476,9 +456,7 @@ export function createDocumentSetStore(documentSetId) {
         const $visibleIds = get(visiblePairIds);
         const key = doc1Id < doc2Id ? `${doc1Id}-${doc2Id}` : `${doc2Id}-${doc1Id}`;
         const pairs = $pairIndex.byDocPair.get(key) || [];
-        return $visibleIds.size > 0
-            ? pairs.filter(p => $visibleIds.has(`${p.id_1}-${p.id_2}`))
-            : pairs;
+        return $visibleIds.size > 0 ? pairs.filter(p => $visibleIds.has(p)) : pairs;
     }
 
     function otherSide(pair, anchorDocId, anchorImgId, imgNodes, docNodes) {
@@ -661,13 +639,7 @@ export function createDocumentSetStore(documentSetId) {
 
     const normalizeByImages = writable(true);
 
-    const visiblePairIds = derived(filteredPairs, ($pairs) => {
-        const set = new Set();
-        for (const p of $pairs) {
-            set.add(`${p.id_1}-${p.id_2}`);
-        }
-        return set;
-    });
+    const visiblePairIds = derived(filteredPairs, $pairs => new Set($pairs));
 
     const coverageData = derived(filteredPairs, ($pairs) => {
         const map = new Map();
@@ -686,8 +658,13 @@ export function createDocumentSetStore(documentSetId) {
         new Map([...$docs].map(([id, doc]) => [id, Math.max(1, $counts.get(id) ?? 0, doc.images.length)]))
     );
 
-    /** Map<"id1-id2", category> for all loaded pairs; updated in-place by patchPairs */
-    const pairCat = writable(new Map());
+    const findPair = (a, b) => get(pairIndex).byImage.get(a)?.find(p => p.id_1 === b || p.id_2 === b);
+    const catKey = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
+    /** Map<"id1-id2", category> of categories patched for pairs that are not loaded */
+    const catOverrides = new Map();
+    const findCategory = (a, b) => findPair(a, b)?.category ?? catOverrides.get(catKey(a, b)) ?? null;
+    /** (img1, img2) => category; re-set (functions always notify subscribers) on load and by patchPairs */
+    const pairCat = writable(findCategory);
 
     /**
      * Light refresh: patch already-loaded pairs in place and re-emit without re-streaming from the worker
@@ -695,17 +672,12 @@ export function createDocumentSetStore(documentSetId) {
      * // TODO make more versatile => allow to remove pairs
      */
     const patchPairs = (updates) => {
-        const m = new Map(updates.map(u => [`${u.img_1}-${u.img_2}`, u.category]));
-        const $pairs = get(allPairs);
-        for (const p of $pairs) {
-            const cat = m.get(`${p.id_1}-${p.id_2}`) ?? m.get(`${p.id_2}-${p.id_1}`);
-            if (cat !== undefined) p.category = cat;
+        for (const { img_1, img_2, category } of updates) {
+            const p = findPair(img_1, img_2);
+            if (p) p.category = category;
+            else catOverrides.set(catKey(img_1, img_2), category);
         }
-        pairCat.update(prev => {
-            const next = new Map(prev);
-            for (const [k, v] of m) next.set(k, v);
-            return next;
-        });
+        pairCat.set(findCategory);
     };
 
 
@@ -716,10 +688,8 @@ export function createDocumentSetStore(documentSetId) {
         error,
         loadingProgress,
         cancelLoading: () => {
-            if (abortController) {
-                abortController.abort();
-                loading.set(false);
-            }
+            worker?.terminate();
+            loading.set(false);
         },
 
         allPairs,

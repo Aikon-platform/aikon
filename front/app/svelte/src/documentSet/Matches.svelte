@@ -9,7 +9,6 @@
     import { appName, csrfToken } from "../constants.js";
     import QueryExpansionView from "../regions/modal/QueryExpansionView.svelte";
     import CategoryToolbar from "../regions/similarity/CategoryToolbar.svelte";
-    import DuplicatesView from "../regions/modal/DuplicatesView.svelte";
 
     export let matches = [];
     export let columns = [];
@@ -17,8 +16,8 @@
     export let isInStemma = false;
     export let hideEmpty = false;
     export let clusterStore;
-    /** Map<"id1-id2", category> of current pair categories, for selection state */
-    export let pairCat = new Map();
+    /** (img1, img2) => category of current pair categories, for selection state */
+    export let pairCat = () => null;
 
     // anchor image is the first of the list
     $: anchorImageId = isInStemma ? displayMatches[0]?.[0]?.images?.[0]?.id ?? null : null;
@@ -26,7 +25,6 @@
     const dispatch = createEventDispatcher();
     const baseUrl = window.location.origin;
 
-    const pairCategory = (a, b) => pairCat.get(`${a}-${b}`) ?? pairCat.get(`${b}-${a}`) ?? null;
 
     const rowPairs = row => {
         const anchor = row[0]?.images?.[0];
@@ -40,7 +38,7 @@
     const rowCategory = (row, _pairCat) => {
         const pairs = rowPairs(row);
         if (!pairs.length) return null;
-        const cats = pairs.map(p => pairCategory(p.img_1, p.img_2));
+        const cats = pairs.map(p => pairCat(p.img_1, p.img_2));
         return cats.every(c => c === cats[0]) ? cats[0] : null;
     };
 
@@ -69,7 +67,6 @@
         { id: "region", label: i18n("mainView") },
         { id: "page", label: i18n("pageView") },
         { id: "matches", label: i18n("matchesView") },
-        { id: "duplicates", label: i18n("duplicatesView") }
     ];
 
     let modalOpen = false;
@@ -211,8 +208,6 @@
                 {#key currentItem.img}
                     <QueryExpansionView item={currentItem}/>
                 {/key}
-            {:else if activeTab === "duplicates"}
-                <DuplicatesView item={currentItem}/>
             {/if}
         </Tabs>
     </svelte:fragment>

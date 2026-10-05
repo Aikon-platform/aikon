@@ -54,7 +54,7 @@
         const {doc1, doc2} = cell;
         const pairKey = doc1.id < doc2.id ? `${doc1.id}-${doc2.id}` : `${doc2.id}-${doc1.id}`;
         let pairs = $pairIndex.byDocPair.get(pairKey) || [];
-        if (visibleIds.size > 0) pairs = pairs.filter(p => visibleIds.has(`${p.id_1}-${p.id_2}`));
+        if (visibleIds.size > 0) pairs = pairs.filter(p => visibleIds.has(p));
         return pairs;
     }
 

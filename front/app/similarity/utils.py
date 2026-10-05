@@ -1,5 +1,6 @@
 import os
 import re
+import zlib
 from collections import defaultdict
 
 import numpy as np
@@ -10,7 +11,8 @@ from itertools import combinations_with_replacement, product, islice
 
 from pathlib import Path
 from django.db import transaction
-from django.db.models import Q, F, QuerySet
+from django.db.models import Q, F, QuerySet, Value
+from django.db.models.functions import Coalesce
 
 from app.similarity.const import SCORES_PATH
 from app.config.settings import APP_URL, APP_NAME
@@ -616,7 +618,10 @@ def update_category_x(region_pair: RegionPair, user_id: int):
     return region_pair
 
 
-def filter_pairs(digit_ids, exclusive=True, min_score=None, max_score=None, topk=None, exclude_self=False, categories=None) -> QuerySet:
+CATEGORY = Coalesce("category", Value(0))
+
+
+def filter_pairs(digit_ids, exclusive=True, min_score=None, max_score=None, topk=None, exclude_self=False, categories=None, user_id=None) -> QuerySet:
     if exclusive:
         query = Q(digit_1__in=digit_ids) & Q(digit_2__in=digit_ids)
     else:
@@ -631,18 +636,14 @@ def filter_pairs(digit_ids, exclusive=True, min_score=None, max_score=None, topk
     if exclude_self:
         query &= ~Q(digit_1=F("digit_2"))
 
+    qs = RegionPair.objects.filter(query)
     if categories:
-        has_no_category = 0 in categories
-        real_categories = [c for c in categories if c != 0]
+        cat_query = Q(cat__in=categories)
+        if user_id and SimilarityCategory.USER_MATCH in categories:
+            cat_query |= Q(category_x__contains=[user_id])
+        qs = qs.alias(cat=CATEGORY).filter(cat_query)
 
-        if has_no_category and real_categories:
-            query &= Q(category__in=real_categories) | Q(category__isnull=True)
-        elif has_no_category:
-            query &= Q(category__isnull=True)
-        elif real_categories:
-            query &= Q(category__in=real_categories)
-
-    qs = RegionPair.objects.filter(query).order_by(F("score").desc(nulls_first=True))
+    qs = qs.order_by(F("score").desc(nulls_first=True))
     return qs[:topk] if topk else qs
 
 
@@ -650,22 +651,19 @@ def normalize_pair(img_1: str, img_2: str):
     return RegionPair.order_pair((img_1, img_2), normalize=True)
 
 
-F_IMG1, F_IMG2, F_D1, F_D2, F_ANNO1, F_ANNO2, F_SCORE, F_CAT, F_CATX, F_SIMTYPE = range(
-    10
-)
-
-
-def stream_pairs_ndjson(qs: QuerySet):
-    """Generator yielding NDJSON chunks of batched pairs."""
-    stream_fields = (
-        "img_1", "img_2", "digit_1", "digit_2", "anno_1", "anno_2",
-        "score", "category", "category_x", "similarity_type",
-    )
-    batch_size = 1000
-
-    rows = qs.values(*stream_fields).iterator(chunk_size=batch_size)
+def stream_pairs_ndjson(qs: QuerySet, user_id: int | None, batch_size=10_000):
+    """Gzipped NDJSON, one line per batch: [new image names, flat (img_idx_1, img_idx_2, score, category, is_user_match) tuples]"""
+    rows = qs.values_list("img_1", "img_2", "score", CATEGORY, "category_x").iterator(chunk_size=batch_size)
+    ids, gz = {}, zlib.compressobj(1, wbits=31)
     while batch := list(islice(rows, batch_size)):
-        yield b"".join(orjson.dumps({**r, "category_x": r["category_x"] or []}) + b"\n" for r in batch)
+        n = len(ids)
+        flat = [
+            v for a, b, s, c, x in batch
+            for v in (ids.setdefault(a, len(ids)), ids.setdefault(b, len(ids)), s and round(s, 4), c, int(user_id in (x or ())))
+        ]
+        new = [*islice(reversed(ids), len(ids) - n)][::-1]
+        yield gz.compress(orjson.dumps([new, flat]) + b"\n") + gz.flush(zlib.Z_SYNC_FLUSH)
+    yield gz.flush()
 
 
 def export_pairs(digit_ids, after_id: int = 0, limit: int | None = None) -> dict:
