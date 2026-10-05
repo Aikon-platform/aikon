@@ -108,7 +108,7 @@
                           x1={s.x + NODE_W/2} y1={s.y + NODE_H}
                           x2={tg.x + NODE_W/2} y2={tg.y}
                           stroke="var(--bulma-body-color)" stroke-width={2 / $transform.k}
-                          marker-end="url(#doc-arrow)"/>
+                          marker-end={edge.undirected ? null : "url(#doc-arrow)"}/>
                 </g>
                 {#if edge.label}
                     <text x={(s.x + NODE_W/2 + tg.x + NODE_W/2) / 2}

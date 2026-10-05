@@ -12,7 +12,7 @@
     export let mode = "image";
     export let isInStemma = false;
 
-    const { nodeTitles, docsInStemma } = stemmaStore;   // drop areAllInStemma
+    const { nodeTitles, docsInStemma } = stemmaStore;
 
     $: stemmaDocs = isInStemma && $docsInStemma.has($baseDocId) ? $docsInStemma : null;
     function areInStemma(ids, set) {

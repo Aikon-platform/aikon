@@ -10,6 +10,7 @@
     import Tabs from "../../ui/Tabs.svelte";
     import { RegionItem } from "../types.js";
     import {i18n} from "../../utils.js";
+    import DuplicatesView from "../modal/DuplicatesView.svelte";
 
     export let items = [];
     export let loading = false;
@@ -57,6 +58,7 @@
         { id: "page", label: i18n("pageView") },
         { id: "similarity", label: i18n("similarityView") },
         { id: "expansion", label: i18n("expansionView") },
+        { id: "duplicates", label: i18n("duplicatesView") }
     ];
 </script>
 
@@ -113,6 +115,8 @@
                     {#key currentItem.img}
                         <QueryExpansionView item={currentItem}/>
                     {/key}
+                {:else if activeTab === "duplicates"}
+                    <DuplicatesView item={currentItem}/>
                 {/if}
             </Tabs>
         </svelte:fragment>

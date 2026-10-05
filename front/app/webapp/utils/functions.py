@@ -1,4 +1,5 @@
 import datetime
+import functools
 import shutil
 
 import magic
@@ -17,7 +18,7 @@ from PIL import Image
 from django.core.exceptions import ValidationError
 
 from django.utils.html import format_html
-from django.http import HttpResponse
+from django.http import HttpResponse, JsonResponse
 from django.utils.timezone import is_naive, make_aware
 from django.utils.safestring import mark_safe
 from urllib.request import (
@@ -26,6 +27,8 @@ from urllib.request import (
     build_opener,
     install_opener,
 )
+
+from django.views.decorators.http import require_POST
 
 from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL, APP_URL, APP_PORT, MODE
 from app.webapp.models.utils.constants import DATE_ERROR, IMG
@@ -807,3 +810,18 @@ def maybe_dockerize(url: str) -> str:
     if MODE == "dev":
         return url.replace(APP_URL, f"http://host.docker.internal:{APP_PORT}")
     return url
+
+
+def json_post(view):
+    @require_POST
+    @functools.wraps(view)
+    def wrapper(request, *args, **kwargs):
+        try:
+            result = view(request, json.loads(request.body or b"{}"), *args, **kwargs)
+        except (KeyError, ValueError, ValidationError) as e:
+            return JsonResponse({"error": str(e)}, status=400)
+        except Exception as e:
+            log(f"[{view.__name__}] An error occurred", e)
+            return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+        return result if isinstance(result, HttpResponse) else JsonResponse(result, safe=False)
+    return wrapper

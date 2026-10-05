@@ -12,7 +12,7 @@
 import {appLang, appName, regionsType} from "../constants.js";
 import {extractNb, getCantaloupeUrl, getMiradorUrl, i18n} from "../utils.js";
 
-const IMG_REF_REGEX = /^(?:(\d+)_)?wit(\d+)_([a-z]{3})(\d+)(?:_anno(\d+))?_(\d+)(?:_([\d,]+))?(?:\.jpg)?$/;
+const IMG_REF_REGEX = /^(?:(\d+)_)?wit(\d+)_([a-z]{3})(\d+)(?:_anno(\d+))?_(\d+)(?:_([\d.,]+))?(?:\.jpg)?$/;
 
 export function parseImgRef(imgRef) {
     if (!imgRef) return null;
@@ -70,10 +70,12 @@ export class RegionItem {
         return this.imgRoot.replace(".jpg", `_${coordStr}.jpg`);
     }
 
-    get getTitle() {
+    get getTitle() { return this.label(); }
+
+    label(witness = `${i18n("Witness")} #${this.witnessId}`) {
         const c = this.coord;
         const coordStr = c ? (Array.isArray(c) ? c.join(",") : c) : "full";
-        return `Canvas ${this.canvasNb} - ${coordStr} - ${i18n("Witness")} #${this.witnessId}`
+        return `Canvas ${this.canvasNb} - ${coordStr} - ${witness}`;
     }
 
     get parsed() {

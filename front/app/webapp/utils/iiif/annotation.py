@@ -1,6 +1,7 @@
 import colorsys
 import hashlib
 import json
+import re
 from datetime import datetime
 from pathlib import Path
 from urllib.parse import urlparse, urlunparse, parse_qs, urlencode
@@ -176,7 +177,7 @@ def get_coord_from_annotation(aiiinotation, as_str=False):
         # coord => "x,y,w,h"
         # since AIIINOTATE_STRICT_MODE is true, `xywh` will always be defined
         coord = aiiinotation["on"][0]["xywh"]
-        # remove negative values if some of the coordinates exceed the image boundaries
+        # remove negative values if some coordinates exceed image boundaries
         if as_str:
             return ",".join(["0" if num < 0 else str(num) for num in coord])
         return coord
@@ -397,7 +398,7 @@ def get_and_parse(q_url: str) -> List | Dict | None:
         return None
 
 
-def get_paginated_annotations(q_url: str) -> List[Dict]:
+def get_paginated_annotations(q_url: str, strict: bool = False) -> List[Dict] | None:
     """
     fetch annotations paginated in several AnnotationLists and return them as an array of annotations.
     """
@@ -410,12 +411,68 @@ def get_paginated_annotations(q_url: str) -> List[Dict]:
             log(
                 f"[get_paginated_annotations] annotation_list should be a Dict, got {type(annotation_list)}",
             )
+            if strict:
+                return None
             next_page = None  # avoid infinite loop
         else:
             annotations.extend(annotation_list.get("resources", []))
             next_page = annotation_list.get("next", None)
 
     return annotations
+
+
+def get_canvas_annotations(digit_id: int, canvas_nb: int) -> List[Dict] | None:
+    """All annotations on a canvas, None if aiiinotate failed"""
+    region_extraction = RegionExtraction.objects.filter(digitization_id=digit_id).first()
+    if not region_extraction:
+        return []
+    base = region_extraction.get_manifest_url(only_base=True)
+    annos = []
+    for uri in {base, maybe_dockerize(base)}:
+        page = get_paginated_annotations(update_params(
+            f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search",
+            {"canvasUri": f"{uri}/canvas/c{canvas_nb}.json"},
+        ), strict=True)
+        if page is None:
+            return None
+        annos += page
+    return annos
+
+
+def get_regions_id_from_annotation(anno: Dict) -> int | None:
+    return next((int(m[1]) for t in get_annotation_tags(anno) if (m := re.search(r"_anno(\d+)$", t or ""))), None)
+
+
+def update_annotation_xywh(anno: Dict, xywh: str) -> bool:
+    on, fragment = anno["on"][0], f"xywh={xywh}"
+    on.update({"@id": f"{on['full']}#{fragment}", "selector": {"@type": "oa:FragmentSelector", "value": fragment}})
+    on.pop("xywh", None)
+    anno["dcterms:modified"] = datetime.now().strftime("%Y-%m-%dT%H:%M:%S")
+    try:
+        r = requests.post(f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/update", json=anno)
+        return r.ok and not r.json().get("rejectedIds")
+    except requests.exceptions.RequestException as e:
+        log("[update_annotation_xywh] Request failed", e)
+        return False
+
+
+def delete_annotation(uri: str) -> bool:
+    try:
+        r = requests.delete(f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/delete", params={"uri": uri})
+        if r.status_code in (200, 204):
+            return True
+        log(f"[delete_annotation] Request failed with status code: {r.status_code}")
+    except requests.exceptions.RequestException as e:
+        log("[delete_annotation] Request failed", e)
+    return False
+
+
+def unindex_annotation(annotation_id: str) -> bool:
+    """
+    delete a single annotation from aiiinotate
+    """
+    # annotation_id = f"{wit_abbr}{wit_id}_{digit_abbr}{digit_id}_anno{regions_id}_c{canvas_nb}_{uuid4().hex[:8]}
+    return delete_annotation(to_annotation_url("", annotation_id).replace("https", "http"))
 
 
 def get_manifest_annotations(

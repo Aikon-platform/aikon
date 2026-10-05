@@ -12,6 +12,7 @@
     import QueryExpansionView from "../modal/QueryExpansionView.svelte";
     import PageView from "../modal/PageView.svelte";
     import RegionModal from "../modal/RegionModal.svelte";
+    import DuplicatesView from "../modal/DuplicatesView.svelte";
 
     export let qImg;
     export let isInModal = false;
@@ -144,6 +145,7 @@
         { id: "region", label: i18n("mainView") },
         { id: "page", label: i18n("pageView") },
         { id: "matches", label: i18n("matchesView") },
+        { id: "duplicates", label: i18n("duplicatesView") }
     ];
 </script>
 
@@ -216,6 +218,8 @@
                     {#key currentItem.img}
                         <QueryExpansionView item={currentItem}/>
                     {/key}
+                {:else if activeTab === "duplicates"}
+                    <DuplicatesView item={currentItem}/>
                 {/if}
             </Tabs>
         </svelte:fragment>

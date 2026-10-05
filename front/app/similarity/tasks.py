@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import requests
 from app.config.celery import celery_app
-from config.settings import API_URL
+from app.config.settings import API_URL
 
 
 @celery_app.task
@@ -14,6 +16,14 @@ def process_similarity_file(file):
     from app.similarity.utils import score_file_to_db
 
     return score_file_to_db(file)
+
+
+@celery_app.task
+def download_similarity_file(url: str, path: str):
+    from app.similarity.utils import download_scores, score_file_to_db
+
+    if download_scores(url, Path(path)):
+        score_file_to_db(path)
 
 
 @celery_app.task

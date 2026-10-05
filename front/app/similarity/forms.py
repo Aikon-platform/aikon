@@ -4,8 +4,7 @@ from django import forms
 
 from app.config.settings import APP_LANG
 from app.similarity.const import MODULE_NAME
-from app.webapp.forms import FormConfig, get_available_models, SubForm
-from webapp.forms import InputSourceForm
+from app.webapp.forms import FormConfig, get_available_models, SubForm, InputSourceForm
 
 AVAILABLE_SIMILARITY_ALGORITHMS = {
     "cosine": (
