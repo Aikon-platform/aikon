@@ -1,0 +1,27 @@
+{% extends "admin/base_site.html" %}
+{% load static %}
+
+{% block title %}
+    {{ view_title }}
+{% endblock %}
+
+{% block extrahead %}
+    <link rel="stylesheet" href="{% static 'css/regions.css' %}">
+    <link rel="stylesheet" href="{% static 'svelte/regionView/region.css' %}">
+    <style>
+        #region-view {
+            width: 80vw;
+        }
+    </style>
+{% endblock %}
+
+{% block content %}
+    <div id="region-view"></div>
+{% endblock %}
+
+{% block extra_js %}
+<script>
+    const imgRef = "{{ img_ref }}";
+</script>
+<script type="module" src="{% static 'svelte/regionView/region.js' %}"></script>
+{% endblock %}

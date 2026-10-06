@@ -1,5 +1,6 @@
 <script>
     import { createEventDispatcher, onMount, onDestroy, setContext } from "svelte";
+    // import { RegionItem } from "../types.js";
     import NavigationArrow from "../../ui/NavigationArrow.svelte";
 
     export let open = false;
@@ -49,6 +50,9 @@
             {/if}
 
             <div class="modal-inner">
+                <!--<a class="button is-small is-link is-light m-2 is-align-self-flex-end" href={new RegionItem(currentItem).viewUrl} target="_blank">
+                    <i class="fa-solid fa-up-right-from-square"/>
+                </a>-->
                 <slot item={currentItem} index={currentIndex} {close}/>
             </div>
 
