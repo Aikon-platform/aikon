@@ -9,6 +9,7 @@
     import { appName, csrfToken } from "../constants.js";
     import QueryExpansionView from "../regions/modal/QueryExpansionView.svelte";
     import CategoryToolbar from "../regions/similarity/CategoryToolbar.svelte";
+    import RegionTabs from "../regions/modal/RegionTabs.svelte";
 
     export let matches = [];
     export let columns = [];
@@ -197,19 +198,7 @@
 
 <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
     <svelte:fragment let:item={currentItem}>
-        <Tabs {tabs} let:activeTab>
-            {#if activeTab === "region"}
-                <div class="modal-region">
-                    <RegionCard item={currentItem} height="full" isInModal={true} copyable={true} selectable={false}/>
-                </div>
-            {:else if activeTab === "page"}
-                <PageView item={currentItem}/>
-            {:else if activeTab === "matches"}
-                {#key currentItem.img}
-                    <QueryExpansionView item={currentItem}/>
-                {/key}
-            {/if}
-        </Tabs>
+        <RegionTabs item={currentItem}/>
     </svelte:fragment>
 </RegionModal>
 
@@ -225,15 +214,6 @@
     }
     table { table-layout: fixed; }
     td { vertical-align: middle; }
-    .modal-region {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-region :global(.region) {
-        height: 100%;
-    }
     thead th {
         position: sticky;
         top: 0;

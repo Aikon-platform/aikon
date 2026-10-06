@@ -24,6 +24,7 @@ Propagation logic:
     import { i18n } from "../../utils.js";
     import { createStemmaInteraction, createStemmaMenu } from "./stemmaInteraction.js";
     import QueryExpansionView from "../../regions/modal/QueryExpansionView.svelte";
+    import RegionTabs from "../../regions/modal/RegionTabs.svelte";
 
     export let stemmaStore;
     export let visiblePairs;
@@ -371,19 +372,7 @@ Propagation logic:
 
 <RegionModal items={visibleRegions} bind:currentIndex={clickedRegionIdx} bind:open={modalOpen} on:navigate={handleNavigate}>
     <svelte:fragment let:item={currentItem}>
-        <Tabs {tabs} let:activeTab>
-            {#if activeTab === "region"}
-                <div class="modal-region">
-                    <RegionCard item={currentItem} height="full" isInModal={true} copyable={true} selectable={false}/>
-                </div>
-            {:else if activeTab === "page"}
-                <PageView item={currentItem}/>
-            {:else if activeTab === "matches"}
-                {#key currentItem.img}
-                    <QueryExpansionView item={currentItem}/>
-                {/key}
-            {/if}
-        </Tabs>
+        <RegionTabs item={currentItem}/>
     </svelte:fragment>
 </RegionModal>
 
@@ -419,15 +408,6 @@ Propagation logic:
         fill: none;
         cursor: pointer;
         pointer-events: stroke;
-    }
-    .modal-region {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-region :global(.region) {
-        height: 100%;
     }
     .toggle-btn {
         position: absolute;

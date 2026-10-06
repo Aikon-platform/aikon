@@ -3,14 +3,8 @@
     import { appLang } from "../../constants";
     import SimilarRegion from "./SimilarRegion.svelte";
     import RegionModal from "../modal/RegionModal.svelte";
-    import RegionCard from "../RegionCard.svelte";
-    import PageView from "../modal/PageView.svelte";
-    import ComparisonView from "../modal/ComparisonView.svelte";
-    import QueryExpansionView from "../modal/QueryExpansionView.svelte";
-    import Tabs from "../../ui/Tabs.svelte";
     import { RegionItem } from "../types.js";
-    import {i18n} from "../../utils.js";
-    import DuplicatesView from "../modal/DuplicatesView.svelte";
+    import RegionTabs from "../modal/RegionTabs.svelte";
 
     export let items = [];
     export let loading = false;
@@ -52,14 +46,6 @@
         modalIndex = e.detail.index ?? 0;
         modalOpen = true;
     };
-
-    const tabs = [
-        { id: "region", label: i18n("mainView") },
-        { id: "page", label: i18n("pageView") },
-        { id: "similarity", label: i18n("similarityView") },
-        { id: "expansion", label: i18n("expansionView") },
-        { id: "duplicates", label: i18n("duplicatesView") }
-    ];
 </script>
 
 {#if loading}
@@ -102,36 +88,8 @@
     {#if !isInModal}
     <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
         <svelte:fragment let:item={currentItem}>
-            <Tabs {tabs} let:activeTab>
-                {#if activeTab === "region"}
-                    <div class="modal-region">
-                        <RegionCard item={currentItem} height="full" isInModal={true} copyable={true}/>
-                    </div>
-                {:else if activeTab === "page"}
-                    <PageView item={currentItem}/>
-                {:else if activeTab === "similarity" && qImgMetadata}
-                    <ComparisonView queryItem={qImgMetadata} similarItem={currentItem} score={currentScore}/>
-                {:else if activeTab === "expansion"}
-                    {#key currentItem.img}
-                        <QueryExpansionView item={currentItem}/>
-                    {/key}
-                {:else if activeTab === "duplicates"}
-                    <DuplicatesView item={currentItem}/>
-                {/if}
-            </Tabs>
+            <RegionTabs item={currentItem} queryItem={qImgMetadata}/>
         </svelte:fragment>
     </RegionModal>
     {/if}
 {/if}
-
-<style>
-    .modal-region {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-region :global(.region) {
-        height: 100%;
-    }
-</style>
