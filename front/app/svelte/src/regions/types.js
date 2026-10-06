@@ -85,6 +85,10 @@ export class RegionItem {
         return this._parsed;
     }
 
+    get viewUrl() {
+        return `/${appName}/region/${this.fullImg.replace(/\.jpg$/, "")}/`;
+    }
+
     get witnessId() { return this.parsed.witnessId; }
     get digitType() { return this.parsed.digitizationType; }
     get digitId() { return this.parsed.digitizationId; }
