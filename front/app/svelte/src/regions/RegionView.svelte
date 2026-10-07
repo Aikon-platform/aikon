@@ -1,8 +1,10 @@
 <script>
     import { setContext } from "svelte";
     import { RegionItem } from "../regions/types.js";
+    import { loading } from "../utils.js";
     import RegionTabs from "../regions/modal/RegionTabs.svelte";
     import Modal from "../Modal.svelte";
+    import Loading from "../Loading.svelte";
 
     export let imgRef;
 
@@ -17,6 +19,8 @@
         window.history.replaceState({}, "", url);
     }
 </script>
+
+<Loading visible={$loading}/>
 
 <Modal/>
 

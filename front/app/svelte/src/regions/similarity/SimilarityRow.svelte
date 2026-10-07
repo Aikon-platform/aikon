@@ -1,5 +1,6 @@
 <script>
     import { onMount, onDestroy, setContext, getContext } from "svelte";
+    import InputToggle from "../../ui/InputToggle.svelte";
     import { similarityStore } from "./similarityStore.js";
     import {appName} from "../../constants";
     import {i18n, getColNb, manifestToMirador, showMessage, sendTo} from "../../utils.js";
@@ -16,11 +17,9 @@
 
     const row = similarityStore.createRowStore(qImg, isInModal);
     const { loading, propagatedLoading, error, propagated, filtered, fetchRow } = row;
-    const { selectedRegions, currentPageId } = similarityStore;
+    const { selectedRegions, currentPageId, showSameWitness } = similarityStore;
 
     const qImgItem = RegionItem.fromImg(qImg);
-    setContext("qImgMetadata", qImgItem);
-
     const manifest = getContext("manifest");
 
     const t = {
@@ -46,6 +45,10 @@
         confirmDelete: {
             en: "Do you confirm all pairs containing this region should be deleted?",
             fr: "Confirmez-vous que toutes les paires contenant cette région doivent être supprimées ?"
+        },
+        showSameWitness: {
+            en: "From same document",
+            fr: "Dans le même document"
         },
     };
 
@@ -154,7 +157,6 @@
             {/if}
 
             <RegionCard item={qImgItem} {isInModal} copyable={true} height="full" url={qImgItem.url(null, '250,')} downloadable={false} selectable={false} on:openModal={handleOpenModal}/>
-            <!--<img src="{qImgItem.url(null, '250,')}" alt={i18n("qImg", t)} class="mb-3 card query-image">-->
             <div class="new-similarity control pt-2">
                 <div class="tags has-addons" style="flex-wrap: nowrap">
                     <input bind:value={sImg} class="input is-small tag" type="text" placeholder="{i18n('newMatch', t)}"/>
@@ -182,6 +184,10 @@
                 {/if}
             </div>
         </div>
+        {#if isInModal}
+            <InputToggle toggleLabel={i18n("showSameWitness", t)} start={$showSameWitness}
+                         on:updateChecked={e => showSameWitness.set(e.detail)}/>
+        {/if}
     </svelte:fragment>
 
     <svelte:fragment slot="row-body">
