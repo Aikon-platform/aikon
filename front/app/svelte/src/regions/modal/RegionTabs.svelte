@@ -6,6 +6,8 @@
     import QueryExpansionView from "./QueryExpansionView.svelte";
     import DuplicatesView from "./DuplicatesView.svelte";
     import { i18n } from "../../utils.js";
+    import { setContext } from "svelte";
+    import { RegionItem } from "../types.js";
 
     const allTabs = [
         { id: "region", label: i18n("mainView") },
@@ -17,14 +19,20 @@
 
     /** @type {import("../types.js").RegionItemType} */
     export let item;
-    /** @type {import("../types.js").RegionItemType|null} enables the comparison tab */
-    export let queryItem = null;
+    /** @type {{qImg?: string, sImg: string}|null} without qImg, the current item is the query */
+    export let comparison = null;
     export let activeTab = "region";
     export let copyable = true;
     export let showNav = true;
     export let tabs = allTabs.map(({ id }) => id);
 
-    $: visibleTabs = allTabs.filter(({ id }) => tabs.includes(id) && (id !== "similarity" || queryItem));
+    setContext("compareWith", (sImg) => {
+        comparison = { sImg };
+        activeTab = "similarity";
+    });
+    $: pair = comparison && { qImg: comparison.qImg ?? new RegionItem(item).fullImg, sImg: comparison.sImg };
+    $: visibleTabs = allTabs.filter(({ id }) => tabs.includes(id) && (id !== "similarity" || comparison));
+    $: if (activeTab === "similarity" && !comparison) activeTab = "region";
 </script>
 
 <Tabs tabs={visibleTabs} bind:activeTab>
@@ -34,8 +42,8 @@
         </div>
     {:else if activeTab === "page"}
         <PageView {item} {showNav}/>
-    {:else if activeTab === "similarity"}
-        <ComparisonView {queryItem} similarItem={item}/>
+    {:else if activeTab === "similarity" && pair}
+        <ComparisonView qImg={pair.qImg} sImg={pair.sImg}/>
     {:else if activeTab === "duplicates"}
         <DuplicatesView {item}/>
     {:else if activeTab === "matches"}

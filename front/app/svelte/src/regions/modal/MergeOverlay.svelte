@@ -28,6 +28,10 @@
             en: "The two boxes overlap by less than 90%. Also delete the annotation of the discarded region?",
             fr: "Les deux boîtes se recouvrent à moins de 90 %. Supprimer aussi l'annotation de la région écartée ?"
         },
+        confirmOtherPage: {
+            en: "The two boxes exist on different pages. Also delete the annotation of the discarded region?",
+            fr: "Les deux boîtes sont situées sur des pages différentes. Supprimer aussi l'annotation de la région écartée ?"
+        },
         next: { en: "Next", fr: "Suivant" },
         merge: { en: "Merge", fr: "Fusionner" },
         cancel: { en: "Cancel", fr: "Annuler" },
@@ -43,7 +47,9 @@
 
     async function merge() {
         if (next) return step = "conflicts";
-        const deleteDrop = deletion === "ask" && await showMessage(i18n("confirmDelete", t), i18n("confirm"), true);
+        const deleteDrop = deletion === "ask" && await showMessage(
+            i18n(iou === null ? "confirmOtherPage" : "confirmDelete", t), i18n("confirm"), true
+        );
         const data = await sendTo(`${appName}/similarity/merge-regions`,
             { keep, drop, categories, delete_drop: deleteDrop }, i18n("networkPb", t));
         if (data) dispatch("merged", data);
