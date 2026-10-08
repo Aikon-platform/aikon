@@ -1,5 +1,5 @@
 import {derived, get, writable} from "svelte/store";
-import {errorMsg, initPagination, loading, pageUpdate} from "../../utils.js";
+import {errorMsg, initPagination, pageUpdate} from "../../utils.js";
 import {appName, csrfToken} from "../../constants.js";
 import {noId} from "./similarityCategory.js";
 import {isSameWitness, parseImgRef} from "../types.js";
@@ -64,6 +64,7 @@ function createSimilarityStore() {
     const allowedPropagateDepthRange = [2,6];
 
     const currentPage = writable(1);
+    const loading = writable(false);
 
     /** @type {writable<ComparedRegionsType>} */
     const comparedRegions = writable({});
@@ -363,6 +364,7 @@ function createSimilarityStore() {
         pageLength,
         createRowStore,
         triggerRefresh,
+        loading,
     };
 }
 

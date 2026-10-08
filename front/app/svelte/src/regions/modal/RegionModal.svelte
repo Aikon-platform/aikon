@@ -1,6 +1,6 @@
 <script>
     import { createEventDispatcher, onMount, onDestroy, setContext } from "svelte";
-    // import { RegionItem } from "../types.js";
+    import { appendToDom} from "../../utils.js";
     import NavigationArrow from "../../ui/NavigationArrow.svelte";
 
     export let open = false;
@@ -42,7 +42,7 @@
 </script>
 
 {#if open}
-    <div class="modal is-active">
+    <div class="modal is-active" use:appendToDom>
         <div class="modal-background" on:click={close} on:keyup/>
         <div class="modal-content">
             {#if canNavigate}
@@ -53,7 +53,7 @@
                 <!--<a class="button is-small is-link is-light m-2 is-align-self-flex-end" href={new RegionItem(currentItem).viewUrl} target="_blank">
                     <i class="fa-solid fa-up-right-from-square"/>
                 </a>-->
-                <slot item={currentItem} index={currentIndex} {close}/>
+                <slot item={currentItem} index={currentIndex} anchored={!!anchor} {close}/>
             </div>
 
             {#if canNavigate}
