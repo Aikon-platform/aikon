@@ -42,7 +42,7 @@ from app.similarity.utils import (
     normalize_pair,
     SimilarityCategory,
     find_annotations,
-    load_regions, in_pairs,
+    load_regions, in_pairs, pairs_with, PAIR_FIELDS,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
@@ -1021,3 +1021,15 @@ def merge_regions(request):
             transaction.set_rollback(True)
             return JsonResponse({"error": "Could not reach aiiinotate: merge aborted"}, status=502)
     return JsonResponse({"kept": keep})
+
+
+def get_pair(request):
+    q_img, s_img = (add_jpg(request.GET.get(k, "")) for k in ("q_img", "s_img"))
+    try:
+        parse_img(q_img), parse_img(s_img)
+    except ValueError as e:
+        return JsonResponse({"error": f"Invalid image: {e}"}, status=400)
+
+    rows = pairs_with(q_img).filter(Q(img_1=s_img) | Q(img_2=s_img)).values_list(*PAIR_FIELDS, named=True)
+    pairs = get_best_pairs(q_img, rows, user_id=request.user.id)
+    return JsonResponse(pairs[0] if pairs else [], safe=False)
