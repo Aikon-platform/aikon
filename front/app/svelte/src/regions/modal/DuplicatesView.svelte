@@ -40,8 +40,8 @@
         addDuplicate: { en: "Add duplicate", fr: "Ajouter un doublon" },
         merge: { en: "Merge with query region", fr: "Fusionner avec la région requête" },
         setAnchor: { en: "Explore this region's duplicates", fr: "Explorer les doublons de cette région" },
-        noDuplicate: { en: "No overlapping region on this page", fr: "Aucune région chevauchante sur cette page" },
-        loading: { en: "Retrieving overlapping regions...", fr: "Récupération des régions chevauchantes..." },
+        noDuplicate: { en: "No overlapping region on this page", fr: "Aucune région dupliquée sur cette page" },
+        loading: { en: "Retrieving overlapping regions...", fr: "Récupération des régions dupliquées..." },
         networkPb: { en: "Problem with network", fr: "Problème de réseau" },
     };
 
@@ -60,7 +60,8 @@
     function onMerged({ detail: { kept } }) {
         preview = null;
         similarityStore.triggerRefresh();
-        kept === qImg ? load() : setModalAnchor(RegionItem.fromImg(kept));
+        setModalAnchor(RegionItem.fromImg(kept));
+        if (kept === qImg) load();
     }
 </script>
 
