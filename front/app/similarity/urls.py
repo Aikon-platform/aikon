@@ -81,6 +81,7 @@ urlpatterns = [
         delete_matches,
         name="delete-matches",
     ),
+    path(f"{APP_NAME}/similarity/pair", get_pair, name="get-pair"),
     path(
         f"{APP_NAME}/similarity/delete-pair",
         delete_pair,

@@ -1,9 +1,9 @@
 <script>
-    import { onMount, onDestroy, setContext, getContext } from "svelte";
+    import { onMount, onDestroy, getContext } from "svelte";
     import InputToggle from "../../ui/InputToggle.svelte";
     import { similarityStore } from "./similarityStore.js";
     import {appName} from "../../constants";
-    import {i18n, getColNb, manifestToMirador, showMessage, sendTo} from "../../utils.js";
+    import {i18n, manifestToMirador, showMessage, sendTo} from "../../utils.js";
     import { RegionItem } from "../types.js";
 
     import MatchedRegions from "./MatchedRegions.svelte";
@@ -53,8 +53,6 @@
     };
 
     let sImg = "";
-    let innerWidth = 0;
-    $: colNb = getColNb(innerWidth);
     $: sLen = Object.keys($selectedRegions[currentPageId] || {}).length;
 
     // Lazy loading
@@ -142,8 +140,6 @@
     }
 </script>
 
-<svelte:window bind:innerWidth/>
-
 <Row useGrid={false}>
     <svelte:fragment slot="row-header">
         <div bind:this={rowEl} class="is-flex is-flex-direction-column is-align-items-center">
@@ -192,9 +188,9 @@
 
     <svelte:fragment slot="row-body">
         {#if hasBeenVisible}
-            <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} cols={colNb - 1} downloadable={false}/>
+            <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} downloadable={false}/>
             <div class="block propagated-regions my-4">
-                <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} cols={colNb - 1} downloadable={false}/>
+                <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} downloadable={false}/>
             </div>
         {/if}
     </svelte:fragment>

@@ -94,29 +94,3 @@
         {/if}
     </div>
 </div>
-
-<style>
-    .modal-context-outer {
-        height: 100%;
-        width: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-context-wrapper {
-        height: 100%;
-        max-width: 100%;
-        position: relative;
-        display: inline-block;
-    }
-    .modal-context-full-page {
-        object-fit: contain;
-        max-height: 100%;
-        max-width: 100%;
-        height: 100%;
-    }
-    .modal-context-bbox {
-        position: absolute;
-        border: 3px solid var(--bulma-link);
-    }
-</style>

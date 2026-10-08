@@ -90,10 +90,6 @@ export class RegionItem {
         return this._parsed;
     }
 
-    get viewUrl() {
-        return `/${appName}/region/${this.fullImg.replace(/\.jpg$/, "")}/`;
-    }
-
     get witnessId() { return this.parsed.witnessId; }
     get digitType() { return this.parsed.digitizationType; }
     get digitId() { return this.parsed.digitizationId; }
@@ -161,5 +157,13 @@ export class RegionItem {
 
     urlForMirador(canvasNb = this.canvasNb){
         return `${getMiradorUrl()}/index.html?iiif-content=${this.manifest()}&canvas=${canvasNb}&editMode=true&defaultForm=note`;
+    }
+
+    get viewUrl() {
+        return `/${appName}/region/${this.fullImg.replace(/\.jpg$/, "")}/`;
+    }
+
+    get witnessUrl() {
+        return `/${appName}/witness/${this.witnessId}/regions`;
     }
 }

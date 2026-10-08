@@ -26,19 +26,34 @@
     export let showNav = true;
     export let tabs = allTabs.map(({ id }) => id);
 
+    let compared = null;
     setContext("compareWith", (sImg) => {
-        comparison = { sImg };
+        compared = { sImg };
         activeTab = "similarity";
     });
-    $: pair = comparison && { qImg: comparison.qImg ?? new RegionItem(item).fullImg, sImg: comparison.sImg };
-    $: visibleTabs = allTabs.filter(({ id }) => tabs.includes(id) && (id !== "similarity" || comparison));
-    $: if (activeTab === "similarity" && !comparison) activeTab = "region";
+
+    $: regionItem = new RegionItem(item);
+    $: img = regionItem.fullImg;
+    $: img, compared = null;
+    $: active = compared ?? comparison;
+    $: pair = active && { qImg: active.qImg ?? img, sImg: active.sImg };
+    $: visibleTabs = allTabs.filter(({ id }) => tabs.includes(id) && (id !== "similarity" || pair));
+    $: if (activeTab === "similarity" && !pair) activeTab = "region";
 </script>
 
 <Tabs tabs={visibleTabs} bind:activeTab>
     {#if activeTab === "region"}
-        <div class="modal-region">
-            <RegionCard {item} height="full" isInModal={true} {copyable} selectable={false}/>
+        <div class="modal-context-outer is-flex-direction-column pb-4">
+            <div class="has-text-centered mb-2">
+                <a class="tag button is-small has-text-grey mt-3" href={regionItem.witnessUrl} target="_blank">
+                    {i18n("Witness")} #{regionItem.witnessId}
+                </a>
+            </div>
+            <div class="modal-context-wrapper mb-3">
+                <div class="modal-region modal-context-full-page">
+                    <RegionCard {item} height="full" isInModal={true} {copyable} selectable={false}/>
+                </div>
+            </div>
         </div>
     {:else if activeTab === "page"}
         <PageView {item} {showNav}/>

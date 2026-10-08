@@ -11,7 +11,6 @@
 
     import Layout from "../Layout.svelte";
     import WitnessPanel from "../witness/WitnessPanel.svelte"
-    import Loading from "../Loading.svelte";
     import SelectionBtn from "../selection/SelectionBtn.svelte";
     import Modal from "../Modal.svelte";
     import ExtractionButtons from "../regions/ExtractionButtons.svelte";
@@ -55,8 +54,6 @@
         tabList.vectorization = appLang === "en" ? "Vectorization" : "Vectorisation";
     }
 </script>
-
-<Loading visible={$loading}/>
 
 <Modal/>
 

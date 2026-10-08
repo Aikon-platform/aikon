@@ -12,7 +12,6 @@
     export let qImg;
     export let isInModal = false;
     export let noRegionsSelected = false;
-    export let cols = 4;
     export let downloadable = false;
 
     $: label = (() => {
@@ -59,35 +58,35 @@
 {:else}
     <div class="p-2">
         <span class="m-2">{items.length} {label}</span>
-        <div class="m-4 is-gap-3 has-{cols}-cols" class:grid={items.length > 0}>
-            {#each visibleItems as [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash], i (sImg)}
-                <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users}
-                               {similarityType} {similarityHash} index={i} {isInModal} {downloadable}
-                               on:openModal={handleOpenModal} />
-            {:else}
-                <div class="faded is-center py-3">
-                    {#if !isPropagated && noRegionsSelected}
-                        {appLang === "en" ? "No document selected. Select one to display results." : "Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats."}
-                    {:else}
-                        {appLang === "en" ? "No similar regions" : "Pas de régions similaires"}
-                    {/if}
-                </div>
-            {/each}
-        </div>
-        {#if hasMore}
-            <div class="is-center py-3">
-                <button class="button is-small is-link is-outlined" on:click={() => visibleCount += PAGE_SIZE}>
-                    {appLang === "en" ? `Load more` : `Charger plus`}
-                </button>
+            <div class="m-4 is-gap-3" class:grid={items.length > 0}>
+                {#each visibleItems as [score, _, sImg, , sRegions, category, users, similarityType, similarityHash], i (sImg)}
+                    <SimilarRegion {qImg} {sImg} {score} {sRegions} {category} {users}
+                                   {similarityType} {similarityHash} index={i} {isInModal} {downloadable}
+                                   on:openModal={handleOpenModal}/>
+                {:else}
+                    <div class="faded is-center py-3">
+                        {#if !isPropagated && noRegionsSelected}
+                            {appLang === "en" ? "No document selected. Select one to display results." : "Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats."}
+                        {:else}
+                            {appLang === "en" ? "No similar regions" : "Pas de régions similaires"}
+                        {/if}
+                    </div>
+                {/each}
             </div>
-        {/if}
-    </div>
+            {#if hasMore}
+                <div class="is-center py-3">
+                    <button class="button is-small is-link is-outlined" on:click={() => visibleCount += PAGE_SIZE}>
+                        {appLang === "en" ? `Load more` : `Charger plus`}
+                    </button>
+                </div>
+            {/if}
+        </div>
 
     {#if !isInModal}
-    <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
-        <svelte:fragment let:item={currentItem}>
-            <RegionTabs item={currentItem} {comparison}/>
-        </svelte:fragment>
-    </RegionModal>
+        <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
+            <svelte:fragment let:item={currentItem} let:anchored>
+                <RegionTabs item={currentItem} comparison={anchored ? null : comparison}/>
+            </svelte:fragment>
+        </RegionModal>
     {/if}
 {/if}
