@@ -1,5 +1,4 @@
 <script>
-    import { getContext } from "svelte";
     import { appLang } from "../../constants";
     import SimilarRegion from "./SimilarRegion.svelte";
     import RegionModal from "../modal/RegionModal.svelte";
@@ -14,8 +13,7 @@
     export let isInModal = false;
     export let noRegionsSelected = false;
     export let cols = 4;
-
-    const qImgMetadata = getContext("qImgMetadata") || null;
+    export let downloadable = false;
 
     $: label = (() => {
         const plural = items.length > 1;
@@ -27,9 +25,6 @@
             ? (plural ? "images similaires" : "image similaire")
             : (plural ? "similar images" : "similar image");
     })();
-
-    $: modalItems = items.map(([, , sImg]) => RegionItem.fromImg(sImg));
-    $: currentScore = items[modalIndex]?.[0] ?? null;
 
     let modalOpen = false;
     let modalIndex = 0;
@@ -46,6 +41,9 @@
         modalIndex = e.detail.index ?? 0;
         modalOpen = true;
     };
+
+    $: modalItems = items.map(([, , sImg]) => RegionItem.fromImg(sImg));
+    $: comparison = items[modalIndex] && { qImg, sImg: items[modalIndex][2] };
 </script>
 
 {#if loading}
@@ -64,7 +62,7 @@
         <div class="m-4 is-gap-3 has-{cols}-cols" class:grid={items.length > 0}>
             {#each visibleItems as [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash], i (sImg)}
                 <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users}
-                               {similarityType} {similarityHash} index={i} {isInModal}
+                               {similarityType} {similarityHash} index={i} {isInModal} {downloadable}
                                on:openModal={handleOpenModal} />
             {:else}
                 <div class="faded is-center py-3">
@@ -88,7 +86,7 @@
     {#if !isInModal}
     <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
         <svelte:fragment let:item={currentItem}>
-            <RegionTabs item={currentItem} queryItem={qImgMetadata}/>
+            <RegionTabs item={currentItem} {comparison}/>
         </svelte:fragment>
     </RegionModal>
     {/if}

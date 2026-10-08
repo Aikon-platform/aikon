@@ -34,6 +34,11 @@ export function parseImgRef(imgRef) {
     };
 }
 
+export const isSameWitness = (img1, img2) => {
+    const witnessId = parseImgRef(img1)?.witnessId;
+    return witnessId != null && witnessId === parseImgRef(img2)?.witnessId;
+};
+
 export class RegionItem {
     /** @param {RegionItemType} data */
     constructor(data) {

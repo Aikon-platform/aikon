@@ -2,6 +2,7 @@ import {derived, get, writable} from "svelte/store";
 import {errorMsg, initPagination, loading, pageUpdate} from "../../utils.js";
 import {appName, csrfToken} from "../../constants.js";
 import {noId} from "./similarityCategory.js";
+import {isSameWitness, parseImgRef} from "../types.js";
 
 /**
  * @typedef { Object.<number, Object.<string, RegionsType>> } SelectedRegionsType
@@ -112,6 +113,10 @@ function createSimilarityStore() {
     /** @type {writable<string[]|[]>} query image names for the current witness */
     const qImgs = writable([]);
     const pageQImgs = writable([]);
+
+    /** @type {writable<boolean>} display matches extracted from the query's witness (only in modal) */
+    const showSameWitness = writable(JSON.parse(localStorage.getItem("showSameWitness")) ?? true);
+    showSameWitness.subscribe((value) => localStorage.setItem("showSameWitness", JSON.stringify(value)));
 
     /**
      * On load, fetches all query images and regions that were compared to current regions
@@ -240,6 +245,10 @@ function createSimilarityStore() {
 
         const baseEndpoint = `${window.location.origin}/${appName}/regions`;
 
+        const sameWitnessFilter = (store) => derived([store, showSameWitness], ([$i, $show]) =>
+            $show ? $i : $i.filter(([, , sImg]) => !isSameWitness(qImg, sImg))
+        );
+
         const getDigitIds = () => {
             const sel = get(selectedRegions);
             return [...new Set(
@@ -309,10 +318,11 @@ function createSimilarityStore() {
         ];
 
         return {
-            items, propagated, loading, propagatedLoading, error, fetchRow,
+            items, loading, propagatedLoading, error, fetchRow,
+            propagated: isInModal ? sameWitnessFilter(propagated) : propagated,
             setVisible: (v) => { visible = v; if (v) fetchRow(); },
             filtered: isInModal
-                ? derived(items, $i => $i.filter(([, , , , , cat]) => cat !== noId))
+                ? sameWitnessFilter(derived(items, $i => $i.filter(([, , , , , cat]) => cat !== noId)))
                 : derived([items, excludedCategories, similarityScoreCutoff], ([$i, $e, $s]) =>
                     $i.filter(([score, , , , , cat]) =>
                         !$e.includes(cat) && (score == null || $s == null || Number(score) >= $s)
@@ -334,6 +344,7 @@ function createSimilarityStore() {
         excludedCategories,
         qImgs,
         pageQImgs,
+        showSameWitness,
         removeQImg,
         selectedRegions,
         propagateRecursionDepth,
