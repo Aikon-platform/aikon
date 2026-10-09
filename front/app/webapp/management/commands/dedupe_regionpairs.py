@@ -4,8 +4,7 @@ from pathlib import Path
 
 from django.core.management import BaseCommand
 
-from app.similarity.dedupe import load_plan, build_mapping, save_plan, apply_mapping, DEFAULT_THRESHOLD, BATCH_SIZE
-
+from app.similarity.dedupe import load_plan, build_mapping, save_plan, apply_mapping, purge_orphans, DEFAULT_THRESHOLD, BATCH_SIZE
 
 class Command(BaseCommand):
     help = (
@@ -14,11 +13,15 @@ class Command(BaseCommand):
     )
 
     """
+    0. Orphans
+    Delete pairs whose digitization does not exist or belongs to another witness than in the image name,
+    resync digit_1/digit_2 from image names, set regions_id_1/2 of deleted region extractions to NULL
+    
     1. Cluster
     On each page, group the regions with IoU ≥ `--threshold` (default 0.9)
     
     2. Name
-    Each group takes the canonical name of its largest region → mapping `{duplicate: canonical}`
+    Each group takes the canonical name of its smallest region → mapping `{duplicate: canonical}`
     the mapping can be saved or reloaded with `--plan`
     
     3. Merge pairs (one locked transaction)
@@ -67,6 +70,7 @@ class Command(BaseCommand):
 
     def handle(self, *args, **opts):
         log = (lambda s: self.stdout.write(str(s))) if opts["verbosity"] else (lambda s: None)
+        dry_run = not opts["apply"]
         plan_path: Path | None = opts["plan"]
 
         if plan_path and plan_path.exists():
@@ -78,5 +82,6 @@ class Command(BaseCommand):
                 save_plan(mapping, stats, opts["threshold"], plan_path)
                 log(f"Saved plan to {plan_path}")
 
-        apply_mapping(mapping, opts["batch_size"], log, opts["digits"], dry_run=not opts["apply"])
-        log("Done." if opts["apply"] else "Dry run; re-run with --apply to execute.")
+        purge_orphans(dry_run=dry_run)
+        apply_mapping(mapping, opts["batch_size"], log, opts["digits"], dry_run=dry_run)
+        log("Dry run; re-run with --apply to execute." if dry_run else "Done.")

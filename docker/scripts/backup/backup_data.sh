@@ -49,8 +49,8 @@ DUMP_STATUS=$?
 if [[ $DUMP_STATUS -ne 0 ]]; then
     # remove potentially incomplete backup file
     rm -f "$BACKUP_FILE"
-    echo "Error: pg_dump failed with status $DUMP_STATUS." > "$BACKUP_FILE"
-    exit
+    echo "Error: pg_dump failed with status $DUMP_STATUS." >&2
+    exit 1
 fi
 
 echo "Database backup created at: $BACKUP_FILE"
