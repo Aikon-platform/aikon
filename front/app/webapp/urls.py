@@ -1,4 +1,4 @@
-from django.urls import path, reverse_lazy
+from django.urls import path, reverse_lazy, re_path
 from django.contrib.auth import views as auth_views
 
 from app.webapp.views import *
@@ -231,6 +231,11 @@ urlpatterns += [
         f"{APP_NAME}/document-set/<str:id>",
         DocumentSetView.as_view(),
         name="document_set_view",
+    ),
+    re_path(
+        rf"^{APP_NAME}/region/(?P<img_ref>wit\d+_[a-z]{{3}}\d+_\d+_\d+,\d+,\d+,\d+)/$",
+        RegionView.as_view(),
+        name="region_view",
     ),
 ]
 

@@ -1,29 +1,25 @@
 <script>
-    import { onMount, onDestroy, setContext, getContext } from "svelte";
+    import { onMount, onDestroy, getContext } from "svelte";
+    import InputToggle from "../../ui/InputToggle.svelte";
     import { similarityStore } from "./similarityStore.js";
-    import {appName, appUrl, csrfToken} from "../../constants";
-    import {i18n, getColNb, manifestToMirador, refToIIIF, showMessage, sendTo} from "../../utils.js";
+    import {appName} from "../../constants";
+    import {i18n, manifestToMirador, showMessage, sendTo} from "../../utils.js";
     import { RegionItem } from "../types.js";
 
     import MatchedRegions from "./MatchedRegions.svelte";
     import Row from "../../Row.svelte";
     import RegionCard from "../RegionCard.svelte";
-    import Tabs from "../../ui/Tabs.svelte";
-    import QueryExpansionView from "../modal/QueryExpansionView.svelte";
-    import PageView from "../modal/PageView.svelte";
     import RegionModal from "../modal/RegionModal.svelte";
-    import DuplicatesView from "../modal/DuplicatesView.svelte";
+    import RegionTabs from "../modal/RegionTabs.svelte";
 
     export let qImg;
     export let isInModal = false;
 
     const row = similarityStore.createRowStore(qImg, isInModal);
     const { loading, propagatedLoading, error, propagated, filtered, fetchRow } = row;
-    const { selectedRegions, currentPageId } = similarityStore;
+    const { selectedRegions, currentPageId, showSameWitness } = similarityStore;
 
     const qImgItem = RegionItem.fromImg(qImg);
-    setContext("qImgMetadata", qImgItem);
-
     const manifest = getContext("manifest");
 
     const t = {
@@ -50,11 +46,13 @@
             en: "Do you confirm all pairs containing this region should be deleted?",
             fr: "Confirmez-vous que toutes les paires contenant cette région doivent être supprimées ?"
         },
+        showSameWitness: {
+            en: "From same document",
+            fr: "Dans le même document"
+        },
     };
 
     let sImg = "";
-    let innerWidth = 0;
-    $: colNb = getColNb(innerWidth);
     $: sLen = Object.keys($selectedRegions[currentPageId] || {}).length;
 
     // Lazy loading
@@ -140,16 +138,7 @@
         similarityStore.removeQImg(qImg);
         fetchRow();
     }
-
-    const tabs = [
-        { id: "region", label: i18n("mainView") },
-        { id: "page", label: i18n("pageView") },
-        { id: "matches", label: i18n("matchesView") },
-        { id: "duplicates", label: i18n("duplicatesView") }
-    ];
 </script>
-
-<svelte:window bind:innerWidth/>
 
 <Row useGrid={false}>
     <svelte:fragment slot="row-header">
@@ -164,7 +153,6 @@
             {/if}
 
             <RegionCard item={qImgItem} {isInModal} copyable={true} height="full" url={qImgItem.url(null, '250,')} downloadable={false} selectable={false} on:openModal={handleOpenModal}/>
-            <!--<img src="{qImgItem.url(null, '250,')}" alt={i18n("qImg", t)} class="mb-3 card query-image">-->
             <div class="new-similarity control pt-2">
                 <div class="tags has-addons" style="flex-wrap: nowrap">
                     <input bind:value={sImg} class="input is-small tag" type="text" placeholder="{i18n('newMatch', t)}"/>
@@ -192,13 +180,17 @@
                 {/if}
             </div>
         </div>
+        {#if isInModal}
+            <InputToggle toggleLabel={i18n("showSameWitness", t)} start={$showSameWitness}
+                         on:updateChecked={e => showSameWitness.set(e.detail)}/>
+        {/if}
     </svelte:fragment>
 
     <svelte:fragment slot="row-body">
         {#if hasBeenVisible}
-            <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} cols={colNb - 1} downloadable={false}/>
+            <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} downloadable={false}/>
             <div class="block propagated-regions my-4">
-                <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} cols={colNb - 1} downloadable={false}/>
+                <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} downloadable={false}/>
             </div>
         {/if}
     </svelte:fragment>
@@ -207,21 +199,7 @@
 {#if !isInModal}
     <RegionModal items={[qImgItem]} bind:currentIndex={modalIndex} bind:open={modalOpen}>
         <svelte:fragment let:item={currentItem}>
-            <Tabs {tabs} let:activeTab>
-                {#if activeTab === "region"}
-                    <div class="modal-region">
-                        <RegionCard item={currentItem} height="full" isInModal={true} copyable={true} selectable={false}/>
-                    </div>
-                {:else if activeTab === "page"}
-                    <PageView item={currentItem}/>
-                {:else if activeTab === "matches"}
-                    {#key currentItem.img}
-                        <QueryExpansionView item={currentItem}/>
-                    {/key}
-                {:else if activeTab === "duplicates"}
-                    <DuplicatesView item={currentItem}/>
-                {/if}
-            </Tabs>
+            <RegionTabs item={currentItem}/>
         </svelte:fragment>
     </RegionModal>
 {/if}
