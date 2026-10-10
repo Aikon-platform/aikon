@@ -1,9 +1,11 @@
 CURRENT_DIR="$( cd "$( dirname "${BASH_SOURCE[0]}" )" >/dev/null 2>&1 && pwd )"
-DOCKER_DIR="$(dirname "$CURRENT_DIR")"
+DOCKER_DIR="$(dirname "$CURRENT_DIR")/.."
 FRONT_ROOT="$(dirname "$DOCKER_DIR")"
 
 source "$DOCKER_DIR/.env"
-source "$FRONT_ROOT/app/config/.env"
+source "$FRONT_ROOT/../../front/app/config/.env"
+
+DATA_BACKUP="/data/backup"
 
 DB_USER="${POSTGRES_USER?Error: POSTGRES_USER must be set in .env}"
 DB_PASSWORD="${POSTGRES_PASSWORD?Error: POSTGRES_PASSWORD must be set in .env}"
@@ -19,7 +21,7 @@ fi
 TIMESTAMP=$(date +%Y-%m-%d_%H-%M)
 BACKUP_FILE="$DATA_BACKUP/db_backup_${DB_NAME}_${TIMESTAMP}.dump"
 
-DB_CONTAINER=$(docker compose -f "$DOCKER_DIR/docker-compose.yml" ps -q db)
+DB_CONTAINER=$(docker compose -f "$DOCKER_DIR/compose.yml" ps -q db)
 if [[ -z "$DB_CONTAINER" ]]; then
    echo "Error: Database container is not running or not found"
    exit 1
