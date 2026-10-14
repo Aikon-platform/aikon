@@ -73,6 +73,7 @@ class Command(BaseCommand):
         dry_run = not opts["apply"]
         plan_path: Path | None = opts["plan"]
 
+        purge_orphans(dry_run, log)
         if plan_path and plan_path.exists():
             mapping, meta = load_plan(plan_path)
             log(f"Loaded plan from {plan_path}: {len(mapping)} mappings (threshold={meta.get('iou_threshold')})")
@@ -82,6 +83,5 @@ class Command(BaseCommand):
                 save_plan(mapping, stats, opts["threshold"], plan_path)
                 log(f"Saved plan to {plan_path}")
 
-        purge_orphans(dry_run=dry_run)
         apply_mapping(mapping, opts["batch_size"], log, opts["digits"], dry_run=dry_run)
         log("Dry run; re-run with --apply to execute." if dry_run else "Done.")
