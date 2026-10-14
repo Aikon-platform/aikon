@@ -18,8 +18,8 @@ class Region(NamedTuple):
 
     @property
     def rank(self) -> tuple:
-        """Canonical region of a cluster: the largest, then the one already normalized"""
-        return self.box[2] * self.box[3], self.img == self.name, self.img
+        """Canonical region of a cluster (lowest rank): the smallest, then the one already normalized"""
+        return self.box[2] * self.box[3], self.img != self.name, self.img
 
 
 class SimilarityType(IntEnum):

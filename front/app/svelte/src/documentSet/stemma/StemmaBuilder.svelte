@@ -2,7 +2,7 @@
     import { i18n } from "../../utils.js";
     import { parseImgRef } from "../../regions/types.js";
     import SplitLayout from "../../ui/SplitLayout.svelte";
-    import DocumentSetMatrix from "../document-matrix/DocumentSetMatrix.svelte";
+    import DocumentSetMatrix, { viewModes } from "../document-matrix/DocumentSetMatrix.svelte";
     import DocumentPairMatrix from "../document-matrix/DocumentPairMatrix.svelte";
     import PairDetailModal from "../document-matrix/PairDetailModal.svelte";
     import { createStemmaStore } from "./stemmaStore.js";
@@ -41,8 +41,7 @@
         byImage: { en: "By image", fr: "Par image" },
         selectedDocs: { en: "Selected documents", fr: "Documents sélectionnés" },
         fullDocSet: { en: "Full document set", fr: "Jeu de documents complet" },
-        percentage: {en: "By percentage", fr: "Par pourcentage"},
-        percentageView: {en: "View matrix with image similarity percentage", fr: "Visualiser la matrice avec des pourcentage d'images similaires"},
+        viewMode: {en: "Matrix display mode", fr: "Mode d'affichage de la matrice"},
         matches: {en: "Matches", fr: "Correspondances"},
 
         selectViz: { en: "Select a visualization", fr: "Choisir une visualisation" },
@@ -64,7 +63,7 @@
 
     let scatterMode = "image";
     let friezeMode = "image";
-    let percentageMode = false;
+    let viewMode = "matches";
     let modalActive = false;
     let navState = null;
     let scatterData = null;
@@ -177,10 +176,13 @@
 <!--                <input type="checkbox" bind:checked={$normalizeByImages}>-->
 <!--                <span class="pl-1">{i18n("normalize", t)}</span>-->
 <!--            </label>-->
-            <label title={i18n("percentageView", t)} class="checkbox is-size-7 is-flex is-align-items-center">
-                <input type="checkbox" bind:checked={percentageMode}>
-                <span class="pl-1">{i18n("percentage", t)}</span>
-            </label>
+            <div class="select is-small" title={i18n("viewMode", t)}>
+                <select bind:value={viewMode}>
+                    {#each Object.keys(viewModes) as m}
+                        <option value={m}>{i18n(m, viewModes)}</option>
+                    {/each}
+                </select>
+            </div>
         {:else if $selectedViz === "spatialFrieze"}
             <div class="select is-small">
                 <select bind:value={friezeMode}>
@@ -202,8 +204,7 @@
                 scoreData={matrixScope === "full" ? fullScoreData : $matrixScoreData}
                 docStats={matrixScope === "full" ? fullDocStats : $matrixDocStats}
                 imageCountMap={matrixScope === "full" ? $imageCountMap : $matrixImageCount}
-                normalize={!percentageMode}
-                {percentageMode}
+                mode={viewMode}
                 {coverageData}
                 isInStemma={true} {stemmaStore}
                 on:cellselect={e => selectedCell.set(e.detail)}

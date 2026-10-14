@@ -2,20 +2,18 @@
     import { onMount } from "svelte";
     import {appLang, modules} from "../../constants";
     import { similarityStore } from "./similarityStore.js";
-    // const fetchSimilarityScoreRange = similarityStore.fetchSimilarityScoreRange;
-    import {errorMsg, loading} from "../../utils.js";
+    import {errorMsg} from "../../utils.js";
 
     import Table from "../../Table.svelte";
     import SimilarityPage from "./SimilarityPage.svelte";
     import SimilarityToolbar from "./SimilarityToolbar.svelte";
 
-    const { fetchSimilarity, comparedRegions } = similarityStore;
+    const { fetchSimilarity, comparedRegions, loading } = similarityStore;
     export let witnessStore;
 
     onMount(() => {
         if (modules.includes("similarity")){
             fetchSimilarity();
-        // fetchSimilarityScoreRange();
         }
     });
 </script>

@@ -4,6 +4,7 @@
     import SplitLayout from "../../ui/SplitLayout.svelte";
     import SpatialFrieze from "./SpatialFrieze.svelte";
     import Matches from "../Matches.svelte";
+    import DownloadPng from "../../ui/DownloadPng.svelte";
 
     export let documentSetStore;
     export let clusterStore;
@@ -47,12 +48,16 @@
 <SplitLayout>
     <div slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
         <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
-        <div class="select is-small">
-            <select bind:value={friezeMode}>
-                <option value="page">{i18n("byPage", t)}</option>
-                <option value="image">{i18n("byImage", t)}</option>
-            </select>
+        <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+            <DownloadPng targetId="spatial-frieze" filename="spatial-frieze" svgExport={true}/>
+            <div class="select is-small">
+                <select bind:value={friezeMode}>
+                    <option value="page">{i18n("byPage", t)}</option>
+                    <option value="image">{i18n("byImage", t)}</option>
+                </select>
+            </div>
         </div>
+
     </div>
     <div slot="left-scroll">
         <SpatialFrieze

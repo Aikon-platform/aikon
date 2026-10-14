@@ -1,12 +1,12 @@
 <script>
-    import { userId, csrfToken, appName } from "../../constants";
-    import { RegionItem } from "../types.js";
+    import { csrfToken, appName } from "../../constants";
+    import { RegionItem, isSameWitness } from "../types.js";
+    import PairCategoryToolbar from "./PairCategoryToolbar.svelte";
     import { getContext } from "svelte";
 
     import {i18n, shorten, showMessage} from "../../utils.js";
     import {similarityStore} from "./similarityStore.js";
     import RegionCard from "../RegionCard.svelte";
-    import CategoryToolbar from "./CategoryToolbar.svelte";
 
     const {comparedRegions} = similarityStore;
 
@@ -40,11 +40,11 @@
     export let index = 0;
     /** @type {boolean} */
     export let isInModal = false;
+    /** @type {boolean} */
+    export let downloadable = isInModal;
 
-    let selectedCategory = category;
-    let isSelectedByUser = usersIncludesCurrentUser(users);
     const setModalAnchor = getContext("setModalAnchor");
-    const qImgMetadata = getContext("qImgMetadata");
+    const compareWith = getContext("compareWith");
 
     ////////////////////////////////////////////
 
@@ -65,10 +65,14 @@
             en: "Extracted from same witness as query region",
             fr: "Extrait du même témoin que la région requête"
         },
+        compare: {
+            en: "Compare with query region",
+            fr: "Comparer avec la région requête"
+        },
     };
 
     const sImgItem = RegionItem.fromImg(sImg);
-    const sameWitness = qImgMetadata?.witnessId === sImgItem.witnessId;
+    const sameWitness = isSameWitness(qImg, sImg)
 
     function toTitledRegion() {
         const regionData = $comparedRegions[`wit${sImgItem.witnessId}_${sImgItem.digitType}${sImgItem.digitId}_anno${sRegions}`];
@@ -96,67 +100,6 @@
     //     similarity_hash: similarityHash
     // })
 
-    function usersIncludesCurrentUser (currentUsers) {
-        return currentUsers.includes(Number(userId));
-    }
-
-    /**
-     * save the new RegionPair.category to database (RegionPair.category)
-     * if `similarityType===3` (propagated match), the RegionPair does not exist in the DB.
-     * setting the region will create the RegionPair and save it to database
-     */
-    async function categorize(category) {
-        const previousCategory = selectedCategory;
-        selectedCategory = selectedCategory === category ? null : category;
-
-        try {
-            const response = await fetch(`${baseUrl}/${appName}/save-category`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken
-                },
-                body: JSON.stringify({
-                    img_1: qImg,
-                    img_2: sImg,
-                    category: selectedCategory,
-                    similarity_type: similarityType,
-                    similarity_hash: similarityHash
-                })
-            });
-            if (!response.ok) {
-                console.error("Error: Network response was not ok");
-                selectedCategory = previousCategory;
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            selectedCategory = previousCategory;
-        }
-    }
-
-    async function addUserToPair() {
-        const previousState = isSelectedByUser;
-        isSelectedByUser = !isSelectedByUser;
-
-        try {
-            const response = await fetch(`${baseUrl}/${appName}/add-user-to-pair`, {
-                method: "POST",
-                headers: {
-                    "Content-Type": "application/json",
-                    "X-CSRFToken": csrfToken
-                },
-                body: JSON.stringify({ img_1: qImg, img_2: sImg })
-            });
-            if (!response.ok) {
-                console.error("Error: Network response was not ok");
-                isSelectedByUser = previousState;
-            }
-        } catch (error) {
-            console.error("Error:", error);
-            isSelectedByUser = previousState;
-        }
-    }
-
     async function deletePair() {
         const confirmed = await showMessage(
             i18n("confirmDelete", t), i18n("confirm"), true
@@ -183,11 +126,17 @@
 </script>
 
 <div class="cell">
-    <RegionCard {item} height={140} selectable={false} copyable={true} isSquare={false} {isInModal} {index}
+    <RegionCard {item} height={140} selectable={false} copyable={true} isSquare={false} {isInModal} {index} {downloadable}
             borderColor={sameWitness ? "var(--contrasted)" : null} borderWidth={3}
             on:openModal title="{sameWitness ? i18n('sameWitness', t) : null}">
         <svelte:fragment slot="actions">
             {#if isInModal}
+                {#if compareWith}
+                    <button class="button tag p-0 has-text-link" on:click|stopPropagation={() => compareWith(sImg)}
+                        title={i18n("compare", t)}>
+                        <i class="fa-solid fa-code-compare"/>
+                    </button>
+                {/if}
                 <button class="button tag mb-1" on:click|stopPropagation={deletePair}
                         title="{i18n('deletePair', t)}">
                     <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24">
@@ -196,10 +145,10 @@
                 </button>
                 <button class="button tag p-0" on:click|stopPropagation={() => setModalAnchor(item)}
                         title="{i18n('setAnchor', t)}">
-                    <i class="fa-solid fa-anchor"></i>
+                    <i class="fa-solid fa-anchor"/>
                 </button>
             {/if}
         </svelte:fragment>
     </RegionCard>
-    <CategoryToolbar {selectedCategory} toggleFct={categorize} userToggleFct={addUserToPair}/>
+    <PairCategoryToolbar {qImg} {sImg} {category} {users} {similarityType} {similarityHash}/>
 </div>

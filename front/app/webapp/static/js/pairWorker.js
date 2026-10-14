@@ -128,7 +128,7 @@ function finalize() {
 
             const isSelf = pair.digit_1 === pair.digit_2;
             const isExact = pair.category === 1
-            const rank = isSelf ? Infinity : (isExact ? 1 : k + 1);
+            const rank = isExact ? 1 : isSelf ? Infinity : k + 1;
             if (pair.id_1 === imgId) {
                 pair.rank_1 = rank;
             } else {
