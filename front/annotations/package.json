@@ -15,12 +15,12 @@
   "dependencies": {
     "@dotenvx/dotenvx": ">=1.51.2",
     "http-server": ">=14.1.1",
-    "mirador": ">=4.0.0",
+    "mirador": "~4.2.3",
     "mirador-annotation-editor": ">=1.2.5",
     "parcel": ">=2.16.1"
   },
   "peerDependencies": {
-    "@mui/system": "^7.x"
+    "@mui/system": ">=7.x"
   },
   "devDependencies": {
     "aiiinotate": ">=0.14.0"
