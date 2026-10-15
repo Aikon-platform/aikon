@@ -22,7 +22,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         pageUpdate(pageNb, currentPage, "p");
     }
 
-    function findClusters(pairs) {
+    function findClusters(pairs, cat) {
         if (pairs.length === 0) return [];
         const parent = new Map();
 
@@ -62,34 +62,21 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         });
 
         return Array.from(clusterMap.values())
-            .map(members => {
-                const n = members.length;
-                const maxEdges = (n * (n - 1)) / 2;
-                const imageSet = new Set(members);
-                const edges = new Set();
-                let allCategory1 = true;
-                for (const p of pairs) {
-                    if (!imageSet.has(p.id_1) || !imageSet.has(p.id_2)) continue;
-                    const [a, b] = p.id_1 < p.id_2 ? [p.id_1, p.id_2] : [p.id_2, p.id_1];
-                    edges.add(`${a}|${b}`);
-                    if (allCategory1 && p.category !== 1) allCategory1 = false;
-                }
-                return {
-                    id: clusterIdOf(members),
-                    members,
-                    size: n,
-                    fullyConnected: edges.size >= maxEdges && allCategory1
-                };
-            })
-            .filter(c => c.size > 1)
+            .filter(members => members.length > 1)
+            .map(members => ({
+                id: clusterIdOf(members),
+                members,
+                size: members.length,
+                fullyConnected: members.every((a, i) => members.slice(i + 1).every(b => cat(a, b) === 1))
+            }))
             .sort((a, b) => b.size - a.size);
     }
 
     /**
      * Clusters { id, members: [imgId1, imgId2, ...], size, fullyConnected }
      */
-    const imageClusters = derived([visiblePairs, pairCat], ([$pairs]) =>
-        $pairs.length ? findClusters($pairs) : []
+    const imageClusters = derived([visiblePairs, pairCat], ([$pairs, $pairCat]) =>
+        $pairs.length ? findClusters($pairs, $pairCat) : []
     );
 
     // UI clusters, manipulable without needing to rerun findClusters
