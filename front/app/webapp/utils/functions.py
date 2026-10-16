@@ -30,7 +30,7 @@ from urllib.request import (
 
 from django.views.decorators.http import require_POST
 
-from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL, APP_URL, APP_PORT, MODE
+from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL, APP_URL, APP_URL_FROM_DOCKER, APP_PORT, MODE
 from app.webapp.models.utils.constants import DATE_ERROR, IMG
 from app.webapp.utils.paths import IMG_PATH
 from app.vectorization.const import SVG_PATH
@@ -597,6 +597,7 @@ def get_file_list(path, filter_list=None):
 
 
 def get_json(url):
+    url = maybe_dockerize_url(url)
     try:
         r = requests.get(url)
     except requests.exceptions.SSLError:
@@ -801,14 +802,20 @@ def ensure_legacy_regions(task_name: str) -> str:
         return "regions"
     return task_name
 
-def maybe_dockerize(url: str) -> str:
+
+def maybe_dockerize_url(url: str) -> str:
     """
-    replace the app's default URL to Docker's host.docker.internal,
-    which resolves to the host's localhost. necessary for Docker
-    containers-to-Django HTTP requests.
+    replace the app's default URL to a Docker-reachable URL
+    (host.docker.internal, which resolves to the host's localhost, or
+    web:FRONT_PORT, which resolves to the front container.
+    necessary for:
+    - Docker containers-to-Django HTTP requests
+    - Django ap to Django HTTP requests (if MODE=local, BASE_URL is localhost:8080,
+        inaccessible in a docker container.)
     """
-    if MODE == "dev":
-        return url.replace(APP_URL, f"http://host.docker.internal:{APP_PORT}")
+    if MODE in ("dev", "local"):
+        # return url.replace(APP_URL, f"http://host.docker.internal:{APP_PORT}")
+        return url.replace(APP_URL, APP_URL_FROM_DOCKER)
     return url
 
 
