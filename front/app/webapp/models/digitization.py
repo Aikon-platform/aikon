@@ -33,6 +33,7 @@ from app.webapp.models.utils.constants import (
     SOURCE_INFO,
 )
 from app.webapp.utils.functions import (
+    maybe_dockerize_url,
     rename_file,
     get_nb_of_files,
     get_first_img,

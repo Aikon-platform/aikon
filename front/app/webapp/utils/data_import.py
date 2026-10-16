@@ -15,6 +15,7 @@ from app.webapp.models.utils.constants import MAN_ABBR, MS_ABBR
 from app.webapp.utils.data_transfer import TRANSFER_MODELS, get_transfer_model
 from app.webapp.utils.paths import REGIONS_PATH
 from app.webapp.utils.logger import log
+from app.webapp.utils.functions import maybe_dockerize_url
 
 TIMEOUT = 30
 
@@ -202,6 +203,7 @@ def import_region_extraction(digit: Digitization, regions_url: str, model="impor
     """
     from app.webapp.utils.iiif.annotation import index_region_extraction
 
+    regions_url = maybe_dockerize_url(regions_url)
     data = requests.get(regions_url, timeout=TIMEOUT).json()
     crops = data.get("extracted_crops") or {}
     if not any(crops.values()):

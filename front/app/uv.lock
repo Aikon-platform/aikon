@@ -27,7 +27,6 @@ dependencies = [
     { name = "django-crispy-forms" },
     { name = "django-environ" },
     { name = "django-filter" },
-    { name = "django-native-tags" },
     { name = "django-nested-admin" },
     { name = "django-polymorphic" },
     { name = "djangorestframework" },
@@ -82,7 +81,6 @@ requires-dist = [
     { name = "django-crispy-forms", specifier = ">=1.14.0" },
     { name = "django-environ", specifier = ">=0.12.1" },
     { name = "django-filter", specifier = ">=23.5" },
-    { name = "django-native-tags", specifier = ">=0.5.3" },
     { name = "django-nested-admin", specifier = ">=4.1.6" },
     { name = "django-polymorphic", specifier = ">=3.1.0" },
     { name = "djangorestframework", specifier = ">=3.15.2" },
@@ -702,12 +700,6 @@ sdist = { url = "https://files.pythonhosted.org/packages/79/56/313c43b871d4cc167
 wheels = [
     { url = "https://files.pythonhosted.org/packages/8c/cd/77566526193cb49e805bd33a6b982ba5a39f3a7f828dd6647a76bf977f3c/django_livereload_server-0.5.1-py2.py3-none-any.whl", hash = "sha256:e03bd65d1679ef1b4a5e22e2a77d11d3cfb0e3d21ae25afba49e280924ba6f58", size = 25920, upload-time = "2023-12-19T23:22:00.494Z" },
 ]
-
-[[package]]
-name = "django-native-tags"
-version = "0.5.3"
-source = { registry = "https://pypi.org/simple" }
-sdist = { url = "https://files.pythonhosted.org/packages/e7/e5/f72db2c0b698314036e7c388f8f818ebf118b2ef29672280795702f849cb/django-native-tags-0.5.3.tar.gz", hash = "sha256:989a612e3235e5fc13b7c1ed6ca5890bb09cc90f1d3d63605add03acf5ec5706", size = 24580, upload-time = "2011-05-07T09:54:19.431Z" }
 
 [[package]]
 name = "django-nested-admin"

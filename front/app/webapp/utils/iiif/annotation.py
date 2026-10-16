@@ -22,10 +22,11 @@ from app.config.settings import (
     APP_URL,
     APP_URL_FROM_DOCKER
 )
-from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, maybe_dockerize
+from app.webapp.utils.functions import log, get_img_nb_len, gen_img_ref, maybe_dockerize_url
 from app.webapp.utils.iiif import parse_ref, gen_iiif_url, region_title
 from app.webapp.utils.paths import REGIONS_PATH, IMG_PATH
 from app.webapp.utils.region_extraction import get_file_region_extraction
+from app.webapp.utils.functions import maybe_dockerize_url
 
 # ********************************************
 # UTILS
@@ -85,7 +86,7 @@ def string_to_color(s: str, saturation=0.9, lightness=0.5) -> str:
 
 def format_annotation(region_extraction: RegionExtraction, canvas_nb, xywh, tags=None):
     # regions.get_manifest_url returns digitization manifest
-    base_url = maybe_dockerize(region_extraction.get_manifest_url(only_base=True))
+    base_url = maybe_dockerize_url(region_extraction.get_manifest_url(only_base=True))
     x, y, w, h = xywh
 
     canvas_id = f"{base_url}/canvas/c{canvas_nb}.json"
@@ -428,7 +429,7 @@ def get_canvas_annotations(digit_id: int, canvas_nb: int) -> List[Dict] | None:
         return []
     base = region_extraction.get_manifest_url(only_base=True)
     annos = []
-    for uri in {base, maybe_dockerize(base)}:
+    for uri in {base, maybe_dockerize_url(base)}:
         page = get_paginated_annotations(update_params(
             f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/search",
             {"canvasUri": f"{uri}/canvas/c{canvas_nb}.json"},
@@ -885,7 +886,7 @@ def index_annotations_on_canvas(regions: RegionExtraction, canvas_nb):
     # POST request that index the annotations
     response = requests.post(
         f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",
-        json={"uri": maybe_dockerize(f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json")},
+        json={"uri": maybe_dockerize_url(f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json")},
     )
 
     if not response.ok:
@@ -933,6 +934,9 @@ def index_manifest(manifest_url, reindex=False):
             return True
 
     try:
+        log(f"$$$ MANIFEST URL PRE {manifest_url}")
+        manifest_url = maybe_dockerize_url(manifest_url)
+        log(f"$$$ MANIFEST URL POST {manifest_url}")
         manifest = requests.get(manifest_url)
         manifest_content = manifest.json()
     except Exception as e:
