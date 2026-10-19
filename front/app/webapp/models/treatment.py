@@ -246,7 +246,6 @@ class Treatment(AbstractSearchableModel):
             parameters = prepare_task_request(
                 self.task_type, witnesses, self.id, self.api_parameters
             )
-            log(f"$$$ parameters, {parameters}")
         except (ImportError, AttributeError) as e:
             self.on_task_error(
                 {

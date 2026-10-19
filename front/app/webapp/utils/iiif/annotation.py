@@ -936,9 +936,7 @@ def index_manifest(manifest_url, reindex=False):
             return True
 
     try:
-        log(f"$$$ MANIFEST URL PRE {manifest_url}")
         manifest_url = maybe_dockerize_url(manifest_url)
-        log(f"$$$ MANIFEST URL POST {manifest_url}")
         manifest = requests.get(manifest_url)
         manifest_content = manifest.json()
     except Exception as e:
