@@ -104,7 +104,7 @@ def gen_manifest_json(digit: Digitization):
     Build a manuscript manifest using iiif-prezi library
     IIIF Presentation API 2.0
     """
-    url_base = maybe_dockerize_url(digit.get_manifest_url(only_base=True))
+    url_base = maybe_dockerize_url(digit.get_manifest_url(only_base=True), dev_too=True)
     try:
         fac = ManifestFactory(
             mdbase=url_base,

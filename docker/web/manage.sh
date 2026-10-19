@@ -18,13 +18,13 @@ psql_error_log () {
 📜 full error log:
 $error_log
 
+🗝️ .env used to connect to the database:
+$env_contents
+
 ⚠️ this is likely due to a stale database user with a different password.
 
 🔧 to reset the PostgreSQL user password, run:
     docker exec -it aikon-db-1 psql -U $POSTGRES_USER -d $POSTGRES_DB -c "ALTER USER $POSTGRES_USER WITH PASSWORD '$POSTGRES_PASSWORD';"
-
-🗝️ .env used to connect to the database:
-$env_contents
 
 exiting...
 EOF

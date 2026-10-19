@@ -803,17 +803,21 @@ def ensure_legacy_regions(task_name: str) -> str:
     return task_name
 
 
-def maybe_dockerize_url(url: str) -> str:
+def maybe_dockerize_url(url: str, dev_too=False) -> str:
     """
     replace the app's default URL to a Docker-reachable URL
-    (host.docker.internal, which resolves to the host's localhost, or
-    web:FRONT_PORT, which resolves to the front container.
+    (web:FRONT_PORT, which resolves to the front container)
     necessary for:
     - Docker containers-to-Django HTTP requests
-    - Django ap to Django HTTP requests (if MODE=local, BASE_URL is localhost:8080,
+    - Django to Django HTTP requests (if MODE=local, BASE_URL is localhost:8080,
         inaccessible in a docker container.)
+
+    if `dev_too=True`, dockerize URL for modes "dev" and "local" ;
+    otherwise, only dockerize for MODE="local".
+    (it is necessary to have 2 configs: some URLs MUST be dockerized in "local" but not in "dev")
     """
-    if MODE in ("dev", "local"):
+    modes = ("dev", "local") if dev_too else ("local")
+    if MODE in modes:
         # return url.replace(APP_URL, f"http://host.docker.internal:{APP_PORT}")
         return url.replace(APP_URL, APP_URL_FROM_DOCKER)
     return url
