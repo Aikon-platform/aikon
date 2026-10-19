@@ -279,6 +279,7 @@ if __name__ == "__main__":
         compose("logs", "-f")
     elif action == "build":
         compose("up", "-d", "--build")
+        run_api("build")
     elif action == "up":
         compose("up", "-d", "--remove-orphans")
         run_api("up")
