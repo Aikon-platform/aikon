@@ -193,7 +193,6 @@ def task_request(task_name, records, treatment_id=None, endpoint="start"):
     # TODO probably useless => put in start task method?
     try:
         payload = prepare_task_request(task_name, records, treatment_id)
-        log(f"$$$ payload {payload}")
         response = requests.post(url=f"{API_URL}/{task_name}/start", json=payload)
         if response.status_code == 200:
             log(
@@ -249,7 +248,6 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
         documents = []
         for record in records:
             document = prepare_document(record, **parameters)
-            log("$$$ document", document)
             # we're expecting `dict | list[dict]`, where `src` points to a IIIF manifest
             if isinstance(document, list):
                 document = [dockerize_one(d) for d in document]
