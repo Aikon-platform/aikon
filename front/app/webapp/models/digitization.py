@@ -501,7 +501,10 @@ def pre_delete_digit(sender, instance: Digitization, **kwargs):
     - delete all related annotations
     """
     from app.webapp.tasks import delete_digitization
-    from app.webapp.utils.iiif.annotation import destroy_region_extraction, unindex_manifest
+    from app.webapp.utils.iiif.annotation import (
+        destroy_region_extraction,
+        unindex_manifest,
+    )
 
     other_media = instance.pdf.name if instance.digit_type == PDF_ABBR else None
     delete_digitization.delay(instance.get_ref(), other_media)
@@ -509,9 +512,12 @@ def pre_delete_digit(sender, instance: Digitization, **kwargs):
     try:
         if "similarity" in ADDITIONAL_MODULES:
             from app.similarity.utils import reset_digit_similarity
+
             reset_digit_similarity(instance)
 
-        results = [destroy_region_extraction(r) for r in instance.get_region_extractions()]
+        results = [
+            destroy_region_extraction(r) for r in instance.get_region_extractions()
+        ]
         if not (unindex_manifest(instance.get_manifest_url()) and all(results)):
             log(f"[pre_delete_digit] Cleanup incomplete for digit #{instance.id}")
     except Exception as e:

@@ -258,7 +258,7 @@ export function createClusterStore(documentSetStore, clusterSelection) {
 
     const selectedImages = () => {
         const selection = get(clusterSelection).selected;
-        // NOTE: selection.RegionsExtraction is hardcoded in `constants.js` and is used to set the name of selected region extractions 
+        // NOTE: selection.RegionsExtraction is hardcoded in `constants.js` and is used to set the name of selected region extractions
         return selection.regions || selection.region_extraction || selection.RegionsExtraction || {}
     };
 

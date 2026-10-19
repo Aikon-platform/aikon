@@ -33,11 +33,7 @@ if str(FRONT) not in sys.path:
     sys.path.append(str(FRONT))
 from app.webapp.utils.logger import log
 
-LOG_KWARGS = {
-    "msg_type": "magenta",
-    "with_time": False,
-    "compact": True
-}
+LOG_KWARGS = {"msg_type": "magenta", "with_time": False, "compact": True}
 
 # host processes started in dev mode: (name, command, cwd).
 # celery is called through the venv bin directly (`uv run celery` fails, cf. front/run.sh);
@@ -142,7 +138,10 @@ def run_dev() -> None:
     if (ROOT / "api/run.py").exists():
         procs_def += api_dev_procs()
     procs = {name: spawn(name, cmd, cwd, env) for name, cmd, cwd, env in procs_def}
-    log(f"\n→ http://localhost:{ENV['FRONT_PORT']}  (Ctrl+C to stop, twice to also stop docker)\n", **LOG_KWARGS)
+    log(
+        f"\n→ http://localhost:{ENV['FRONT_PORT']}  (Ctrl+C to stop, twice to also stop docker)\n",
+        **LOG_KWARGS,
+    )
     try:
         while True:
             for name, p in procs.items():
@@ -153,7 +152,10 @@ def run_dev() -> None:
     except KeyboardInterrupt:
         pass
     finally:
-        log("\nstopping host processes (hit Ctrl+C again to also stop docker services)", **LOG_KWARGS)
+        log(
+            "\nstopping host processes (hit Ctrl+C again to also stop docker services)",
+            **LOG_KWARGS,
+        )
         teardown = False
 
         def on_sigint(*_):
@@ -167,13 +169,17 @@ def run_dev() -> None:
         if teardown:
             compose("down")
         else:
-            log("docker services still running: run `python run.py down` to stop them", **LOG_KWARGS)
+            log(
+                "docker services still running: run `python run.py down` to stop them",
+                **LOG_KWARGS,
+            )
 
 
 def run_api(action: str) -> None:
     if not (ROOT / "api/.env").exists() or ENV.get("MODE") == "dev":
         return
     subprocess.run([sys.executable, str(ROOT / "api/run.py"), action], cwd=ROOT / "api")
+
 
 def doctor() -> None:
     ok = True
@@ -182,7 +188,11 @@ def doctor() -> None:
     def check(label: str, passed: bool, hint: str = "") -> None:
         nonlocal ok
         ok &= passed
-        log(f"  {'✓' if passed else '✗'} {label}" + (f" — {hint}" if not passed and hint else ""), **{**LOG_KWARGS, "msg_type": "success" if passed else "error"})
+        log(
+            f"  {'✓' if passed else '✗'} {label}"
+            + (f" — {hint}" if not passed and hint else ""),
+            **{**LOG_KWARGS, "msg_type": "success" if passed else "error"},
+        )
 
     log("docker", **doctor_kwargs)
     check("daemon reachable", docker_ok(), "start Docker Desktop: open -a Docker")
@@ -192,7 +202,9 @@ def doctor() -> None:
     log("containers", **doctor_kwargs)
     out = subprocess.run(
         ["docker", "compose", "ps", "--format", "json"],
-        cwd=DOCKER_DIR, capture_output=True, text=True,
+        cwd=DOCKER_DIR,
+        capture_output=True,
+        text=True,
     ).stdout
     containers = [json.loads(l) for l in out.splitlines() if l.strip()]
     if not containers:
@@ -237,10 +249,24 @@ def docker_ok() -> bool:
 
 def db_password_ok() -> bool:
     return not subprocess.run(
-        ["docker", "compose", "exec", "-T",
-         "-e", f"PGPASSWORD={ENV['POSTGRES_PASSWORD']}", "db",
-         "psql", "-U", ENV["POSTGRES_USER"], "-d", ENV["POSTGRES_DB"], "-c", "\\q"],
-        cwd=DOCKER_DIR, capture_output=True,
+        [
+            "docker",
+            "compose",
+            "exec",
+            "-T",
+            "-e",
+            f"PGPASSWORD={ENV['POSTGRES_PASSWORD']}",
+            "db",
+            "psql",
+            "-U",
+            ENV["POSTGRES_USER"],
+            "-d",
+            ENV["POSTGRES_DB"],
+            "-c",
+            "\\q",
+        ],
+        cwd=DOCKER_DIR,
+        capture_output=True,
     ).returncode
 
 
@@ -255,12 +281,18 @@ def api_dev_procs() -> list:
     port = api_env.get("API_PORT", "5001")
     device = api_env.get("DEVICE_NB", "") or "0"
     return [
-        ("api-flask",
-         ["uv", "run", "flask", "--app", "app.main", "run", "--debug", "-p", port],
-         ROOT / "api", {"CUDA_VISIBLE_DEVICES": device}),
-        ("api-dramatiq",
-         ["uv", "run", "dramatiq", "app.main", "-t", "1", "-p", "1"],
-         ROOT / "api", {"CUDA_VISIBLE_DEVICES": device}),
+        (
+            "api-flask",
+            ["uv", "run", "flask", "--app", "app.main", "run", "--debug", "-p", port],
+            ROOT / "api",
+            {"CUDA_VISIBLE_DEVICES": device},
+        ),
+        (
+            "api-dramatiq",
+            ["uv", "run", "dramatiq", "app.main", "-t", "1", "-p", "1"],
+            ROOT / "api",
+            {"CUDA_VISIBLE_DEVICES": device},
+        ),
     ]
 
 
@@ -287,8 +319,13 @@ if __name__ == "__main__":
         else:
             port = ENV.get("NGINX_PORT", "8080")
             url = (
-                f"https://{ENV['PROD_URL']}" if ENV["MODE"] == "prod" else f"http://localhost:{port}"
+                f"https://{ENV['PROD_URL']}"
+                if ENV["MODE"] == "prod"
+                else f"http://localhost:{port}"
             )
-            log(f"→ {url} (stop with `python run.py down`)", **{**LOG_KWARGS, "compact": False})
+            log(
+                f"→ {url} (stop with `python run.py down`)",
+                **{**LOG_KWARGS, "compact": False},
+            )
     else:
         sys.exit(__doc__)

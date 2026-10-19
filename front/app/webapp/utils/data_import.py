@@ -125,7 +125,11 @@ def resolve_source(source_url, ctx: ImportContext):
     """Return ({src_wit_id: witness json url}, similarity url or None, title or None)"""
     data = ctx.fetch(source_url)
     if "/witness/" in source_url:
-        return ({str(data["id"]): source_url} if data else {}), None, (data or {}).get("id_nb")
+        return (
+            ({str(data["id"]): source_url} if data else {}),
+            None,
+            (data or {}).get("id_nb"),
+        )
     if not data:
         return {}, None, None
     return data, data.pop("similarity", None), data.pop("title", None)

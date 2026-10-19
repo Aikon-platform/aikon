@@ -30,7 +30,15 @@ from urllib.request import (
 
 from django.views.decorators.http import require_POST
 
-from app.config.settings import APP_NAME, APP_LANG, CANTALOUPE_APP_URL, APP_URL, APP_URL_FROM_DOCKER, APP_PORT, MODE
+from app.config.settings import (
+    APP_NAME,
+    APP_LANG,
+    CANTALOUPE_APP_URL,
+    APP_URL,
+    APP_URL_FROM_DOCKER,
+    APP_PORT,
+    MODE,
+)
 from app.webapp.models.utils.constants import DATE_ERROR, IMG
 from app.webapp.utils.paths import IMG_PATH
 from app.vectorization.const import SVG_PATH
@@ -834,5 +842,10 @@ def json_post(view):
         except Exception as e:
             log(f"[{view.__name__}] An error occurred", e)
             return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
-        return result if isinstance(result, HttpResponse) else JsonResponse(result, safe=False)
+        return (
+            result
+            if isinstance(result, HttpResponse)
+            else JsonResponse(result, safe=False)
+        )
+
     return wrapper
