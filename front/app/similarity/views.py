@@ -42,15 +42,30 @@ from app.similarity.utils import (
     normalize_pair,
     SimilarityCategory,
     find_annotations,
-    load_regions, in_pairs, pairs_with, PAIR_FIELDS,
+    load_regions,
+    in_pairs,
+    pairs_with,
+    PAIR_FIELDS,
 )
 from app.webapp.utils.tasking import receive_notification
 from app.webapp.views import is_superuser, check_ref
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.document_set import DocumentSet
-from app.similarity.dedupe import bbox_iou, pair_conflicts, sync_aiiinotate, apply_mapping, \
-    fetch_distinct_images, DEFAULT_THRESHOLD, DUPLICATE_IOU, parse_bbox, close
-from app.webapp.utils.iiif.annotation import get_regions_id_from_annotation, get_id_from_annotation
+from app.similarity.dedupe import (
+    bbox_iou,
+    pair_conflicts,
+    sync_aiiinotate,
+    apply_mapping,
+    fetch_distinct_images,
+    DEFAULT_THRESHOLD,
+    DUPLICATE_IOU,
+    parse_bbox,
+    close,
+)
+from app.webapp.utils.iiif.annotation import (
+    get_regions_id_from_annotation,
+    get_id_from_annotation,
+)
 
 
 @user_passes_test(is_superuser)
@@ -388,6 +403,7 @@ def get_region_extraction_title_by_ref(
         return JsonResponse(
             {"error": f"Error retrieving region extraction title: {e}"}, status=500
         )
+
 
 # todo use @json_post decorator
 def add_region_pair(request):
@@ -881,16 +897,19 @@ def get_regions_pairs(request, wid, rid=None):
     digit_ids.update(r.digitization_id for r in region_extractions)
 
     try:
-        pairs = [p.to_dict() for p in filter_pairs(
-            digit_ids,
-            exclusive=bool(witness_ids_param or digit_ids_param),
-            min_score=safe_float(request.GET.get("minScore")),
-            max_score=safe_float(request.GET.get("maxScore")),
-            topk=safe_int(request.GET.get("topk")),
-            exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
-            categories=parse_list(request.GET.get("category")) or [],
-            user_id=request.user.id,
-        )]
+        pairs = [
+            p.to_dict()
+            for p in filter_pairs(
+                digit_ids,
+                exclusive=bool(witness_ids_param or digit_ids_param),
+                min_score=safe_float(request.GET.get("minScore")),
+                max_score=safe_float(request.GET.get("maxScore")),
+                topk=safe_int(request.GET.get("topk")),
+                exclude_self=safe_bool(request.GET.get("excludeSelf")) or False,
+                categories=parse_list(request.GET.get("category")) or [],
+                user_id=request.user.id,
+            )
+        ]
         return JsonResponse(pairs, status=200, safe=False)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
@@ -933,7 +952,8 @@ def stream_document_set_pairs(request, dsid=None):
 
     qs = filter_pairs(digit_ids, **params)
     response = StreamingHttpResponse(
-        stream_pairs_ndjson(qs if params["topk"] else qs.order_by(), params["user_id"]), content_type="application/x-ndjson"
+        stream_pairs_ndjson(qs if params["topk"] else qs.order_by(), params["user_id"]),
+        content_type="application/x-ndjson",
     )
 
     # Nginx streaming headers
@@ -944,71 +964,98 @@ def stream_document_set_pairs(request, dsid=None):
 
     return response
 
+
 def get_region_duplicates(request, img):
     q_img, q = add_jpg(img), parse_img(img, True)
     if not q or not q.bbox:
         return JsonResponse({"error": f"Invalid region: {img}"}, status=400)
     q_box = parse_bbox(q.bbox)
     scores = {
-        s_img: score for s_img in fetch_distinct_images([q.digit]) - {q_img}
-        if (
-           s := parse_img(s_img, True))
-           and s.bbox
-           and not close(parse_bbox(s.bbox), q_box)
-           and (score := bbox_iou(q, s) or 0) > DUPLICATE_IOU
+        s_img: score
+        for s_img in fetch_distinct_images([q.digit]) - {q_img}
+        if (s := parse_img(s_img, True))
+        and s.bbox
+        and not close(parse_bbox(s.bbox), q_box)
+        and (score := bbox_iou(q, s) or 0) > DUPLICATE_IOU
     }
-    return JsonResponse([{"img": i, "iou": round(v, 3)} for i, v in sorted(scores.items(), key=lambda kv: -kv[1])], safe=False)
+    return JsonResponse(
+        [
+            {"img": i, "iou": round(v, 3)}
+            for i, v in sorted(scores.items(), key=lambda kv: -kv[1])
+        ],
+        safe=False,
+    )
 
 
 @require_POST
 def merge_regions_preview(request):
     try:
-        (q_img, s_img), refs = load_regions(json.loads(request.body), "q_img", "s_img", paired=("q_img", "s_img"))
+        (q_img, s_img), refs = load_regions(
+            json.loads(request.body), "q_img", "s_img", paired=("q_img", "s_img")
+        )
     except (KeyError, ValueError) as e:
         return JsonResponse({"error": str(e)}, status=400)
 
     if (annos := find_annotations(refs)) is None:
-        return JsonResponse({"error": "Could not reach aiiinotate: merge aborted"}, status=502)
+        return JsonResponse(
+            {"error": "Could not reach aiiinotate: merge aborted"}, status=502
+        )
 
     q_anno, s_anno = annos
     if not s_anno and not in_pairs(s_img):
-        return JsonResponse({"error": f"{s_img} exists neither in pairs nor in aiiinotate"}, status=400)
+        return JsonResponse(
+            {"error": f"{s_img} exists neither in pairs nor in aiiinotate"}, status=400
+        )
 
     q_anno, s_anno = annos
     score = bbox_iou(*refs)
-    return JsonResponse({
-        "q": q_img,
-        "s": s_img,
-        "keep": s_img if s_anno and not q_anno else q_img,
-        "indexed": {q_img: bool(q_anno), s_img: bool(s_anno)},
-        "iou": score,
-        "deletion": ("auto" if (score or 0) >= DEFAULT_THRESHOLD else "ask") if q_anno and s_anno else None,
-        "conflicts": [{"img": i1 if i2 == q_img else i2, "categories": c}
-                      for (i1, i2), c in pair_conflicts({s_img: q_img}).items()],
-    })
+    return JsonResponse(
+        {
+            "q": q_img,
+            "s": s_img,
+            "keep": s_img if s_anno and not q_anno else q_img,
+            "indexed": {q_img: bool(q_anno), s_img: bool(s_anno)},
+            "iou": score,
+            "deletion": ("auto" if (score or 0) >= DEFAULT_THRESHOLD else "ask")
+            if q_anno and s_anno
+            else None,
+            "conflicts": [
+                {"img": i1 if i2 == q_img else i2, "categories": c}
+                for (i1, i2), c in pair_conflicts({s_img: q_img}).items()
+            ],
+        }
+    )
 
 
 @require_POST
 def merge_regions(request):
     try:
         data = json.loads(request.body)
-        (keep, drop), (k, d) = load_regions(data, "keep", "drop", paired=("keep", "drop"))
+        (keep, drop), (k, d) = load_regions(
+            data, "keep", "drop", paired=("keep", "drop")
+        )
     except (KeyError, ValueError) as e:
         return JsonResponse({"error": str(e)}, status=400)
 
     if (annos := find_annotations([k, d])) is None:
-        return JsonResponse({"error": "Could not reach aiiinotate: merge aborted"}, status=502)
+        return JsonResponse(
+            {"error": "Could not reach aiiinotate: merge aborted"}, status=502
+        )
 
     keep_anno, drop_anno = annos
     score = bbox_iou(k, d)
     carrier = keep_anno or (drop_anno if score is not None else None)
-    sides = {
-        keep: {
-            "digit": k.digit,
-            "anno": get_id_from_annotation(carrier),
-            "regions_id": get_regions_id_from_annotation(carrier)
+    sides = (
+        {
+            keep: {
+                "digit": k.digit,
+                "anno": get_id_from_annotation(carrier),
+                "regions_id": get_regions_id_from_annotation(carrier),
+            }
         }
-    } if carrier else None
+        if carrier
+        else None
+    )
     categories = data.get("categories") or {}
 
     with transaction.atomic():
@@ -1016,10 +1063,16 @@ def merge_regions(request):
         apply_mapping({drop: keep}, 10_000, lambda s: None, [k.digit], sides=sides)
         for (i1, i2), cats in conflicts.items():
             partner = i1 if i2 == keep else i2
-            RegionPair.objects.filter(img_1=i1, img_2=i2).update(category=categories.get(partner, min(cats)))
-        if not sync_aiiinotate(keep_anno, drop_anno, k, score, bool(data.get("delete_drop"))):
+            RegionPair.objects.filter(img_1=i1, img_2=i2).update(
+                category=categories.get(partner, min(cats))
+            )
+        if not sync_aiiinotate(
+            keep_anno, drop_anno, k, score, bool(data.get("delete_drop"))
+        ):
             transaction.set_rollback(True)
-            return JsonResponse({"error": "Could not reach aiiinotate: merge aborted"}, status=502)
+            return JsonResponse(
+                {"error": "Could not reach aiiinotate: merge aborted"}, status=502
+            )
     return JsonResponse({"kept": keep})
 
 

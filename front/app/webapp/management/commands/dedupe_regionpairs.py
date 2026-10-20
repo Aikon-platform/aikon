@@ -19,23 +19,23 @@ class Command(BaseCommand):
     
     1. Cluster
     On each page, group the regions with IoU ≥ `--threshold` (default 0.9)
-    
+
     2. Name
     Each group takes the canonical name of its smallest region → mapping `{duplicate: canonical}`
     the mapping can be saved or reloaded with `--plan`
-    
+
     3. Merge pairs (one locked transaction)
     - renamed images take the `anno_id` and `regions_id` of the canonical region
-    - regionPairs describing the 2 same images with the same hash are merged: 
+    - regionPairs describing the 2 same images with the same hash are merged:
         → TYPE manual > automatic > propagated
         → SCORE the merged pairs keeps the highest score
         → CATEGORY keep the lowest category and the union of user matches (category_x)
     - self-pairs are deleted (img_1 = img_2)
-    
+
     4. Align categories
     RegionPairs with the same images but different hashes (different similarity computation parameters)
     get the same categories. Conflicting categories are left unchanged
-    
+
     The command runs as a dry run unless `--apply` is passed
     `--digits` restricts it to some digitizations
     aiiinotate is never modified
@@ -52,7 +52,7 @@ class Command(BaseCommand):
             type=Path,
             default=None,
             help="JSON path. If it exists, load the mapping from it; otherwise compute and save it here. "
-                 "A plan is a snapshot: regenerate it if pairs changed since.",
+            "A plan is a snapshot: regenerate it if pairs changed since.",
         )
         parser.add_argument(
             "--threshold",
@@ -76,7 +76,9 @@ class Command(BaseCommand):
         purge_orphans(dry_run, log)
         if plan_path and plan_path.exists():
             mapping, meta = load_plan(plan_path)
-            log(f"Loaded plan from {plan_path}: {len(mapping)} mappings (threshold={meta.get('iou_threshold')})")
+            log(
+                f"Loaded plan from {plan_path}: {len(mapping)} mappings (threshold={meta.get('iou_threshold')})"
+            )
         else:
             mapping, stats = build_mapping(opts["threshold"], log, opts["digits"])
             if plan_path:

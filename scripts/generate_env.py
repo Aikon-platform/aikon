@@ -78,43 +78,76 @@ HEADER = (
 )
 
 ENV_CONSTANTS = {
-    "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0,web,nginx,host.docker.internal",
+    "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0,web,nginx,host.docker.internal,aikon.localhost",
     "AIIINOTATE_HOST": "0.0.0.0",
     "AIIINOTATE_SCHEME": "http",
     "AIIINOTATE_LOG_TARGET": "stdout",
     "AIIINOTATE_LOG_DIR": "",
     "AIIINOTATE_LOG_LEVEL": "debug",
     "AIIINOTATE_PAGE_SIZE": "5000",
-    "AIIINOTATE_STRICT_MODE": "true"  # in lowercase to be properly parsed by aiiinotate's JS
+    "AIIINOTATE_STRICT_MODE": "true",  # in lowercase to be properly parsed by aiiinotate's JS
 }
 
 
 REQUIRED = {
     "front/app/config/.env": (
-        "SECRET_KEY", "POSTGRES_DB", "POSTGRES_USER", "POSTGRES_PASSWORD",
-        "DB_HOST", "DB_PORT", "REDIS_HOST", "REDIS_PORT", "REDIS_DB_INDEX",
-        "API_URL", "BASE_URL", "MEDIA_DIR", "CANTALOUPE_BASE_URI",
-        "AIIINOTATE_BASE_URL", "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
-        "AIIINOTATE_STRICT_MODE", "MIRADOR_BASE_URL",
+        "SECRET_KEY",
+        "POSTGRES_DB",
+        "POSTGRES_USER",
+        "POSTGRES_PASSWORD",
+        "DB_HOST",
+        "DB_PORT",
+        "REDIS_HOST",
+        "REDIS_PORT",
+        "REDIS_DB_INDEX",
+        "API_URL",
+        "BASE_URL",
+        "MEDIA_DIR",
+        "CANTALOUPE_BASE_URI",
+        "AIIINOTATE_BASE_URL",
+        "AIIINOTATE_LOG_TARGET",
+        "AIIINOTATE_LOG_LEVEL",
+        "AIIINOTATE_STRICT_MODE",
+        "MIRADOR_BASE_URL",
     ),
     "front/cantaloupe/.env": (
-        "CANTALOUPE_BASE_URI", "CANTALOUPE_IMG",
-        "CANTALOUPE_PORT", "CANTALOUPE_PORT_HTTPS",
+        "CANTALOUPE_BASE_URI",
+        "CANTALOUPE_IMG",
+        "CANTALOUPE_PORT",
+        "CANTALOUPE_PORT_HTTPS",
     ),
     "docker/.env": (
-        "DATA_FOLDER", "USERID", "COMPOSE_FILE",
-        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_DB", "MONGODB_CONNSTRING",
-        "AIIINOTATE_PORT", "AIIINOTATE_HOST", "AIIINOTATE_SCHEME",
-        "AIIINOTATE_LOG_TARGET", "AIIINOTATE_LOG_LEVEL",
-        "AIIINOTATE_PAGE_SIZE", "AIIINOTATE_PUBLIC_URL", "AIIINOTATE_BASE_URL",
-        "MIRADOR_PORT", "CANTALOUPE_PORT", "NGINX_PORT",
-        "NGINX_MAX_BODY_SIZE", "NGINX_TIMEOUT",
-        "MONGODB_HOST", "MONGODB_PORT", "MONGODB_DB", "MONGODB_CONNSTRING",
-        "MONGODB_DB_TEST", "MONGODB_CONNSTRING_TEST",
+        "DATA_FOLDER",
+        "USERID",
+        "COMPOSE_FILE",
+        "MONGODB_HOST",
+        "MONGODB_PORT",
+        "MONGODB_DB",
+        "MONGODB_CONNSTRING",
+        "AIIINOTATE_PORT",
+        "AIIINOTATE_HOST",
+        "AIIINOTATE_SCHEME",
+        "AIIINOTATE_LOG_TARGET",
+        "AIIINOTATE_LOG_LEVEL",
+        "AIIINOTATE_PAGE_SIZE",
+        "AIIINOTATE_PUBLIC_URL",
+        "AIIINOTATE_BASE_URL",
+        "MIRADOR_PORT",
+        "CANTALOUPE_PORT",
+        "NGINX_PORT",
+        "NGINX_MAX_BODY_SIZE",
+        "NGINX_TIMEOUT",
+        "MONGODB_HOST",
+        "MONGODB_PORT",
+        "MONGODB_DB",
+        "MONGODB_CONNSTRING",
+        "MONGODB_DB_TEST",
+        "MONGODB_CONNSTRING_TEST",
     ),
 }
 
 # HELPERS *******************************************************
+
 
 def parse_env(path: Path) -> dict:
     """{key: (value, description)} in declaration order."""
@@ -141,7 +174,9 @@ def next_free_port(port: str) -> int:
 
 def prompt(key: str, default: str, desc: str) -> str:
     hint = f" | {desc}" if desc else ""
-    val = input(f"{key}{hint} (press Enter for default value)\n  [{default or 'empty'}]: ").strip()
+    val = input(
+        f"{key}{hint} (press Enter for default value)\n  [{default or 'empty'}]: "
+    ).strip()
     return default if not val else "" if val == "x" else val
 
 
@@ -168,7 +203,10 @@ def resolve_values(mode: str, assume_yes: bool) -> dict:
         if key.endswith("_PORT") and mode != "prod" and key not in current:
             free = next_free_port(val)
             if free != int(val):
-                print(f"⚠ port {val} busy → {key}={free} (set {key} in .env to override)", file=sys.stderr)
+                print(
+                    f"⚠ port {val} busy → {key}={free} (set {key} in .env to override)",
+                    file=sys.stderr,
+                )
                 val = free
         v[key] = str(val)
 
@@ -206,7 +244,8 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
     base = (
         f"https://{v['PROD_URL']}"
         if prod
-        else f"http://localhost:{v['NGINX_PORT'] if nginx else v['FRONT_PORT']}"
+        else f"http://aikon.localhost:{v['NGINX_PORT']}" if nginx
+        else f"http://localhost:{v['FRONT_PORT']}"
     )
 
     env_dict = {
@@ -224,20 +263,34 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
         "MEDIA_DIR": "/data/mediafiles" if in_docker else f"{v['DATA_DIR']}/mediafiles",
         "BASE_URL": base,
         "APP_URL_FROM_DOCKER": (
-            base if prod
-            else "http://web:8000" if in_docker
+            base
+            if prod
+            else "http://web:8000"
+            if in_docker
             else f"http://host.docker.internal:{v['FRONT_PORT']}"
         ),
         "APP_URL_FROM_API": (
-            base if prod
-            else "http://web:8000" if in_docker  # local: api container → web
+            base
+            if prod
+            else "http://web:8000"
+            if in_docker  # local: api container → web
             else f"http://localhost:{v['FRONT_PORT']}"  # dev: api on host → localhost
         ),
-        "API_URL": v["PROD_API_URL"] if prod else f"http://{'api' if in_docker else 'localhost'}:{v['API_PORT']}",
-        "CANTALOUPE_BASE_URI": base if nginx else f"http://localhost:{v['CANTALOUPE_PORT']}",
-        "AIIINOTATE_BASE_URL": f"{base}/aiiinotate" if prod else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",
-        "AIIINOTATE_PUBLIC_URL": f"{base}/aiiinotate" if prod else f"http://localhost:{v['AIIINOTATE_PORT']}",
-        "MIRADOR_BASE_URL": f"{base}/mirador" if nginx else f"http://localhost:{v['MIRADOR_PORT']}",
+        "API_URL": v["PROD_API_URL"]
+        if prod
+        else f"http://{'api' if in_docker else 'localhost'}:{v['API_PORT']}",
+        "CANTALOUPE_BASE_URI": base
+        if nginx
+        else f"http://localhost:{v['CANTALOUPE_PORT']}",
+        "AIIINOTATE_BASE_URL": f"{base}/aiiinotate"
+        if prod
+        else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",
+        "AIIINOTATE_PUBLIC_URL": f"{base}/aiiinotate"
+        if prod
+        else f"http://localhost:{v['AIIINOTATE_PORT']}",
+        "MIRADOR_BASE_URL": f"{base}/mirador"
+        if nginx
+        else f"http://localhost:{v['MIRADOR_PORT']}",
         "MONGODB_CONNSTRING": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}",
         "MONGODB_DB_TEST": f"{v['MONGODB_DB']}_test",
         "MONGODB_CONNSTRING_TEST": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}_test",
@@ -263,14 +316,24 @@ def generate_nginx_conf(v: dict) -> None:
         return
     for template in (ROOT / "docker/web").glob("nginx_*.conf.template"):
         text = template.read_text()
-        for key in ("PROD_URL", "NGINX_PORT", "NGINX_MAX_BODY_SIZE",
-                    "NGINX_TIMEOUT", "SSL_CERTIFICATE", "SSL_KEY"):
+        for key in (
+            "PROD_URL",
+            "NGINX_PORT",
+            "NGINX_MAX_BODY_SIZE",
+            "NGINX_TIMEOUT",
+            "SSL_CERTIFICATE",
+            "SSL_KEY",
+        ):
             text = text.replace(key, v[key])
-        out = template.with_suffix("")  # nginx_external.conf.template → nginx_external.conf
+        out = template.with_suffix(
+            ""
+        )  # nginx_external.conf.template → nginx_external.conf
         out.write_text(text)
         print(f"  wrote {out.relative_to(ROOT)}")
 
+
 # RUN *******************************************************
+
 
 def generate(mode: str, assume_yes: bool) -> None:
     """create the .env"""

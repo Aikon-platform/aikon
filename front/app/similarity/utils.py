@@ -19,12 +19,20 @@ from app.config.settings import APP_URL, APP_NAME
 from app.similarity.models.region_pair import (
     RegionPair,
     RegionPairTuple,
-    parse_img, ImgRef, add_jpg,
+    parse_img,
+    ImgRef,
+    add_jpg,
 )
 from app.similarity.models.similarity_parameters import (
     SimilarityParameters,
 )
-from app.similarity import SourceType, SIM_DEFAULTS, SimilarityType, Priority, SimilarityCategory
+from app.similarity import (
+    SourceType,
+    SIM_DEFAULTS,
+    SimilarityType,
+    Priority,
+    SimilarityCategory,
+)
 from app.similarity.tasks import delete_api_similarity
 from app.webapp.models.digitization import Digitization
 from app.webapp.models.region_extraction import RegionExtraction, get_witness_ids
@@ -34,7 +42,10 @@ from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.functions import delete_path
 from app.webapp.utils.logger import log
 from app.similarity.dedupe import fetch_distinct_images, close, parse_bbox
-from app.webapp.utils.iiif.annotation import get_canvas_annotations, get_coord_from_annotation
+from app.webapp.utils.iiif.annotation import (
+    get_canvas_annotations,
+    get_coord_from_annotation,
+)
 
 
 ################################################################
@@ -62,6 +73,8 @@ def prepare_request(witnesses, treatment_id, parameters=None):
 
 
 DOC_REF_RE = re.compile(r"^\w+-\w+$")
+
+
 def process_results(data, completed=True):
     """
     :param data: {
@@ -274,8 +287,12 @@ def get_doc_refs_from_records(records, source_type=SourceType.REGIONS) -> list[s
 
 def similarity_param(parameters: dict | None) -> dict:
     """Explicit parameters value casting"""
-    p = SIM_DEFAULTS | {k: v for k, v in (parameters or {}).items() if v not in (None, "")}
-    return p | {k: type(d)(p[k]) for k, d in SIM_DEFAULTS.items() if not isinstance(d, list)}
+    p = SIM_DEFAULTS | {
+        k: v for k, v in (parameters or {}).items() if v not in (None, "")
+    }
+    return p | {
+        k: type(d)(p[k]) for k, d in SIM_DEFAULTS.items() if not isinstance(d, list)
+    }
 
 
 def similarity_hash(parameters: dict) -> str:
@@ -284,19 +301,23 @@ def similarity_hash(parameters: dict) -> str:
     hashed in process_results(): any difference makes get_existing_pairs() ineffective
     """
     p = similarity_param(parameters)
-    return SimilarityParameters.get_or_create_from_params({
-        "algorithm": p["algorithm"],
-        "topk": p["cosine_n_filter"],
-        "feat_net": p["feat_net"],
-        "segswap_prefilter": p["segswap_prefilter"],
-        "segswap_n": p["segswap_n"],
-        "raw_transpositions": p["transpositions"],
-    })
+    return SimilarityParameters.get_or_create_from_params(
+        {
+            "algorithm": p["algorithm"],
+            "topk": p["cosine_n_filter"],
+            "feat_net": p["feat_net"],
+            "segswap_prefilter": p["segswap_prefilter"],
+            "segswap_n": p["segswap_n"],
+            "raw_transpositions": p["transpositions"],
+        }
+    )
 
 
 def legacy_refs(wids) -> dict[str, list[str]]:
     legacy = defaultdict(list)
-    for regions in RegionExtraction.objects.filter(digitization__witness_id__in=wids).select_related("digitization"):
+    for regions in RegionExtraction.objects.filter(
+        digitization__witness_id__in=wids
+    ).select_related("digitization"):
         legacy[str(regions.digitization.witness_id)].append(regions.get_ref())
     return legacy
 
@@ -308,7 +329,9 @@ def get_existing_pairs(doc_refs: set[str], parameters: dict) -> set[str]:
     """
     param_hash = similarity_hash(parameters)
     # score folders are "wid1-wid2" or (legacy) "regions_ref1-regions_ref2"
-    legacy = legacy_refs(doc_refs) if parameters["source_type"] == SourceType.REGIONS else {}
+    legacy = (
+        legacy_refs(doc_refs) if parameters["source_type"] == SourceType.REGIONS else {}
+    )
 
     def is_computed(r1, r2):
         return any(
@@ -322,7 +345,9 @@ def get_existing_pairs(doc_refs: set[str], parameters: dict) -> set[str]:
         l1, l2 = legacy.get(r1), legacy.get(r2)
         return bool(l1 and l2) and all(
             is_computed(a, b)
-            for a, b in (combinations_with_replacement(l1, 2) if r1 == r2 else product(l1, l2))
+            for a, b in (
+                combinations_with_replacement(l1, 2) if r1 == r2 else product(l1, l2)
+            )
         )
 
     return {
@@ -333,7 +358,11 @@ def get_existing_pairs(doc_refs: set[str], parameters: dict) -> set[str]:
 
 
 def score_file(r1: str, r2: str, param_hash: str) -> Path:
-    return Path(SCORES_PATH) / RegionPair.order_pair((r1, r2), as_string=True) / f"{param_hash}.json"
+    return (
+        Path(SCORES_PATH)
+        / RegionPair.order_pair((r1, r2), as_string=True)
+        / f"{param_hash}.json"
+    )
 
 
 def score_file_to_db(file_path):
@@ -436,7 +465,9 @@ PAIR_FIELDS = (
 
 def get_region_pairs_with(q_img, query_digit_ids, target_digit_ids=None):
     # query_digit_ids is implied by q_img: the digitization is encoded in the image name
-    return list(pairs_with(q_img, target_digit_ids).values_list(*PAIR_FIELDS, named=True))
+    return list(
+        pairs_with(q_img, target_digit_ids).values_list(*PAIR_FIELDS, named=True)
+    )
 
 
 def pair_tuple(row, q_img):
@@ -457,7 +488,9 @@ def pair_tuple(row, q_img):
 def pairs_with(q_img: str, digit_ids=None) -> QuerySet:
     if digit_ids is None:
         return RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img))
-    return RegionPair.objects.filter(Q(img_1=q_img, digit_2__in=digit_ids) | Q(img_2=q_img, digit_1__in=digit_ids))
+    return RegionPair.objects.filter(
+        Q(img_1=q_img, digit_2__in=digit_ids) | Q(img_2=q_img, digit_1__in=digit_ids)
+    )
 
 
 def pair_priority(pair: RegionPairTuple, user_id) -> tuple:
@@ -473,8 +506,13 @@ def is_auto(pair: RegionPairTuple, user_id) -> bool:
     return pair.category is None and user_id not in pair.category_x and pair.similarity_type == SimilarityType.AUTO
 
 
-def get_best_pairs(q_img, rows, excluded_categories=(), topk=None, user_id=None, export=False):
-    pairs = sorted((RegionPairTuple.of(r, q_img) for r in rows), key=lambda p: pair_priority(p, user_id))
+def get_best_pairs(
+    q_img, rows, excluded_categories=(), topk=None, user_id=None, export=False
+):
+    pairs = sorted(
+        (RegionPairTuple.of(r, q_img) for r in rows),
+        key=lambda p: pair_priority(p, user_id),
+    )
     if export:
         return pairs
 
@@ -526,9 +564,9 @@ def check_computed_pairs(regions_refs):
         # a pair counts as computed whatever its parameters hash → only relaunches pairs never computed
         if not any(
             any(
-                (
-                    Path(SCORES_PATH) / RegionPair.order_pair(pair, as_string=True)
-                ).glob("*.json")
+                (Path(SCORES_PATH) / RegionPair.order_pair(pair, as_string=True)).glob(
+                    "*.json"
+                )
             )
             for pair in [(ref1, ref2), (wid1, wid2)]
         ):
@@ -553,7 +591,9 @@ def get_all_pairs():
 
 def reset(match, api_refs, digit, tag: str) -> bool:
     for name in os.listdir(SCORES_PATH):
-        if any(match(ref) for ref in name.split("-")) and not delete_path(Path(SCORES_PATH) / name):
+        if any(match(ref) for ref in name.split("-")) and not delete_path(
+            Path(SCORES_PATH) / name
+        ):
             log(f"[{tag}] Failed to delete file {name}")
 
     for ref in api_refs:
@@ -587,7 +627,10 @@ def reset_similarity(region_extraction: RegionExtraction) -> bool:
         regions_ref = region_extraction.get_ref()
         wid = str(get_witness_ids(region_extraction)[0])
     except Exception as e:
-        log(f"[reset_similarity] Failed to retrieve refs for region extraction #{region_extraction.id}", e)
+        log(
+            f"[reset_similarity] Failed to retrieve refs for region extraction #{region_extraction.id}",
+            e,
+        )
         return False
     # TODO retrieve info on the algorithm and feature network used (in json score files)
     return reset(
@@ -617,7 +660,16 @@ def update_category_x(region_pair: RegionPair, user_id: int):
 CATEGORY = Coalesce("category", Value(0))
 
 
-def filter_pairs(digit_ids, exclusive=True, min_score=None, max_score=None, topk=None, exclude_self=False, categories=None, user_id=None) -> QuerySet:
+def filter_pairs(
+    digit_ids,
+    exclusive=True,
+    min_score=None,
+    max_score=None,
+    topk=None,
+    exclude_self=False,
+    categories=None,
+    user_id=None,
+) -> QuerySet:
     if exclusive:
         query = Q(digit_1__in=digit_ids) & Q(digit_2__in=digit_ids)
     else:
@@ -649,16 +701,27 @@ def normalize_pair(img_1: str, img_2: str):
 
 def stream_pairs_ndjson(qs: QuerySet, user_id: int | None, batch_size=10_000):
     """Gzipped NDJSON, one line per batch: [new image names, flat (img_idx_1, img_idx_2, score, category, is_user_match) tuples]"""
-    rows = qs.values_list("img_1", "img_2", "score", CATEGORY, "category_x").iterator(chunk_size=batch_size)
+    rows = qs.values_list("img_1", "img_2", "score", CATEGORY, "category_x").iterator(
+        chunk_size=batch_size
+    )
     ids, gz = {}, zlib.compressobj(1, wbits=31)
     while batch := list(islice(rows, batch_size)):
         n = len(ids)
         flat = [
-            v for a, b, s, c, x in batch
-            for v in (ids.setdefault(a, len(ids)), ids.setdefault(b, len(ids)), s and round(s, 4), c, int(user_id in (x or ())))
+            v
+            for a, b, s, c, x in batch
+            for v in (
+                ids.setdefault(a, len(ids)),
+                ids.setdefault(b, len(ids)),
+                s and round(s, 4),
+                c,
+                int(user_id in (x or ())),
+            )
         ]
         new = [*islice(reversed(ids), len(ids) - n)][::-1]
-        yield gz.compress(orjson.dumps([new, flat]) + b"\n") + gz.flush(zlib.Z_SYNC_FLUSH)
+        yield gz.compress(orjson.dumps([new, flat]) + b"\n") + gz.flush(
+            zlib.Z_SYNC_FLUSH
+        )
     yield gz.flush()
 
 
@@ -696,12 +759,22 @@ def stored_name(img: str, ref: ImgRef) -> str | None:
     if in_pairs(img):
         return img
     box = parse_bbox(ref.bbox)
-    return next((s for s in sorted(fetch_distinct_images([ref.digit]))
-                 if (r := parse_img(s, True)) and r.bbox and int(r.page) == int(ref.page)
-                 and close(parse_bbox(r.bbox), box)), None)
+    return next(
+        (
+            s
+            for s in sorted(fetch_distinct_images([ref.digit]))
+            if (r := parse_img(s, True))
+            and r.bbox
+            and int(r.page) == int(ref.page)
+            and close(parse_bbox(r.bbox), box)
+        ),
+        None,
+    )
 
 
-def load_regions(data: dict, *keys: str, paired: tuple[str, ...]) -> tuple[list[str], list[ImgRef]]:
+def load_regions(
+    data: dict, *keys: str, paired: tuple[str, ...]
+) -> tuple[list[str], list[ImgRef]]:
     imgs = [add_jpg(data[k]) for k in keys]
     refs = [parse_img(i, True) for i in imgs]
     if not all(r and r.bbox for r in refs):
@@ -712,7 +785,9 @@ def load_regions(data: dict, *keys: str, paired: tuple[str, ...]) -> tuple[list[
 
     stored = {k: stored_name(i, r) for k, i, r in zip(keys, imgs, refs)}
     if not any(stored[k] for k in paired):
-        raise ValueError(f"No pair contains {' or '.join(add_jpg(data[k]) for k in paired)}")
+        raise ValueError(
+            f"No pair contains {' or '.join(add_jpg(data[k]) for k in paired)}"
+        )
 
     imgs = [stored[k] or i for k, i in zip(keys, imgs)]
     if imgs[0] == imgs[1]:
@@ -723,15 +798,22 @@ def load_regions(data: dict, *keys: str, paired: tuple[str, ...]) -> tuple[list[
 
 def find_annotations(refs: list[ImgRef]) -> list[dict | None] | None:
     """get aiiinotations associated with the image reference"""
-    annos = {c: get_canvas_annotations(*c) for c in {(r.digit, int(r.page)) for r in refs}}
+    annos = {
+        c: get_canvas_annotations(*c) for c in {(r.digit, int(r.page)) for r in refs}
+    }
     if None in annos.values():
         return None
     return [
         next(
             (
-                a for a in annos[r.digit, int(r.page)]
-                if close(parse_bbox(get_coord_from_annotation(a, as_str=True)), parse_bbox(r.bbox))
+                a
+                for a in annos[r.digit, int(r.page)]
+                if close(
+                    parse_bbox(get_coord_from_annotation(a, as_str=True)),
+                    parse_bbox(r.bbox),
+                )
             ),
-        None)
+            None,
+        )
         for r in refs
     ]

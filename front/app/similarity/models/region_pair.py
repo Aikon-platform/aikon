@@ -293,7 +293,7 @@ class RegionPair(models.Model):
             img_2=img_2,
             digit_1=parse_img(img_1).digit,
             digit_2=parse_img(img_2).digit,
-            **fields
+            **fields,
         )
 
     def to_dict(self) -> dict:

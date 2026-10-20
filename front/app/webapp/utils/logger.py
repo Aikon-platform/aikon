@@ -155,7 +155,9 @@ class Logger:
     def format_message(self, *msg: Any, **kwargs) -> str:
         """Format a message with timestamp and colors."""
         color = self.get_color(kwargs.get("msg_type", "white"))
-        timestamp = f"\n{self._get_timestamp()}" if kwargs.get("with_time", True) else ""
+        timestamp = (
+            f"\n{self._get_timestamp()}" if kwargs.get("with_time", True) else ""
+        )
 
         formatted = "\n".join([f"{color}{self.COLORS['bold']}{pprint(m)}" for m in msg])
         if kwargs.get("compact", self.compact):
