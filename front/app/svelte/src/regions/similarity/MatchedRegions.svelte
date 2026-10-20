@@ -1,16 +1,9 @@
 <script>
-    import { getContext } from "svelte";
     import { appLang } from "../../constants";
     import SimilarRegion from "./SimilarRegion.svelte";
     import RegionModal from "../modal/RegionModal.svelte";
-    import RegionCard from "../RegionCard.svelte";
-    import PageView from "../modal/PageView.svelte";
-    import ComparisonView from "../modal/ComparisonView.svelte";
-    import QueryExpansionView from "../modal/QueryExpansionView.svelte";
-    import Tabs from "../../ui/Tabs.svelte";
     import { RegionItem } from "../types.js";
-    import {i18n} from "../../utils.js";
-    import DuplicatesView from "../modal/DuplicatesView.svelte";
+    import RegionTabs from "../modal/RegionTabs.svelte";
 
     export let items = [];
     export let loading = false;
@@ -19,9 +12,7 @@
     export let qImg;
     export let isInModal = false;
     export let noRegionsSelected = false;
-    export let cols = 4;
-
-    const qImgMetadata = getContext("qImgMetadata") || null;
+    export let downloadable = false;
 
     $: label = (() => {
         const plural = items.length > 1;
@@ -33,9 +24,6 @@
             ? (plural ? "images similaires" : "image similaire")
             : (plural ? "similar images" : "similar image");
     })();
-
-    $: modalItems = items.map(([, , sImg]) => RegionItem.fromImg(sImg));
-    $: currentScore = items[modalIndex]?.[0] ?? null;
 
     let modalOpen = false;
     let modalIndex = 0;
@@ -53,13 +41,8 @@
         modalOpen = true;
     };
 
-    const tabs = [
-        { id: "region", label: i18n("mainView") },
-        { id: "page", label: i18n("pageView") },
-        { id: "similarity", label: i18n("similarityView") },
-        { id: "expansion", label: i18n("expansionView") },
-        { id: "duplicates", label: i18n("duplicatesView") }
-    ];
+    $: modalItems = items.map(([, , sImg]) => RegionItem.fromImg(sImg));
+    $: comparison = items[modalIndex] && { qImg, sImg: items[modalIndex][2] };
 </script>
 
 {#if loading}
@@ -75,63 +58,35 @@
 {:else}
     <div class="p-2">
         <span class="m-2">{items.length} {label}</span>
-        <div class="m-4 is-gap-3 has-{cols}-cols" class:grid={items.length > 0}>
-            {#each visibleItems as [score, _, sImg, qRegions, sRegions, category, users, similarityType, similarityHash], i (sImg)}
-                <SimilarRegion {qImg} {sImg} {score} {qRegions} {sRegions} {category} {users}
-                               {similarityType} {similarityHash} index={i} {isInModal}
-                               on:openModal={handleOpenModal} />
-            {:else}
-                <div class="faded is-center py-3">
-                    {#if !isPropagated && noRegionsSelected}
-                        {appLang === "en" ? "No document selected. Select one to display results." : "Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats."}
-                    {:else}
-                        {appLang === "en" ? "No similar regions" : "Pas de régions similaires"}
-                    {/if}
-                </div>
-            {/each}
-        </div>
-        {#if hasMore}
-            <div class="is-center py-3">
-                <button class="button is-small is-link is-outlined" on:click={() => visibleCount += PAGE_SIZE}>
-                    {appLang === "en" ? `Load more` : `Charger plus`}
-                </button>
+            <div class="m-4 is-gap-3" class:grid={items.length > 0}>
+                {#each visibleItems as [score, _, sImg, , sRegions, category, users, similarityType, similarityHash], i (sImg)}
+                    <SimilarRegion {qImg} {sImg} {score} {sRegions} {category} {users}
+                                   {similarityType} {similarityHash} index={i} {isInModal} {downloadable}
+                                   on:openModal={handleOpenModal}/>
+                {:else}
+                    <div class="faded is-center py-3">
+                        {#if !isPropagated && noRegionsSelected}
+                            {appLang === "en" ? "No document selected. Select one to display results." : "Aucun document sélectionné. Sélectionnez-en un pour afficher les résultats."}
+                        {:else}
+                            {appLang === "en" ? "No similar regions" : "Pas de régions similaires"}
+                        {/if}
+                    </div>
+                {/each}
             </div>
-        {/if}
-    </div>
+            {#if hasMore}
+                <div class="is-center py-3">
+                    <button class="button is-small is-link is-outlined" on:click={() => visibleCount += PAGE_SIZE}>
+                        {appLang === "en" ? `Load more` : `Charger plus`}
+                    </button>
+                </div>
+            {/if}
+        </div>
 
     {#if !isInModal}
-    <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
-        <svelte:fragment let:item={currentItem}>
-            <Tabs {tabs} let:activeTab>
-                {#if activeTab === "region"}
-                    <div class="modal-region">
-                        <RegionCard item={currentItem} height="full" isInModal={true} copyable={true}/>
-                    </div>
-                {:else if activeTab === "page"}
-                    <PageView item={currentItem}/>
-                {:else if activeTab === "similarity" && qImgMetadata}
-                    <ComparisonView queryItem={qImgMetadata} similarItem={currentItem} score={currentScore}/>
-                {:else if activeTab === "expansion"}
-                    {#key currentItem.img}
-                        <QueryExpansionView item={currentItem}/>
-                    {/key}
-                {:else if activeTab === "duplicates"}
-                    <DuplicatesView item={currentItem}/>
-                {/if}
-            </Tabs>
-        </svelte:fragment>
-    </RegionModal>
+        <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
+            <svelte:fragment let:item={currentItem} let:anchored>
+                <RegionTabs item={currentItem} comparison={anchored ? null : comparison}/>
+            </svelte:fragment>
+        </RegionModal>
     {/if}
 {/if}
-
-<style>
-    .modal-region {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-region :global(.region) {
-        height: 100%;
-    }
-</style>

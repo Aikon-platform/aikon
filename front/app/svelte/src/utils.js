@@ -52,6 +52,8 @@ export function extractInt(str) {
     return parseInt(extractNb(str), 10);
 }
 
+export const appendToDom = (node) => document.body.appendChild(node);
+
 export function shorten(str, maxLen=100) {
     // put '...' in between the 75% and last 25% characters if the string it too long
     const nthChar = Math.floor(maxLen * 0.75);

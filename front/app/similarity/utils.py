@@ -494,24 +494,16 @@ def pairs_with(q_img: str, digit_ids=None) -> QuerySet:
 
 
 def pair_priority(pair: RegionPairTuple, user_id) -> tuple:
-    # high priority => low priority
-    if pair.similarity_type == SimilarityType.MANUAL or user_id in pair.category_x:
-        group = Priority.MANUAL
-    elif pair.similarity_type == SimilarityType.PROPAGATED:
-        group = Priority.PROPAGATED
-    elif pair.category == SimilarityCategory.NO_MATCH:
-        group = Priority.NO_MATCH
-    elif pair.category is not None:
-        group = Priority.CATEGORIZED
-    elif pair.score is not None:
-        group = Priority.AUTO
-    else:
-        group = Priority.NONE
-    return (
-        group,
-        pair.category if group == Priority.CATEGORIZED else 0,
-        -(pair.score or 0),
-    )
+    is_x = user_id in pair.category_x
+    if pair.category is None:
+        # uncategorized get 3.5 as rank so they rank in between cat 3 and cat 4
+        return (0 if is_x else 3.5), 0, -(pair.score or 0)
+
+    return pair.category, 0 if is_x else 1 if pair.similarity_type == SimilarityType.MANUAL else 2, -(pair.score or 0)
+
+
+def is_auto(pair: RegionPairTuple, user_id) -> bool:
+    return pair.category is None and user_id not in pair.category_x and pair.similarity_type == SimilarityType.AUTO
 
 
 def get_best_pairs(
@@ -533,7 +525,7 @@ def get_best_pairs(
         if p.category in excluded_categories:
             continue
 
-        if topk and pair_priority(p, user_id)[0] == Priority.AUTO:
+        if topk and is_auto(p, user_id):
             n_auto += 1
             if n_auto > topk:
                 continue

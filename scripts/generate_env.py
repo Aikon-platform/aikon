@@ -78,7 +78,7 @@ HEADER = (
 )
 
 ENV_CONSTANTS = {
-    "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0,web,nginx,host.docker.internal,aikon.localhost",
+    "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0,web,nginx,host.docker.internal,aikon.localhost,*.localhost",
     "AIIINOTATE_HOST": "0.0.0.0",
     "AIIINOTATE_SCHEME": "http",
     "AIIINOTATE_LOG_TARGET": "stdout",
@@ -263,34 +263,20 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
         "MEDIA_DIR": "/data/mediafiles" if in_docker else f"{v['DATA_DIR']}/mediafiles",
         "BASE_URL": base,
         "APP_URL_FROM_DOCKER": (
-            base
-            if prod
-            else "http://web:8000"
+            base if prod else "http://web:8000"
             if in_docker
             else f"http://host.docker.internal:{v['FRONT_PORT']}"
         ),
         "APP_URL_FROM_API": (
-            base
-            if prod
-            else "http://web:8000"
+            base if prod else "http://web:8000"
             if in_docker  # local: api container → web
             else f"http://localhost:{v['FRONT_PORT']}"  # dev: api on host → localhost
         ),
-        "API_URL": v["PROD_API_URL"]
-        if prod
-        else f"http://{'api' if in_docker else 'localhost'}:{v['API_PORT']}",
-        "CANTALOUPE_BASE_URI": base
-        if nginx
-        else f"http://localhost:{v['CANTALOUPE_PORT']}",
-        "AIIINOTATE_BASE_URL": f"{base}/aiiinotate"
-        if prod
-        else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",
-        "AIIINOTATE_PUBLIC_URL": f"{base}/aiiinotate"
-        if prod
-        else f"http://localhost:{v['AIIINOTATE_PORT']}",
-        "MIRADOR_BASE_URL": f"{base}/mirador"
-        if nginx
-        else f"http://localhost:{v['MIRADOR_PORT']}",
+        "API_URL": v["PROD_API_URL"] if prod else f"http://{'api' if in_docker else 'localhost'}:{v['API_PORT']}",
+        "CANTALOUPE_BASE_URI": base if nginx else f"http://localhost:{v['CANTALOUPE_PORT']}",
+        "AIIINOTATE_BASE_URL": f"{base}/aiiinotate" if nginx else f"http://{host('aiiinotate')}:{v['AIIINOTATE_PORT']}",
+        "AIIINOTATE_PUBLIC_URL": f"{base}/aiiinotate" if nginx else f"http://localhost:{v['AIIINOTATE_PORT']}",
+        "MIRADOR_BASE_URL": f"{base}/mirador" if nginx else f"http://localhost:{v['MIRADOR_PORT']}",
         "MONGODB_CONNSTRING": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}",
         "MONGODB_DB_TEST": f"{v['MONGODB_DB']}_test",
         "MONGODB_CONNSTRING_TEST": f"mongodb://{host('mongo')}:{port('MONGODB_PORT')}/{v['MONGODB_DB']}_test",

@@ -29,10 +29,19 @@ const configs = {
         entryFileNames: "documentSet.js",
         assetFileNames: "documentSet.[ext]",
         inlineDynamicImports: true
-    }
+    },
+    region: {
+        input: path.resolve(__dirname, "src/regions/region.js"),
+        outDir: "../webapp/static/svelte/regionView",
+        format: "es",
+        entryFileNames: "region.js",
+        chunkFileNames: "[name]-[hash].js",
+        assetFileNames: "region.[ext]",
+        inlineDynamicImports: false
+    },
 };
 
-const config = configs[target] || configs.regionList;
+const config = configs[target] || configs.region;
 
 export default defineConfig({
     plugins: [

@@ -1,15 +1,26 @@
 <script>
-    import { appLang } from "../../constants.js";
+    import { appName } from "../../constants.js";
+    import { i18n } from "../../utils.js";
+    import { RegionItem } from "../types.js";
     import InputToggle from "../../ui/InputToggle.svelte";
     import RegionCard from "../RegionCard.svelte";
     import OverlayView from "./OverlayView.svelte";
+    import PairCategoryToolbar from "../similarity/PairCategoryToolbar.svelte";
 
-    /** @typedef {import("./types.js").RegionItemType} RegionItemType */
+    export let qImg;
+    export let sImg;
 
-    /** @type {RegionItemType} */
-    export let queryItem;
-    /** @type {RegionItemType} */
-    export let similarItem;
+    const t = {
+        query: {en: "Query image", fr: "Image requête"},
+        target: {en: "Target image", fr: "Image cible"},
+        overlay: {en: "Overlay view", fr: "Vue superposée"}
+    }
+
+    $: queryItem = RegionItem.fromImg(qImg);
+    $: similarItem = RegionItem.fromImg(sImg);
+    $: pairInfo = fetch(`${window.location.origin}/${appName}/similarity/pair?${new URLSearchParams({ q_img: qImg, s_img: sImg })}`)
+        .then(r => r.ok ? r.json() : [])
+        .catch(() => []);
 
     let overlay = false;
 </script>
@@ -21,19 +32,22 @@
         {:else}
             <div class="side-by-side columns">
                 <div class="column is-flex is-flex-direction-column is-justify-content-center is-align-items-center">
-                    <span>{appLang === "en" ? "Query image" : "Image requête"}</span>
-                    <RegionCard item={queryItem} height="full" isInModal={true}/>
+                    <h3 class="title is-5">{i18n("query", t)}</h3>
+                    <RegionCard item={queryItem} height="full" isInModal={true} downloadable={false}/>
                 </div>
                 <div class="column is-flex is-flex-direction-column is-justify-content-center is-align-items-center">
-                    <span>{appLang === "en" ? "Similarity" : "Similarité"}</span>
-                    <RegionCard item={similarItem} height="full" isInModal={true}/>
+                    <h3 class="title is-5">{i18n("target", t)}</h3>
+                    <RegionCard item={similarItem} height="full" isInModal={true} downloadable={false}/>
                 </div>
             </div>
         {/if}
     </div>
-    <div>
+    <div class="is-flex is-align-items-center is-justify-content-center is-gap-2 m-auto">
         <InputToggle start={false} buttonDisplay={true} on:updateChecked={() => overlay = !overlay}
-                     toggleLabel={appLang === "en" ? "Overlay view" : "Vue superposée"}/>
+                     toggleLabel={i18n("overlay", t)}/>
+        {#await pairInfo then [, , , , , category, users, similarityType, similarityHash]}
+            <PairCategoryToolbar {qImg} {sImg} {category} users={users ?? []} {similarityType} {similarityHash}/>
+        {/await}
     </div>
 </div>
 

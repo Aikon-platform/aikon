@@ -34,6 +34,11 @@ export function parseImgRef(imgRef) {
     };
 }
 
+export const isSameWitness = (img1, img2) => {
+    const witnessId = parseImgRef(img1)?.witnessId;
+    return witnessId != null && witnessId === parseImgRef(img2)?.witnessId;
+};
+
 export class RegionItem {
     /** @param {RegionItemType} data */
     constructor(data) {
@@ -152,5 +157,13 @@ export class RegionItem {
 
     urlForMirador(canvasNb = this.canvasNb){
         return `${getMiradorUrl()}/index.html?iiif-content=${this.manifest()}&canvas=${canvasNb}&editMode=true&defaultForm=note`;
+    }
+
+    get viewUrl() {
+        return `/${appName}/region/${this.fullImg.replace(/\.jpg$/, "")}/`;
+    }
+
+    get witnessUrl() {
+        return `/${appName}/witness/${this.witnessId}/regions`;
     }
 }

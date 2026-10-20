@@ -1,5 +1,5 @@
 <script>
-    import { appLang } from "../../constants.js";
+    import { appLang, appName } from "../../constants.js";
     import { RegionItem } from "../types.js";
 
     import SimilarityRow from "../similarity/SimilarityRow.svelte";
@@ -16,7 +16,7 @@
     /** @returns {string} */
     function buildRedirectionUrl() {
         const u = new URL(window.location.origin);
-        u.pathname = `${new URL(window.location).pathname.split("/")[1]}/witness/${regionItem.witnessId}/regions/`
+        u.pathname = `${appName}/witness/${regionItem.witnessId}/regions/`;
         u.searchParams.set("tab", "similarity");
         return u.href;
     }
