@@ -78,7 +78,7 @@ HEADER = (
 )
 
 ENV_CONSTANTS = {
-    "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0,web,nginx,host.docker.internal",
+    "ALLOWED_HOSTS": "localhost,127.0.0.1,0.0.0.0,web,nginx,host.docker.internal,aikon.localhost",
     "AIIINOTATE_HOST": "0.0.0.0",
     "AIIINOTATE_SCHEME": "http",
     "AIIINOTATE_LOG_TARGET": "stdout",
@@ -206,7 +206,8 @@ def derive(v: dict, mode: str, in_docker: bool) -> dict:
     base = (
         f"https://{v['PROD_URL']}"
         if prod
-        else f"http://localhost:{v['NGINX_PORT'] if nginx else v['FRONT_PORT']}"
+        else f"http://aikon.localhost:{v['NGINX_PORT']}" if nginx
+        else f"http://localhost:{v['FRONT_PORT']}"
     )
 
     env_dict = {

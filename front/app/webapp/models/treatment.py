@@ -267,9 +267,6 @@ class Treatment(AbstractSearchableModel):
 
         url = f"{API_URL}/{self.task_type}/start"
 
-        # if api_param := self.api_parameters:
-        #     parameters.update(api_param)
-
         api_query = requests.post(
             url,
             data=gzip.compress(json.dumps(parameters).encode()),
