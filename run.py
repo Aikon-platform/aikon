@@ -318,15 +318,9 @@ if __name__ == "__main__":
         if ENV["MODE"] == "dev":
             run_dev()
         else:
-            port = ENV.get("NGINX_PORT", "8080")
-            url = (
-                f"https://{ENV['PROD_URL']}"
-                if ENV["MODE"] == "prod"
-                else f"http://localhost:{port}"
-            )
             log(
-                f"→ {url} (stop with `python run.py down`)",
-                **{**LOG_KWARGS, "compact": False},
+                f"→ {read_env(ROOT / 'docker' / '.env')['BASE_URL']} (stop with `python run.py down`)",
+                **{**LOG_KWARGS, "compact": False}
             )
     else:
         sys.exit(__doc__)
