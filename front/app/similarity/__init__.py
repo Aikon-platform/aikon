@@ -9,7 +9,9 @@ class ImgRef(NamedTuple):
     page: str
     bbox: str | None  # None = page-level
 
+
 Bbox = tuple[int, int, int, int]
+
 
 class Region(NamedTuple):
     img: str  # name stored in RegionPair

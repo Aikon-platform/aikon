@@ -14,14 +14,18 @@ def paginated_records(request, records):
     paginator = Paginator(records, PAGE_LEN)
     page_obj = paginator.get_page(request.GET.get("p", 1))
     fields = list(
-        dict.fromkeys(f for v in request.GET.getlist("field") for f in v.split(",") if f)
+        dict.fromkeys(
+            f for v in request.GET.getlist("field") for f in v.split(",") if f
+        )
     )
 
     results = []
     for obj in page_obj:
         if json_obj := obj.get_json(request_user=request.user):
             results.append(
-                {k: json_obj[k] for k in fields if k in json_obj} if fields else json_obj
+                {k: json_obj[k] for k in fields if k in json_obj}
+                if fields
+                else json_obj
             )
 
     return {

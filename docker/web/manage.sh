@@ -49,4 +49,3 @@ echo ""
 echo "creating superuser..."
 $manage create_superuser_check
 echo "✅ superuser setup completed"
-

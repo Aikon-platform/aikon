@@ -27,8 +27,13 @@ def convert_temp_to_img(digit_id):
 
 
 @celery_app.task(
-    rate_limit="2/s", bind=True, max_retries=3, default_retry_delay=10,
-    retry_backoff=True, retry_backoff_max=120, retry_jitter=True,
+    rate_limit="2/s",
+    bind=True,
+    max_retries=3,
+    default_retry_delay=10,
+    retry_backoff=True,
+    retry_backoff_max=120,
+    retry_jitter=True,
 )
 def extract_images_from_iiif_manifest(self, manifest_url, digit_id):
     try:
@@ -36,6 +41,7 @@ def extract_images_from_iiif_manifest(self, manifest_url, digit_id):
     except Exception as exc:
         if self.request.retries >= self.max_retries:
             from app.webapp.utils.logger import log
+
             log(f"[extract_images] giving up on {manifest_url}", exc)
             return []
         raise self.retry(exc=exc)
@@ -113,7 +119,10 @@ def start_import(treatment_id):
     """
     from app.webapp.models.treatment import Treatment
     from app.webapp.utils.data_import import (
-        ImportContext, is_same_instance, resolve_source, import_witness,
+        ImportContext,
+        is_same_instance,
+        resolve_source,
+        import_witness,
     )
     from app.webapp.utils.logger import log
 
@@ -122,11 +131,17 @@ def start_import(treatment_id):
 
     ctx = ImportContext(treatment)
     source_url = ctx.opts.get("source_url", "")
-    log(f"[start_import] Treatment #{treatment_id}: importing from {source_url}", msg_type="info")
+    log(
+        f"[start_import] Treatment #{treatment_id}: importing from {source_url}",
+        msg_type="info",
+    )
 
     if is_same_instance(source_url):
         treatment.on_task_success(
-            {"notify": treatment.notify_email, "message": "Source is this instance, nothing to import"}
+            {
+                "notify": treatment.notify_email,
+                "message": "Source is this instance, nothing to import",
+            }
         )
         return
 
@@ -138,7 +153,10 @@ def start_import(treatment_id):
         ctx.opts["similarity_url"] = similarity_url
     except Exception as e:
         treatment.on_task_error(
-            {"notify": treatment.notify_email, "error": f"Could not fetch source {source_url}: {e}"}
+            {
+                "notify": treatment.notify_email,
+                "error": f"Could not fetch source {source_url}: {e}",
+            }
         )
         return
 
@@ -208,7 +226,10 @@ def import_regions_task(prev, digit_id, regions_url, treatment_id):
         if new_rid := import_region_extraction(digit, regions_url):
             update_mapping(treatment_id, "regions", digit_id, new_rid)
     except Exception as e:
-        log(f"[import_regions_task] Failed to import regions {regions_url} for digit #{digit_id}", e)
+        log(
+            f"[import_regions_task] Failed to import regions {regions_url} for digit #{digit_id}",
+            e,
+        )
     return True
 
 
@@ -241,7 +262,9 @@ def finalize_import(results, treatment_id):
         .values_list("id", flat=True)
     )
     ctx.mapping["digitizations"] = {
-        src: did for src, did in ctx.mapping["digitizations"].items() if did in digits_with_img
+        src: did
+        for src, did in ctx.mapping["digitizations"].items()
+        if did in digits_with_img
     }
     if digits_no_img := all_digit_ids - digits_with_img:
         try:
@@ -250,7 +273,11 @@ def finalize_import(results, treatment_id):
             log("[finalize_import] Failed to delete empty digitizations", e)
 
     sim_url = ctx.opts.get("similarity_url")
-    if ctx.opts.get("import_similarities") and sim_url and "similarity" in ADDITIONAL_MODULES:
+    if (
+        ctx.opts.get("import_similarities")
+        and sim_url
+        and "similarity" in ADDITIONAL_MODULES
+    ):
         try:
             msg += f", {import_similarity_pairs(ctx, sim_url)} region pair(s)"
         except Exception as e:
@@ -259,7 +286,9 @@ def finalize_import(results, treatment_id):
 
     ctx.save()
     if ctx.errors:
-        treatment.on_task_error({"notify": treatment.notify_email, "error": f"{msg}. Errors: {ctx.errors}"})
+        treatment.on_task_error(
+            {"notify": treatment.notify_email, "error": f"{msg}. Errors: {ctx.errors}"}
+        )
     else:
         treatment.on_task_success({"notify": treatment.notify_email, "message": msg})
 
@@ -357,9 +386,7 @@ def convert_digitization(digit_id):
 
         elif digit_type == MAN_ABBR:
             return chain(
-                extract_images_from_iiif_manifest.s(
-                    instance.manifest, instance.id
-                ),
+                extract_images_from_iiif_manifest.s(instance.manifest, instance.id),
                 update_image_json.s(instance.id),
             ).apply_async(countdown=1)
         return f"No processing needed for digitization #{digit_id}"

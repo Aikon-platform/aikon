@@ -210,7 +210,9 @@ class Treatment(AbstractSearchableModel):
 
             if not self.document_set:
                 if self.task_type != "import":
-                    log(f"[treatment_save] No document set for treatment {self.id}, aborting.")
+                    log(
+                        f"[treatment_save] No document set for treatment {self.id}, aborting."
+                    )
                     self.status = "ERROR"
                 super().save(*args, **kwargs)
                 return
@@ -270,7 +272,10 @@ class Treatment(AbstractSearchableModel):
         api_query = requests.post(
             url,
             data=gzip.compress(json.dumps(parameters).encode()),
-            headers={"Content-Type": "application/octet-stream", "Content-Encoding": "gzip"},
+            headers={
+                "Content-Type": "application/octet-stream",
+                "Content-Encoding": "gzip",
+            },
         )
 
         try:
