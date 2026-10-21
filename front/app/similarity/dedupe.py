@@ -254,16 +254,18 @@ def oriented(r: dict) -> dict:
     return swap(r) if norm_ref(r["img_2"]) < norm_ref(r["img_1"]) else r
 
 
-def db_oriented(rows: list[dict]) -> list[dict]:
+def db_oriented(rows: list[dict], batch_size: int = BATCH_SIZE) -> list[dict]:
     """Sides in Postgres collation order, required by the pair_ordering constraint"""
-    if not rows:
-        return rows
+    out = []
     with connection.cursor() as cur:
-        cur.execute(
-            "SELECT b < a FROM unnest(%s::text[], %s::text[]) WITH ORDINALITY AS t(a, b, n) ORDER BY n",
-            [[r["img_1"] for r in rows], [r["img_2"] for r in rows]],
-        )
-        return [swap(r) if s else r for r, (s,) in zip(rows, cur.fetchall())]
+        for i in range(0, len(rows), batch_size):
+            batch = rows[i:i + batch_size]
+            cur.execute(
+                "SELECT b < a FROM unnest(%s::text[], %s::text[]) WITH ORDINALITY AS t(a, b, n) ORDER BY n",
+                [[r["img_1"] for r in batch], [r["img_2"] for r in batch]],
+            )
+            out += [swap(r) if s else r for r, (s,) in zip(batch, cur.fetchall())]
+    return out
 
 
 def renamed(r: dict, mapping: dict[str, str]) -> dict:
@@ -345,7 +347,7 @@ def plan_changes(mapping: dict[str, str], null_hash: bool, log, sides: dict[str,
 
 
 def write_changes(to_update: list[dict], to_delete: list[int], batch_size: int) -> None:
-    to_update = db_oriented(to_update)
+    to_update = db_oriented(to_update, batch_size)
     sql = f"UPDATE webapp_regionpair SET {', '.join(f'{c} = %({c})s' for c in WRITE)} WHERE id = %(id)s"
     with connection.cursor() as cur:
         for i in range(0, len(to_delete), batch_size):
