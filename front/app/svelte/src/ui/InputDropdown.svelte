@@ -274,7 +274,7 @@
             addChoices: false,
             addItems: false,
             removeItems: true,
-            removeItemButton: true,
+            removeItemButton: multiple,
             searchEnabled: searchable,
             allowHTML: true,
             shouldSort: _selectAll ? false : true,  // if selectAll, then "Select all" "Remove all" should be on top.
@@ -394,14 +394,16 @@
     }
     /** selected item (single and multi) */
     :global(.choices__inner .dropdown-item) {
-        background-color: var(--bulma-link);
-        color: white;
-        border: var(--default-border);
         border-radius: 1rem;
         padding-left: 10px;
         font-weight: normal;
         font-size: 12px;
-        margin: 3.75px;
+        margin-bottom: -0.5em;
+    }
+    .input-dropdown-select.is-multiple :global(.choices__inner .dropdown-item) {
+        background-color: var(--bulma-link);
+        color: white;
+        border: var(--default-border);
     }
     /** selected item (multi placeholder) */
     :global(.choices__item.choices__placeholder) {
@@ -419,6 +421,10 @@
     /** selected item (single) */
     :global(.choices__list--single .choices__item) {
         width: fit-content;
+        overflow: hidden;
+        text-overflow: ellipsis;
+        white-space: nowrap;
+        max-width: 100%;
     }
     :global(.choices__list--single .choices__button) {
         background-color: white;

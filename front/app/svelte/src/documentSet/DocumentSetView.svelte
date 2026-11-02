@@ -9,6 +9,8 @@
     import Sidebar from "./sidebar/Sidebar.svelte";
     import NetworkVisualization from "./network/NetworkVisualization.svelte";
     import DocumentMatrix from "./document-matrix/DocumentMatrix.svelte";
+    import FriezeView from "./frieze/FriezeView.svelte";
+    import Documents from "./Documents.svelte";
     import {createDocumentSetStore} from "./documentSetStore.js";
     import Clusters from "./clusters/Clusters.svelte";
     import {createClusterStore} from "./clusters/clusterStore.js";
@@ -35,11 +37,7 @@
     onDestroy(() => unsubs.forEach(u => u()));
 
     import {clusterSelection} from "../selection/selectionStore.js";
-    import FriezeView from "./frieze/FriezeView.svelte";
-    import Documents from "./Documents.svelte";
-
     const {selected} = clusterSelection;
-
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
     $: if ($activeLayout === "sim") documentSetStore.setScoreFilter(true);
