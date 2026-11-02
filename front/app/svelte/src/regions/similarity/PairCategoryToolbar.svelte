@@ -31,7 +31,9 @@
 
     async function addUserToPair() {
         isSelectedByUser = !isSelectedByUser;
-        if (!await post("add-user-to-pair", { img_1: qImg, img_2: sImg })) isSelectedByUser = !isSelectedByUser;
+        if (!await post("add-user-to-pair", { img_1: qImg, img_2: sImg, similarity_type: similarityType })) {
+            isSelectedByUser = !isSelectedByUser;
+        }
     }
 </script>
 

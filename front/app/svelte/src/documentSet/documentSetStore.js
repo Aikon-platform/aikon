@@ -680,6 +680,17 @@ export function createDocumentSetStore(documentSetId) {
         pairCat.set(findCategory);
     };
 
+    const removeImages = (ids) => {
+        const del = new Set(ids);
+        const pairs = get(allPairs).filter(p => !del.has(p.id_1) && !del.has(p.id_2));
+        const kept = new Set();
+        for (const p of pairs) kept.add(p.id_1).add(p.id_2);
+        imageNodes.update(m => (m.forEach((_, id) => kept.has(id) || m.delete(id)), m));
+        documentNodes.update(m => (m.forEach(d => d.images = d.images.filter(i => kept.has(i.id))), m));
+        docSetNumber.update(n => ({...n, pairs: pairs.length, images: kept.size}));
+        allPairs.set(pairs);
+    };
+
 
     return {
         documentSetId,
@@ -687,10 +698,6 @@ export function createDocumentSetStore(documentSetId) {
 
         error,
         loadingProgress,
-        cancelLoading: () => {
-            worker?.terminate();
-            loading.set(false);
-        },
 
         allPairs,
         visiblePairs: filteredPairs,
@@ -699,6 +706,7 @@ export function createDocumentSetStore(documentSetId) {
         pairIndex,
         imageNodes,
         documentNodes,
+        witnessNodes,
         docSort,
         sortedDocumentNodes,
         fetchPairs,
@@ -714,6 +722,7 @@ export function createDocumentSetStore(documentSetId) {
         selectedNodes,
         selectedDocuments,
         updateSelectedNodes: (nodes) => selectedNodes.set(nodes),
+        removeImages,
         toggleCategory,
         toggleDoc,
         toggleAllDocuments,

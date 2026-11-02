@@ -13,8 +13,9 @@
     };
     export let clickable = true;
     export let onlyColor = false;
+    export let title = null;
 
-    const docTitle = `${meta.title} #${id}`;
+    $: docTitle = title ?? `${meta.title} #${id}`;
 
     const t = {
         nbImg: {en: "Number of extracted images", fr: "Nombre d'images extraites"},
