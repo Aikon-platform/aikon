@@ -84,6 +84,10 @@
             en: "Groups of images that share a similarity connection above the score threshold.",
             fr: "Groupes d'images partageant une connexion de similarité au-dessus du seuil de score."
         },
+        witInfo: {
+            en: "Images of a witness involved in at least one pair, by page. Bars filter by number of distinct matched regions under the current filters; dots filter by matched witness.",
+            fr: "Images d'un témoin présentes dans au moins une paire, par page. Les barres filtrent par nombre de régions correspondantes distinctes selon les filtres actifs ; les pastilles par témoin correspondant."
+        },
     }
 </script>
 

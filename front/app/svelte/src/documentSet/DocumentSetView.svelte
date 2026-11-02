@@ -36,6 +36,7 @@
 
     import {clusterSelection} from "../selection/selectionStore.js";
     import FriezeView from "./frieze/FriezeView.svelte";
+    import Documents from "./Documents.svelte";
 
     const {selected} = clusterSelection;
 
@@ -50,6 +51,7 @@
         "fri": appLang === "en" ? "Spatial Frieze" : "Frise spatiale",
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
         "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
+        "wit": "Documents",
     };
 
     const selectedDocs = docSet?.selection?.selected || {
@@ -119,6 +121,8 @@
                             <StemmaBuilder {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "fri"}
                             <FriezeView {documentSetStore} {clusterStore}/>
+                        {:else if $activeLayout === "wit"}
+                            <Documents {documentSetStore}/>
                         {/if}
                     </div>
                 {/if}
