@@ -259,6 +259,8 @@
     const onRemoveItem = (e, _selectedValues) =>
         structuredClone(_selectedValues).filter(s => s !== e.detail.value);
 
+    const strip = s => s.replace(/<[^>]*>/g, "").trim();
+
     /**
      * @param {DropdownChoiceArray} _choicesItems: all the available choices
      * @param {boolean} _selectAll
@@ -276,7 +278,7 @@
             searchEnabled: searchable,
             allowHTML: true,
             shouldSort: _selectAll ? false : true,  // if selectAll, then "Select all" "Remove all" should be on top.
-            sorter: (a,b) => a.label.localeCompare(b.label),  // alpanumeric sorting
+            sorter: (a, b) => strip(a.label).localeCompare(strip(b.label)),  // alphanumeric sorting
             placeholderValue: placeholder,
             classNames: {
                 item: ["choices__item", "dropdown-item"]

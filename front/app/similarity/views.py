@@ -502,12 +502,13 @@ def delete_matches(request):
 
     try:
         data = json.loads(request.body)
-        q_img = add_jpg(data.get("q_img", ""))
-        parse_img(q_img)
+        imgs = [add_jpg(img) for img in data.get("q_imgs") or [data.get("q_img", "")]]
+        for img in imgs:
+            parse_img(img)
     except (json.JSONDecodeError, ValueError) as e:
-        return JsonResponse({"error": f"Could not parse q_img: {e}"}, status=400)
+        return JsonResponse({"error": f"Could not parse images: {e}"}, status=400)
 
-    deleted, _ = RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img)).delete()
+    deleted, _ = RegionPair.objects.filter(Q(img_1__in=imgs) | Q(img_2__in=imgs)).delete()
     return JsonResponse(
         {"success": f"Successfully deleted {deleted} pairs"}, status=200
     )
