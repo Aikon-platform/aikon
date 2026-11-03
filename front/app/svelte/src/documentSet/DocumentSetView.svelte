@@ -9,6 +9,8 @@
     import Sidebar from "./sidebar/Sidebar.svelte";
     import NetworkVisualization from "./network/NetworkVisualization.svelte";
     import DocumentMatrix from "./document-matrix/DocumentMatrix.svelte";
+    import FriezeView from "./frieze/FriezeView.svelte";
+    import Documents from "./Documents.svelte";
     import {createDocumentSetStore} from "./documentSetStore.js";
     import Clusters from "./clusters/Clusters.svelte";
     import {createClusterStore} from "./clusters/clusterStore.js";
@@ -35,10 +37,7 @@
     onDestroy(() => unsubs.forEach(u => u()));
 
     import {clusterSelection} from "../selection/selectionStore.js";
-    import FriezeView from "./frieze/FriezeView.svelte";
-
     const {selected} = clusterSelection;
-
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
     $: if ($activeLayout === "sim") documentSetStore.setScoreFilter(true);
@@ -50,6 +49,7 @@
         "fri": appLang === "en" ? "Spatial Frieze" : "Frise spatiale",
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
         "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
+        "wit": "Documents",
     };
 
     const selectedDocs = docSet?.selection?.selected || {
@@ -119,6 +119,8 @@
                             <StemmaBuilder {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "fri"}
                             <FriezeView {documentSetStore} {clusterStore}/>
+                        {:else if $activeLayout === "wit"}
+                            <Documents {documentSetStore}/>
                         {/if}
                     </div>
                 {/if}
