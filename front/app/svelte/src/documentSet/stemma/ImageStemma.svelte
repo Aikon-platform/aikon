@@ -24,6 +24,7 @@ Propagation logic:
     import { i18n } from "../../utils.js";
     import { createStemmaInteraction, createStemmaMenu } from "./stemmaInteraction.js";
     import QueryExpansionView from "../../regions/modal/QueryExpansionView.svelte";
+    import RegionTabs from "../../regions/modal/RegionTabs.svelte";
 
     export let stemmaStore;
     export let visiblePairs;
@@ -202,7 +203,7 @@ Propagation logic:
         const nodeMap = new Map(nodes.map(n => [n.docId, n]));
         const renderedEdges = edges.flatMap(e => {
             const src = nodeMap.get(e.source), tgt = nodeMap.get(e.target);
-            return src && tgt ? [{source: src, target: tgt, label: e.label}] : [];
+            return src && tgt ? [{source: src, target: tgt, label: e.label, undirected: e.undirected}] : [];
         });
 
         return {nodes, edges: [...renderedEdges, ...extra.edges]};
@@ -323,7 +324,7 @@ Propagation logic:
                         <line class="edge" {x1} {y1} {x2} {y2}
                               stroke={edge.extra ? "transparent" : "var(--bulma-body-color)"}
                               stroke-width={2 / $transform.k}
-                              marker-end={edge.extra ? null : "url(#arrowhead)"}/>
+                              marker-end={edge.extra || edge.undirected ? null : "url(#arrowhead)"}/>
                     </g>
                     {#if edge.label}
                         <text x={(x1 + x2) / 2} y={(y1 + y2) / 2 - 4 / $transform.k}
@@ -371,19 +372,7 @@ Propagation logic:
 
 <RegionModal items={visibleRegions} bind:currentIndex={clickedRegionIdx} bind:open={modalOpen} on:navigate={handleNavigate}>
     <svelte:fragment let:item={currentItem}>
-        <Tabs {tabs} let:activeTab>
-            {#if activeTab === "region"}
-                <div class="modal-region">
-                    <RegionCard item={currentItem} height="full" isInModal={true} copyable={true} selectable={false}/>
-                </div>
-            {:else if activeTab === "page"}
-                <PageView item={currentItem}/>
-            {:else if activeTab === "matches"}
-                {#key currentItem.img}
-                    <QueryExpansionView item={currentItem}/>
-                {/key}
-            {/if}
-        </Tabs>
+        <RegionTabs item={currentItem}/>
     </svelte:fragment>
 </RegionModal>
 
@@ -419,15 +408,6 @@ Propagation logic:
         fill: none;
         cursor: pointer;
         pointer-events: stroke;
-    }
-    .modal-region {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-region :global(.region) {
-        height: 100%;
     }
     .toggle-btn {
         position: absolute;

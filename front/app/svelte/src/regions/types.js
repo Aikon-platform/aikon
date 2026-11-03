@@ -12,7 +12,7 @@
 import {appLang, appName, regionsType} from "../constants.js";
 import {extractNb, getCantaloupeUrl, getMiradorUrl, i18n} from "../utils.js";
 
-const IMG_REF_REGEX = /^(?:(\d+)_)?wit(\d+)_([a-z]{3})(\d+)(?:_anno(\d+))?_(\d+)(?:_([\d,]+))?(?:\.jpg)?$/;
+const IMG_REF_REGEX = /^(?:(\d+)_)?wit(\d+)_([a-z]{3})(\d+)(?:_anno(\d+))?_(\d+)(?:_([\d.,]+))?(?:\.jpg)?$/;
 
 export function parseImgRef(imgRef) {
     if (!imgRef) return null;
@@ -33,6 +33,11 @@ export function parseImgRef(imgRef) {
         imgRoot: `wit${witId}_${digType}${digId}_${canvasStr}.jpg`
     };
 }
+
+export const isSameWitness = (img1, img2) => {
+    const witnessId = parseImgRef(img1)?.witnessId;
+    return witnessId != null && witnessId === parseImgRef(img2)?.witnessId;
+};
 
 export class RegionItem {
     /** @param {RegionItemType} data */
@@ -70,10 +75,12 @@ export class RegionItem {
         return this.imgRoot.replace(".jpg", `_${coordStr}.jpg`);
     }
 
-    get getTitle() {
+    get getTitle() { return this.label(); }
+
+    label(witness = `${i18n("Witness")} #${this.witnessId}`) {
         const c = this.coord;
         const coordStr = c ? (Array.isArray(c) ? c.join(",") : c) : "full";
-        return `Canvas ${this.canvasNb} - ${coordStr} - ${i18n("Witness")} #${this.witnessId}`
+        return `Canvas ${this.canvasNb} - ${coordStr} - ${witness}`;
     }
 
     get parsed() {
@@ -150,5 +157,13 @@ export class RegionItem {
 
     urlForMirador(canvasNb = this.canvasNb){
         return `${getMiradorUrl()}/index.html?iiif-content=${this.manifest()}&canvas=${canvasNb}&editMode=true&defaultForm=note`;
+    }
+
+    get viewUrl() {
+        return `/${appName}/region/${this.fullImg.replace(/\.jpg$/, "")}/`;
+    }
+
+    get witnessUrl() {
+        return `/${appName}/witness/${this.witnessId}/regions`;
     }
 }

@@ -30,7 +30,7 @@ class SubForm(forms.Form):
 
 def get_available_models(task_name):
     try:
-        response = requests.get(f"{API_URL}/{task_name}/models")
+        response = requests.get(f"{API_URL}/{task_name}/models", timeout=5)
         response.raise_for_status()
         models = response.json()
     except Exception as e:

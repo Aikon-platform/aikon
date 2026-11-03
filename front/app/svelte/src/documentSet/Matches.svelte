@@ -9,6 +9,7 @@
     import { appName, csrfToken } from "../constants.js";
     import QueryExpansionView from "../regions/modal/QueryExpansionView.svelte";
     import CategoryToolbar from "../regions/similarity/CategoryToolbar.svelte";
+    import RegionTabs from "../regions/modal/RegionTabs.svelte";
 
     export let matches = [];
     export let columns = [];
@@ -16,8 +17,8 @@
     export let isInStemma = false;
     export let hideEmpty = false;
     export let clusterStore;
-    /** Map<"id1-id2", category> of current pair categories, for selection state */
-    export let pairCat = new Map();
+    /** (img1, img2) => category of current pair categories, for selection state */
+    export let pairCat = () => null;
 
     // anchor image is the first of the list
     $: anchorImageId = isInStemma ? displayMatches[0]?.[0]?.images?.[0]?.id ?? null : null;
@@ -25,7 +26,6 @@
     const dispatch = createEventDispatcher();
     const baseUrl = window.location.origin;
 
-    const pairCategory = (a, b) => pairCat.get(`${a}-${b}`) ?? pairCat.get(`${b}-${a}`) ?? null;
 
     const rowPairs = row => {
         const anchor = row[0]?.images?.[0];
@@ -39,7 +39,7 @@
     const rowCategory = (row, _pairCat) => {
         const pairs = rowPairs(row);
         if (!pairs.length) return null;
-        const cats = pairs.map(p => pairCategory(p.img_1, p.img_2));
+        const cats = pairs.map(p => pairCat(p.img_1, p.img_2));
         return cats.every(c => c === cats[0]) ? cats[0] : null;
     };
 
@@ -107,7 +107,7 @@
         <p class="has-text-grey is-size-7 p-3">{i18n("none", t)}</p>
     {:else if displayMatches.length === 1}
         {#if displayMatches[0].length !== 1}
-            <CategoryToolbar visibleCategories={[1,2,3]}
+            <CategoryToolbar visibleCategories={[1,2,3,4]}
                 selectedCategory={rowCategory(displayMatches[0], pairCat)}
                 toggleFct={cat => categorizeRow(displayMatches[0], cat)}
                 userToggleFct={() => userToggleRow(displayMatches[0])}/>
@@ -198,19 +198,7 @@
 
 <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
     <svelte:fragment let:item={currentItem}>
-        <Tabs {tabs} let:activeTab>
-            {#if activeTab === "region"}
-                <div class="modal-region">
-                    <RegionCard item={currentItem} height="full" isInModal={true} copyable={true} selectable={false}/>
-                </div>
-            {:else if activeTab === "page"}
-                <PageView item={currentItem}/>
-            {:else if activeTab === "matches"}
-                {#key currentItem.img}
-                    <QueryExpansionView item={currentItem}/>
-                {/key}
-            {/if}
-        </Tabs>
+        <RegionTabs item={currentItem}/>
     </svelte:fragment>
 </RegionModal>
 
@@ -226,15 +214,6 @@
     }
     table { table-layout: fixed; }
     td { vertical-align: middle; }
-    .modal-region {
-        height: 100%;
-        display: flex;
-        align-items: center;
-        justify-content: center;
-    }
-    .modal-region :global(.region) {
-        height: 100%;
-    }
     thead th {
         position: sticky;
         top: 0;

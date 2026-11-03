@@ -4,6 +4,7 @@
     import { createSvg } from "./network-svg.js";
     import { appLang } from "../../constants.js";
     import Matches from "../Matches.svelte";
+    import DownloadPng from "../../ui/DownloadPng.svelte";
 
     export let type = "img";
     export let documentSetStore;
@@ -70,21 +71,27 @@
 </script>
 
 <div>
-    <button class="toggle-button button is-small is-link mb-3"
-        on:click={toggleSelectionMode}>
-        {#if selectionMode}
+    <div class="is-flex is-align-items-center mb-3" style="gap: 0.5rem;">
+        <button class="toggle-button button is-small is-link is-light mb-0" on:click={toggleSelectionMode}>
+            {#if selectionMode}
             <span class="icon px-4">
                 <i class="fas fa-hand-pointer"/>
             </span>
-        {:else}
+            {:else}
             <span class="icon px-4">
                 <i class="fas fa-crop-alt"/>
             </span>
+            {/if}
+            Switch to {selectionMode ? "click" : "selection"} mode
+        </button>
+        {#if type === "doc"}
+            <DownloadPng targetId="doc-network" filename="document-network"
+                         svgExport={$networkData?.nodes.length < render_threshold}/>
         {/if}
-        Switch to {selectionMode ? "click" : "selection"} mode
-    </button>
+    </div>
 
-    <div bind:this={container} class="visualization-container"></div>
+
+    <div bind:this={container} id="{type}-network" class="visualization-container"></div>
 
     {#if $selectedNodes.length > 0}
         <div class="box mt-4">

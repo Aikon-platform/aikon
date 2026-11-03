@@ -70,7 +70,8 @@ RUN chmod +x /home/${USER}/manage.sh
 WORKDIR /home/${USER}/app
 # Install UV/python dependencies
 RUN uv python install 3.11
-RUN uv sync --locked --group=prod
+RUN --mount=type=cache,target=${UV_CACHE_DIR},id=uv-cache \
+    uv sync --locked --group=prod
 
 # TODO less aggrssive permissions ?
 # Set permissions on UV and NPM directories

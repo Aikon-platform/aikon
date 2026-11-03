@@ -11,13 +11,7 @@ const
   iiifManifest = windowUrl.searchParams.get("iiif-content"),
   iiifCanvasIndex = windowUrl.searchParams.get("canvas");
 
-// NOTE we could also use AIIINOTATE_PUBLIC_URL
-let aiiinotateBaseUrl;
-if ( process.env.TARGET === "prod" && (process.env.DOCKER || "").toLocaleLowerCase() === "true" ) {
-  aiiinotateBaseUrl = `https://${process.env.PROD_URL}/aiiinotate`
-} else {
-  aiiinotateBaseUrl = process.env.AIIINOTATE_BASE_URL
-}
+const aiiinotateBaseUrl = process.env.AIIINOTATE_BASE_URL;
 
 const config = {
   id: 'miradorRoot',

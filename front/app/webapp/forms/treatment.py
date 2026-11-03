@@ -20,9 +20,7 @@ class ImportForm(forms.Form):
     regions = forms.BooleanField(
         required=False, initial=True, label="Import region extractions"
     )
-    similarities = forms.BooleanField(
-        required=False, label="Import similarity pairs"
-    )
+    similarities = forms.BooleanField(required=False, label="Import similarity pairs")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)

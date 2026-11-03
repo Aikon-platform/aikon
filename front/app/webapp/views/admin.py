@@ -25,6 +25,7 @@ from app.webapp.models.digitization import Digitization
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.witness import Witness
 from app.config.settings import APP_LANG
+from webapp.utils.iiif import parse_ref
 
 
 ##########################################################
@@ -438,4 +439,14 @@ class DocumentSetView(AbstractRecordView):
     #     return context
 
 
-# TODO RegionExtractionSetList
+class RegionView(LoginRequiredMixin, TemplateView):
+    # f"{APP_NAME}/region/<img_ref>/"
+    template_name = "webapp/region.html"
+
+    def get_context_data(self, **kwargs):
+        context = super().get_context_data(**kwargs)
+        img_ref = self.kwargs["img_ref"]
+        wit = get_object_or_404(Witness, pk=parse_ref(img_ref)["wit"][1])
+        context["img_ref"] = img_ref
+        context["view_title"] = f"{wit}"
+        return context

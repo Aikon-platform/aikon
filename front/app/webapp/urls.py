@@ -1,4 +1,4 @@
-from django.urls import path, reverse_lazy
+from django.urls import path, reverse_lazy, re_path
 from django.contrib.auth import views as auth_views
 
 from app.webapp.views import *
@@ -232,6 +232,11 @@ urlpatterns += [
         DocumentSetView.as_view(),
         name="document_set_view",
     ),
+    re_path(
+        rf"^{APP_NAME}/region/(?P<img_ref>wit\d+_[a-z]{{3}}\d+_\d+_\d+,\d+,\d+,\d+)/$",
+        RegionView.as_view(),
+        name="region_view",
+    ),
 ]
 
 # ENDPOINTS
@@ -319,7 +324,9 @@ urlpatterns += [
         get_json_docset_simil,
         name="get_json_document_set_similarity",
     ),
-    path(f"{APP_NAME}/raw/<str:model_name>/<int:rid>", get_json_record, name="record-raw"),
+    path(
+        f"{APP_NAME}/raw/<str:model_name>/<int:rid>", get_json_record, name="record-raw"
+    ),
     path(
         f"{APP_NAME}/witness/select",
         witness_select_fields,

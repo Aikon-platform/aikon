@@ -10,7 +10,7 @@ from app.config.settings import (
     ADDITIONAL_MODULES,
     DEBUG,
     APP_NAME,
-    INSTALLED_APPS
+    INSTALLED_APPS,
 )
 
 from django.contrib.admin import site as admin_site

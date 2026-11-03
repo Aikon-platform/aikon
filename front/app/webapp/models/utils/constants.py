@@ -189,7 +189,7 @@ TASK_TYPE = {
     "region_extraction": REGIONS,
     "similarity": SIMILARITY,
     "vectorization": VECTORIZATION,
-    "import": IMPORT
+    "import": IMPORT,
 }
 
 TRMT_TYPE = ()

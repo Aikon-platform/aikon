@@ -1,3 +1,10 @@
+<script context="module">
+    export const viewModes = {
+        matches: {en: "By matches", fr: "Par correspondances"},
+        score: {en: "By score", fr: "Par score"},
+        percentage: {en: "By percentage", fr: "Par pourcentage"},
+    };
+</script>
 <script>
     import * as d3 from "d3";
     import {createEventDispatcher} from "svelte";
@@ -10,11 +17,18 @@
     export let imageCountMap = new Map();
     export let normalize = true;
     export let cellSize = 30;
-    export let percentageMode = false;
+    export let mode = "matches";
     export let coverageData = new Map();
 
     export let isInStemma = false;
     export let stemmaStore = null;
+
+    const matchLevel = d3.scaleThreshold([1, 11, 26, 51], [0, 0, 1 / 3, 2 / 3, 1]);
+    const cellLabel = {
+        matches: d => d.count,
+        score: d => d.ratio.toFixed(1),
+        percentage: d => `${Math.round(d.pct * 100)}%`,
+    };
 
     $: edges = stemmaStore?.edges;
     $: edgeKeys = isInStemma && $edges
@@ -31,14 +45,18 @@
         addEdge: {en: "Add stemma edge", fr: "Ajouter un lien au stemma"},
         percent: {en: "Percentage of images from", fr: "Pourcentage des images issues de"},
         present: {en: "also present in", fr: "aussi présentes dans"},
+        rank: {
+            en: "{x} × the median score of document pairs with matches",
+            fr: "{x} × le score médian des paires de documents comportant des correspondances"
+        },
     };
 
     let container;
     let selectedCell = null;
 
-    $: matrixData = buildMatrix(documents, scoreData, docStats, normalize, imageCountMap, percentageMode, $coverageData);
+    $: matrixData = buildMatrix(documents, scoreData, docStats, normalize, imageCountMap, mode, $coverageData);
 
-    function buildMatrix(docs, scoreCount, docStatsMap, doNormalize, imgCount, pctMode, coverage) {
+    function buildMatrix(docs, scoreCount, docStatsMap, doNormalize, imgCount, mode, coverage) {
         if (!docs.length) return {docs: [], matrix: [], maxScore: 0};
 
         docs.forEach((doc, i) => {
@@ -48,38 +66,25 @@
 
         const n = docs.length;
         const matrix = [];
+        const scores = [];
         let maxScore = 0;
 
         for (let i = 0; i < n; i++) {
             const row = [];
             for (let j = 0; j < n; j++) {
                 if (i !== j) {
-                    const key = docs[i].id < docs[j].id
-                        ? `${docs[i].id}-${docs[j].id}`
-                        : `${docs[j].id}-${docs[i].id}`;
-
-                    let z, pct, count;
-
-                    if (pctMode) {
-                        const covKey = `${docs[i].id}-${docs[j].id}`;
-                        const covCount = coverage.get(covKey)?.size || 0;
-                        count = imgCount.get(docs[i].id) || 1;
-                        pct = covCount / count;
-                        z = pct;
-                    } else {
-                        const entry = scoreCount?.get(key);
-                        let score = entry?.score || 0;
-                        if (doNormalize && score > 0) {
-                            const n1 = imgCount.get(docs[i].id) || 1;
-                            const n2 = imgCount.get(docs[j].id) || 1;
-                            score /= Math.sqrt(n1 * n2);
-                        }
-                        count = entry?.count || 0;
-                        z = score;
-                    }
+                    const id1 = docs[i].id, id2 = docs[j].id;
+                    const entry = scoreCount?.get(id1 < id2 ? `${id1}-${id2}` : `${id2}-${id1}`);
+                    const n1 = imgCount.get(id1) || 1;
+                    const count = entry?.matchCount || 0;
+                    let score = entry?.matchScore || 0;
+                    if (doNormalize && score) score /= Math.sqrt(n1 * (imgCount.get(id2) || 1));
+                    const pct = (coverage.get(`${id1}-${id2}`)?.size || 0) / n1;
+                    const z = mode === "matches" ? count : mode === "score" ? score : pct;
 
                     if (z > maxScore) maxScore = z;
-                    row.push({x: j, y: i, z, pct, count, doc1: docs[i], doc2: docs[j]});
+                    if (i < j && score) scores.push(score);
+                    row.push({x: j, y: i, z, score, pct, count, doc1: docs[i], doc2: docs[j]});
                 } else {
                     row.push({x: j, y: i, z: 0, diagonal: true});
                 }
@@ -87,7 +92,16 @@
             matrix.push(row);
         }
 
-        return {docs, matrix, maxScore, pctMode};
+        // const sorted = Float64Array.from(scores).sort();
+        // for (const row of matrix) for (const d of row) {
+        //     if (d.score) d.rank = Math.round(100 * d3.bisectRight(sorted, d.score) / sorted.length);
+        // }
+        const median = d3.median(scores);
+        for (const row of matrix) for (const d of row) {
+            if (d.score) d.ratio = d.score / median;
+        }
+
+        return {docs, matrix, maxScore, mode};
     }
 
     function isSelected(d) {
@@ -107,7 +121,8 @@
     function render() {
         if (!container || !matrixData.docs.length) return;
 
-        const {docs, matrix, maxScore} = matrixData;
+        const {docs, matrix, maxScore, mode} = matrixData;
+        const level = d => mode === "matches" ? matchLevel(d.z) : d.z / maxScore;
         const size = docs.length * cellSize;
 
         d3.select(container).selectAll("*").remove();
@@ -152,7 +167,7 @@
                     if (d.z === 0) return "var(--bulma-text)";
                     const key = d.doc1.id < d.doc2.id ? `${d.doc1.id}-${d.doc2.id}` : `${d.doc2.id}-${d.doc1.id}`;
                     const color = d3.hsl(edgeKeys.has(key) ? 19 : 233, 0.951, 0.52);
-                    color.opacity = maxScore > 0 ? 0.2 + 0.8 * (d.z / maxScore) : 0.2;
+                    color.opacity = 0.2 + 0.8 * level(d);
                     return color;
                 })
                 .call(applyStroke)
@@ -163,14 +178,17 @@
                 })
                 .on("mousemove", function (event, d) {
                     let content;
-                    if (matrixData.pctMode) {
-                        const pctStr = d.pct != null ? `${(d.pct * 100).toFixed(1)}%` : "0%";
+                    if (mode === "percentage") {
+                        const pctStr = `${(d.pct * 100).toFixed(1)}%`;
                         content = `${i18n("percent", t)}<br/><span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>${i18n("present", t)}<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}<br/><br/><strong>${pctStr}</strong>`;
                     } else {
                         const docs = `<span style="color:${d.doc1.color}">●</span> ${d.doc1.title}<br/>↔<br/><span style="color:${d.doc2.color}">●</span> ${d.doc2.title}`;
-                        content = d.z === 0
+                        const info = mode === "score"
+                            ? `<br/>${i18n("rank", t).replace("{x}", `<b>${d.ratio.toFixed(1)}</b>`)}`
+                            : ` | <b>${d.count}</b> ${i18n("match", t)}`;
+                        content = !d.count
                             ? `${docs}<br/><br/><em>${i18n("noPairs", t)}</em>`
-                            : `${docs}<br/><br/>${i18n("score", t)}: ${d.z.toFixed(2)} | <b>${d.count}</b> ${i18n("match", t)}`;
+                            : `${docs}<br/><br/>${i18n("score", t)}: ${d.score.toFixed(2)}${info}`;
                     }
                     tooltip.html(content)
                         .style("left", (event.clientX + 15) + "px")
@@ -189,20 +207,18 @@
                     if (isInStemma && stemmaStore) openContextMenu(event, d);
                 });
 
-            if (matrixData.pctMode) {
-                d3.select(this).selectAll(".cell-label")
-                    .data(rowData.filter(d => !d.diagonal && d.pct > 0))
-                    .join("text")
-                    .attr("class", "cell-label")
-                    .attr("x", d => x(d.x) + x.bandwidth() / 2)
-                    .attr("y", x.bandwidth() / 2)
-                    .attr("text-anchor", "middle")
-                    .attr("dominant-baseline", "central")
-                    .attr("font-size", Math.min(x.bandwidth() * 0.35, 10) + "px")
-                    .attr("fill", "white")
-                    .attr("pointer-events", "none")
-                    .text(d => `${Math.round(d.pct * 100)}%`);
-            }
+            d3.select(this).selectAll(".cell-label")
+                .data(rowData.filter(d => !d.diagonal && d.z > 0))
+                .join("text")
+                .attr("class", "cell-label")
+                .attr("x", d => x(d.x) + x.bandwidth() / 2)
+                .attr("y", x.bandwidth() / 2)
+                .attr("text-anchor", "middle")
+                .attr("dominant-baseline", "central")
+                .attr("font-size", Math.min(x.bandwidth() * 0.35, 10) + "px")
+                .attr("fill", "white")
+                .attr("pointer-events", "none")
+                .text(cellLabel[mode]);
         });
 
         svg.selectAll(".row").selectAll(".cell-diagonal")

@@ -9,6 +9,8 @@ const menuLabels = {
     editEdge:    { en: "Qualify connection", fr: "Qualifier le lien" },
     deleteEdge:  { en: "Delete connection", fr: "Supprimer le lien" },
     reverseEdge: { en: "Reverse direction", fr: "Inverser la direction" },
+    undirected:  { en: "Make undirected", fr: "Rendre non orienté" },
+    directed:    { en: "Add direction", fr: "Orienter le lien" },
 };
 
 export function createStemmaInteraction(stemmaStore) {
@@ -149,7 +151,7 @@ export function createStemmaInteraction(stemmaStore) {
 }
 
 export function createStemmaMenu(stemmaStore, { onRename, onEditEdge }) {
-    const { removeNode, removeEdge, reverseEdge } = stemmaStore;
+    const { removeNode, removeEdge, reverseEdge, toggleEdgeDirection } = stemmaStore;
     const menu = writable({ open: false, x: 0, y: 0, items: [] });
 
     const open = (e, items) => {
@@ -168,10 +170,12 @@ export function createStemmaMenu(stemmaStore, { onRename, onEditEdge }) {
     }
 
     function openEdgeMenu(e, edge) {
+        const [s, t] = [edge.source, edge.target].map(n => n.id ?? n.docId);
         open(e, [
             { label: i18n("editEdge", menuLabels), icon: "pen", action: () => onEditEdge(edge) },
-            { label: i18n("reverseEdge", menuLabels), icon: "arrows-h", action: () => reverseEdge(edge.source.id ?? edge.source.docId, edge.target.id ?? edge.target.docId) },
-            { label: i18n("deleteEdge", menuLabels), icon: "trash", danger: true, action: () => removeEdge(edge.source.id ?? edge.source.docId, edge.target.id ?? edge.target.docId) },
+            ...(edge.undirected ? [] : [{ label: i18n("reverseEdge", menuLabels), icon: "arrows-h", action: () => reverseEdge(s, t) }]),
+            { label: i18n(edge.undirected ? "directed" : "undirected", menuLabels), icon: edge.undirected ? "arrow-right" : "minus", action: () => toggleEdgeDirection(s, t) },
+            { label: i18n("deleteEdge", menuLabels), icon: "trash", danger: true, action: () => removeEdge(s, t) },
         ]);
     }
 

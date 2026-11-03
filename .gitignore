@@ -66,6 +66,9 @@ cover/
 
 front/sas/
 
+# docker stuff
+docker/web/nginx_*.conf
+
 # Translations
 *.mo
 *.pot

@@ -1,4 +1,6 @@
+import gzip
 import importlib
+import json
 import uuid
 import requests
 
@@ -208,7 +210,9 @@ class Treatment(AbstractSearchableModel):
 
             if not self.document_set:
                 if self.task_type != "import":
-                    log(f"[treatment_save] No document set for treatment {self.id}, aborting.")
+                    log(
+                        f"[treatment_save] No document set for treatment {self.id}, aborting."
+                    )
                     self.status = "ERROR"
                 super().save(*args, **kwargs)
                 return
@@ -265,10 +269,14 @@ class Treatment(AbstractSearchableModel):
 
         url = f"{API_URL}/{self.task_type}/start"
 
-        # if api_param := self.api_parameters:
-        #     parameters.update(api_param)
-
-        api_query = requests.post(url, json=parameters)
+        api_query = requests.post(
+            url,
+            data=gzip.compress(json.dumps(parameters).encode()),
+            headers={
+                "Content-Type": "application/octet-stream",
+                "Content-Encoding": "gzip",
+            },
+        )
 
         try:
             api_query.raise_for_status()

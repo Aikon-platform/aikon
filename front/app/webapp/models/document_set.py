@@ -226,7 +226,7 @@ class DocumentSet(AbstractSearchableModel):
                     "id": self.id,
                     "class": self.__class__.__name__,
                     "type": get_name("DocumentSet"),
-                    "title": self.__str__(),
+                    "title": self.title,
                     "user_id": user.id if user else 0,
                     "user": user.__str__() if user else NO_USER,
                     "edit_url": self.get_absolute_edit_url(),

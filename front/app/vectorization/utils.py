@@ -122,7 +122,11 @@ def prepare_document(document: Witness | Digitization | RegionExtraction, **kwar
     #     ]
     # ]
     return [
-        {"type": "url_list", "src": f"{APP_URL}/{APP_NAME}/witness/{wid}/list/", "uid": str(wid)}
+        {
+            "type": "url_list",
+            "src": f"{APP_URL}/{APP_NAME}/witness/{wid}/list/",
+            "uid": str(wid),
+        }
         for wid in get_witness_ids(document)
     ]
 

@@ -1,6 +1,8 @@
+from pathlib import Path
+
 import requests
 from app.config.celery import celery_app
-from config.settings import API_URL
+from app.config.settings import API_URL
 
 
 @celery_app.task
@@ -17,6 +19,14 @@ def process_similarity_file(file):
 
 
 @celery_app.task
+def download_similarity_file(url: str, path: str):
+    from app.similarity.utils import download_scores, score_file_to_db
+
+    if download_scores(url, Path(path)):
+        score_file_to_db(path)
+
+
+@celery_app.task
 def delete_api_similarity(ref, algorithm=None, feat_net=None):
     """
     ref can be region_extraction_ref or witness_id
@@ -26,8 +36,6 @@ def delete_api_similarity(ref, algorithm=None, feat_net=None):
         "feat_net": feat_net,
     }
 
-    response = requests.post(
-        f"{API_URL}/similarity/{ref}/delete", params=args
-    )
+    response = requests.post(f"{API_URL}/similarity/{ref}/delete", params=args)
     response.raise_for_status()
     return response.json()

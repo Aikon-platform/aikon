@@ -5,7 +5,7 @@ name: aikon
 x-proxy: &proxy
   HTTP_PROXY: ${HTTP_PROXY:-}
   HTTPS_PROXY: ${HTTPS_PROXY:-}
-  NO_PROXY: localhost,127.0.0.1,web,nginx,db,redis,mongo,cantaloupe,aiiinotate,mirador
+  NO_PROXY: localhost,127.0.0.1,web,nginx,db,redis,mongo,cantaloupe,aiiinotate,mirador,api,aikon.localhost
 
 services:
   db:
@@ -130,7 +130,7 @@ services:
     image: nginx:latest
     env_file: .env
     ports:
-      - "${NGINX_PORT}:80"
+      - "${NGINX_PORT}:${NGINX_PORT}"
     volumes:
       - ./web/nginx.conf.template:/etc/nginx/templates/default.conf.template:ro
       - staticfiles:/staticfiles:ro
@@ -140,7 +140,9 @@ services:
       - cantaloupe
       - mirador
       - aiiinotate
-    networks: [aikon]
+    networks:
+      aikon:
+        aliases: [ aikon.localhost ]
     environment:
       <<: *proxy
     restart: unless-stopped

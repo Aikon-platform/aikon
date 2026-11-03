@@ -15,6 +15,7 @@ from app.webapp.models.utils.constants import MAN_ABBR, MS_ABBR
 from app.webapp.utils.data_transfer import TRANSFER_MODELS, get_transfer_model
 from app.webapp.utils.paths import REGIONS_PATH
 from app.webapp.utils.logger import log
+from app.webapp.utils.functions import maybe_dockerize_url
 
 TIMEOUT = 30
 
@@ -124,7 +125,11 @@ def resolve_source(source_url, ctx: ImportContext):
     """Return ({src_wit_id: witness json url}, similarity url or None, title or None)"""
     data = ctx.fetch(source_url)
     if "/witness/" in source_url:
-        return ({str(data["id"]): source_url} if data else {}), None, (data or {}).get("id_nb")
+        return (
+            ({str(data["id"]): source_url} if data else {}),
+            None,
+            (data or {}).get("id_nb"),
+        )
     if not data:
         return {}, None, None
     return data, data.pop("similarity", None), data.pop("title", None)
@@ -202,6 +207,7 @@ def import_region_extraction(digit: Digitization, regions_url: str, model="impor
     """
     from app.webapp.utils.iiif.annotation import index_region_extraction
 
+    regions_url = maybe_dockerize_url(regions_url)
     data = requests.get(regions_url, timeout=TIMEOUT).json()
     crops = data.get("extracted_crops") or {}
     if not any(crops.values()):

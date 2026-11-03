@@ -12,9 +12,9 @@ map $http_upgrade $connection_upgrade {
 }
 
 server {
-    listen 80;
-    listen [::]:80;
-    server_name localhost ${PROD_URL};
+    listen ${NGINX_PORT};
+    listen [::]:${NGINX_PORT};
+    server_name localhost aikon.localhost ${PROD_URL};
 
     client_max_body_size ${NGINX_MAX_BODY_SIZE};
 
