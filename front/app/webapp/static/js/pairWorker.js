@@ -6,7 +6,8 @@
 const IMG_REGEX = /^(wit\d+_[a-z]{3}(\d+)_(\d+))(?:_([\d,]+))?\.jpg$/;
 // const weights = { 1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125 };
 const weights = { 0: 1, 1: 1, 2: 1.5, 3: 1.25, 4: -1.0, 5: 1.25 };
-const pairKey = ({ digit_1: a, digit_2: b }) => a < b ? `${a}-${b}` : `${b}-${a}`;
+const COLS = { id1: Uint32Array, id2: Uint32Array, score: Float64Array, cat: Uint8Array, um: Uint8Array };
+const pairKey = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
 
 let state = null;
 
@@ -32,109 +33,97 @@ self.onmessage = async ({ data: { url } }) => {
 function createState() {
     return {
         names: [],
-        pairs: [],
+        imgs: [],
         imageMap: new Map(),
-        index: {
-            byImage: new Map(),
-            byDocPair: new Map(),
-            // byDoc: new Map(),
-        },
         categories: {},
-        exactPairs: [],
-        manualPairs: [],
-        realScoreSum: 0,
-        realScoreCount: 0,
-        maxWeightedScore: 0, // TODO check if you can do better
+        n: 0,
+        cols: Object.fromEntries(Object.entries(COLS).map(([k, T]) => [k, new T(1 << 20)])),
     };
 }
 
+function reserve(size) {
+    const { cols } = state;
+    if (size <= cols.id1.length) return;
+    const cap = Math.max(size, cols.id1.length * 2);
+    for (const k in cols) {
+        const a = new cols[k].constructor(cap);
+        a.set(cols[k]);
+        cols[k] = a;
+    }
+}
+
 function processBatch(newNames, flat) {
-    const { names, pairs, index, categories } = state;
+    const { names, imgs, categories } = state;
     for (const name of newNames) names.push(name);
 
+    reserve(state.n + flat.length / 5);
+    const { id1, id2, score, cat, um } = state.cols;
+
     for (let i = 0; i < flat.length; i += 5) {
-        const id1 = flat[i], id2 = flat[i + 1], score = flat[i + 2], cat = flat[i + 3], userMatch = flat[i + 4];
+        const a = flat[i], b = flat[i + 1], c = flat[i + 3], u = flat[i + 4];
+        if (c === 4) continue;
 
-        if (cat === 4) continue;
+        categories[c] = (categories[c] || 0) + 1;
+        if (u) categories[5] = (categories[5] || 0) + 1;
 
-        categories[cat] = (categories[cat] || 0) + 1;
-        if (userMatch) categories[5] = (categories[5] || 0) + 1;
+        imgs[a] ??= getOrAddImage(names[a]);
+        imgs[b] ??= getOrAddImage(names[b]);
 
-        const w = weights[cat || (userMatch && 5)] || 0;
-        const hasScore = score != null;
-        const weightedScore = hasScore ? Math.max(0.01, score * w) : 0;
-
-        const img1 = getOrAddImage(names[id1]);
-        const img2 = getOrAddImage(names[id2]);
-
-        const processedPair = {
-            // indexes in `names`, replaced by image ids on the main thread
-            id_1: id1,
-            id_2: id2,
-            digit_1: img1.digit,
-            digit_2: img2.digit,
-            page_1: img1.canvas,
-            page_2: img2.canvas,
-            score,
-            weightedScore,
-            category: cat,
-            // similarity_type: p.similarity_type,
-            rank_1: 0,
-            rank_2: 0,
-            // doc_rank_1: 0,
-            // doc_rank_2: 0
-        };
-
-        pairs.push(processedPair);
-        if (hasScore) {
-            state.realScoreSum += weightedScore; // could use score
-            state.realScoreCount++;
-            if (weightedScore > state.maxWeightedScore) state.maxWeightedScore = weightedScore;
-        } else {
-            state.manualPairs.push({ pair: processedPair, w });
-        }
-        if (cat === 1) state.exactPairs.push(processedPair);
-
-        pushToMap(index.byDocPair, pairKey(processedPair), processedPair);
-        pushToMap(index.byImage, id1, processedPair);
-        pushToMap(index.byImage, id2, processedPair);
-        // pushToMap(index.byDoc, digit1, processedPair);
-        // pushToMap(index.byDoc, digit2, processedPair);
+        const k = state.n++;
+        id1[k] = a;
+        id2[k] = b;
+        score[k] = flat[i + 2] ?? NaN;
+        cat[k] = c;
+        um[k] = u;
     }
 
-    self.postMessage({ type: 'progress', count: pairs.length });
+    self.postMessage({ type: 'progress', count: state.n });
 }
 
 function finalize() {
-    const { pairs, names, imageMap, index, categories } = state;
+    const { names, imgs, imageMap, categories, n } = state;
+    const { id1, id2, score, cat, um } = Object.fromEntries(
+        Object.entries(state.cols).map(([k, a]) => [k, a.slice(0, n)])
+    );
+    const weightOf = i => weights[cat[i] || (um[i] && 5)] || 0;
 
-    const meanReal = state.realScoreCount ? state.realScoreSum / state.realScoreCount : 1;
-    for (const { pair, w } of state.manualPairs) pair.weightedScore = meanReal * w;
+    const w = new Float64Array(n);
+    let sum = 0, count = 0, max = 0;
+    for (let i = 0; i < n; i++) {
+        if (isNaN(score[i])) continue;
+        w[i] = Math.max(0.01, score[i] * weightOf(i));
+        sum += w[i];
+        count++;
+        if (w[i] > max) max = w[i];
+    }
+    const meanReal = count ? sum / count : 1;
+    const exactScore = (max || 1) * 1.25;
+    for (let i = 0; i < n; i++) {
+        if (cat[i] === 1) w[i] = exactScore;
+        else if (isNaN(score[i])) w[i] = meanReal * weightOf(i);
+    }
 
-    const exactScore = (state.maxWeightedScore || 1) * 1.25;
-    for (const p of state.exactPairs) p.weightedScore = exactScore;
+    // byImage as CSR: pairs of image j are byImage[start[j]..start[j + 1]]
+    const byW = (a, b) => w[b] - w[a];
+    const start = new Uint32Array(names.length + 1);
+    for (let i = 0; i < n; i++) {
+        start[id1[i] + 1]++;
+        start[id2[i] + 1]++;
+    }
+    for (let j = 0; j < names.length; j++) start[j + 1] += start[j];
+    const byImage = new Uint32Array(2 * n), next = start.slice(0, -1);
+    for (let i = 0; i < n; i++) {
+        byImage[next[id1[i]]++] = i;
+        byImage[next[id2[i]]++] = i;
+    }
 
-    pairs.sort((a, b) => b.weightedScore - a.weightedScore);
-    // const rankGroups = new Map();
-
-    for (const [imgId, imgPairs] of index.byImage) {
-        imgPairs.sort((a, b) => b.weightedScore - a.weightedScore);
-
-        for (let k = 0; k < imgPairs.length; k++) {
-            const pair = imgPairs[k];
-
-            // const other = pair.id_1 === imgId ? pair.digit_2 : pair.digit_1;
-            // pushToMap(rankGroups, `${imgId}|${other}`, pair);
-
-            const isSelf = pair.digit_1 === pair.digit_2;
-            const isExact = pair.category === 1
-            const rank = isExact ? 1 : isSelf ? Infinity : k + 1;
-            if (pair.id_1 === imgId) {
-                pair.rank_1 = rank;
-            } else {
-                pair.rank_2 = rank;
-            }
-        }
+    const rank1 = new Float32Array(n), rank2 = new Float32Array(n);
+    for (let j = 0; j < names.length; j++) {
+        byImage.subarray(start[j], start[j + 1]).sort(byW).forEach((i, k) => {
+            const rank = cat[i] === 1 ? 1 : imgs[id1[i]].digit === imgs[id2[i]].digit ? Infinity : k + 1;
+            if (id1[i] === j) rank1[i] = rank;
+            else rank2[i] = rank;
+        });
     }
 
     // ranking of the pair relative to the document pair (digit_1, digit_2)
@@ -152,24 +141,23 @@ function finalize() {
     //     }
     // }
 
+    const order = new Uint32Array(n).map((_, i) => i).sort(byW);
+    const digits = i => [imgs[id1[i]].digit, imgs[id2[i]].digit];
+    const columns = { id1, id2, score, cat, w, rank1, rank2, order, start, byImage };
+
     self.postMessage({
         type: 'complete',
-        allPairs: pairs,
+        columns,
         imageIds: names,
         imageNodes: imageMap,
-        pairIndex: {
-            byImage: new Map([...index.byImage].map(([id, ps]) => [names[id], ps])),
-            byDocPair: index.byDocPair,
-            // byDoc: index.byDoc,
-        },
         categories,
         stats: {
-            pairStats: { count: pairs.length, scoreRange: range(pairs.length ? [pairs.at(-1).weightedScore, pairs[0].weightedScore] : []) },
-            documentStats: groupStats(p => [p.digit_1, p.digit_2]),
-            imageStats: groupStats(p => [names[p.id_1], names[p.id_2]]),
-            docPairStats: groupStats(p => [pairKey(p)])
-        }
-    });
+            pairStats: { count: n, scoreRange: range(n ? [w[order[n - 1]], w[order[0]]] : []) },
+            documentStats: groupStats(n, w, digits),
+            imageStats: groupStats(n, w, i => [names[id1[i]], names[id2[i]]]),
+            docPairStats: groupStats(n, w, i => [pairKey(...digits(i))]),
+        },
+    }, Object.values(columns).map(a => a.buffer));
 
     state = null;
 }
@@ -204,12 +192,12 @@ function pushToMap(map, key, value) {
     arr.push(value);
 }
 
-function groupStats(keysOf) {
+function groupStats(n, w, keysOf) {
     const scoreCount = new Map();
-    for (const p of state.pairs) {
-        for (const key of keysOf(p)) {
+    for (let i = 0; i < n; i++) {
+        for (const key of keysOf(i)) {
             const entry = scoreCount.get(key) ?? scoreCount.set(key, { score: 0, count: 0 }).get(key);
-            entry.score += p.weightedScore;
+            entry.score += w[i];
             entry.count++;
         }
     }
