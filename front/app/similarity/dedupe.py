@@ -10,7 +10,13 @@ from django.db import connection, transaction
 from psycopg2.extras import execute_batch
 
 from app.similarity import Bbox, Region, SimilarityType
-from app.similarity.models.region_pair import parse_img, norm_img, norm_ref, ImgRef
+from app.similarity.models.region_pair import (
+    parse_img,
+    norm_img,
+    norm_ref,
+    ImgRef,
+    db_misordered,
+)
 from app.webapp.utils.iiif.annotation import delete_annotation, update_annotation_xywh
 from similarity import SimilarityType
 
@@ -18,9 +24,9 @@ from similarity import SimilarityType
 """
 Merge duplicate regions in RegionPair.
 
-The same region can be stored under several slightly different coordinates: 
+The same region can be stored under several slightly different coordinates:
 e.g. wit125_man141_0015_550,1395,490,364 and wit125_man141_0015_550,1395,490,370
-Overlapping regions of a page are grouped, each group keeps a single name 
+Overlapping regions of a page are grouped, each group keeps a single name
 and the rows describing the same pair of regions are then merged
 
 Vocabulary:
@@ -34,10 +40,20 @@ DEFAULT_THRESHOLD = 0.9
 DUPLICATE_IOU = 0.5
 PX_TOLERANCE = 0
 BATCH_SIZE = 10_000
-TYPE_PRIORITY = {SimilarityType.MANUAL: 0, SimilarityType.AUTO: 1, SimilarityType.PROPAGATED: 2}
+TYPE_PRIORITY = {
+    SimilarityType.MANUAL: 0,
+    SimilarityType.AUTO: 1,
+    SimilarityType.PROPAGATED: 2,
+    SimilarityType.REMAPPED: 3,
+}
 SIDED = ("digit", "anno", "regions_id")
 WRITE = [
-    "img_1", "img_2", "score", "category", "category_x", "similarity_type",
+    "img_1",
+    "img_2",
+    "score",
+    "category",
+    "category_x",
+    "similarity_type",
     *(f"{k}_{i}" for k in SIDED for i in (1, 2)),
 ]
 COLS = ["id", "similarity_hash", *WRITE]
@@ -69,7 +85,9 @@ INHERIT_SET = """
     category = COALESCE(n.category, CASE WHEN a.n_categories = 1 THEN a.category END),
     category_x = a.category_x
 """
-IMG_DIGIT = r"coalesce(substring(rp.img_{i} from '^wit\d+_\w{{3}}(\d+)_')::int, rp.digit_{i})"
+IMG_DIGIT = (
+    r"coalesce(substring(rp.img_{i} from '^wit\d+_\w{{3}}(\d+)_')::int, rp.digit_{i})"
+)
 IMG_WIT = r"substring(rp.img_{i} from '^wit(\d+)_')::int"
 
 
@@ -79,21 +97,32 @@ def no_log(_: str) -> None:
 
 # ---------- Orphans ----------
 def sides(fmt: str, sep: str) -> str:
-    return sep.join(fmt.format(i=i, digit=IMG_DIGIT.format(i=i), wit=IMG_WIT.format(i=i)) for i in (1, 2))
+    return sep.join(
+        fmt.format(i=i, digit=IMG_DIGIT.format(i=i), wit=IMG_WIT.format(i=i))
+        for i in (1, 2)
+    )
 
 
 # pairs whose digitization does not exist or belongs to another witness than the one in the image name
 ORPHAN_IDS = (
     "SELECT rp.id FROM webapp_regionpair rp "
     + sides("LEFT JOIN webapp_digitization d{i} ON d{i}.id = {digit}", " ")
-    + " WHERE " + sides("d{i}.id IS NULL OR d{i}.witness_id <> {wit}", " OR ")
+    + " WHERE "
+    + sides("d{i}.id IS NULL OR d{i}.witness_id <> {wit}", " OR ")
 )
 PURGE = (
     ("orphan pairs deleted", None, f"rp.id IN ({ORPHAN_IDS})"),
-    ("digit ids resynced from image names", sides("digit_{i} = {digit}", ", "), sides("rp.digit_{i} IS DISTINCT FROM {digit}", " OR ")),
+    (
+        "digit ids resynced from image names",
+        sides("digit_{i} = {digit}", ", "),
+        sides("rp.digit_{i} IS DISTINCT FROM {digit}", " OR "),
+    ),
     *(
-        (f"regions_id_{i} of deleted region extractions nulled", f"regions_id_{i} = NULL",
-         f"rp.regions_id_{i} IS NOT NULL AND NOT EXISTS (SELECT 1 FROM webapp_regionextraction r WHERE r.id = rp.regions_id_{i})")
+        (
+            f"regions_id_{i} of deleted region extractions nulled",
+            f"regions_id_{i} = NULL",
+            f"rp.regions_id_{i} IS NOT NULL AND NOT EXISTS (SELECT 1 FROM webapp_regionextraction r WHERE r.id = rp.regions_id_{i})",
+        )
         for i in (1, 2)
     ),
 )
@@ -106,8 +135,11 @@ def purge_orphans(dry_run: bool, log=no_log) -> None:
                 cur.execute(f"SELECT count(*) FROM webapp_regionpair rp WHERE {where}")
                 n = cur.fetchone()[0]
             else:
-                cur.execute(f"UPDATE webapp_regionpair rp SET {assign} WHERE {where}" if assign
-                            else f"DELETE FROM webapp_regionpair rp WHERE {where}")
+                cur.execute(
+                    f"UPDATE webapp_regionpair rp SET {assign} WHERE {where}"
+                    if assign
+                    else f"DELETE FROM webapp_regionpair rp WHERE {where}"
+                )
                 n = cur.rowcount
             log(f"{label}: {n}")
 
@@ -135,7 +167,10 @@ def canvas(ref: ImgRef) -> tuple[int, int]:
 
 def bbox_iou(a: ImgRef, b: ImgRef) -> float | None:
     """None when the regions are not on the same canvas"""
-    return iou(parse_bbox(a.bbox), parse_bbox(b.bbox)) if canvas(a) == canvas(b) else None
+    return (
+        iou(parse_bbox(a.bbox), parse_bbox(b.bbox)) if canvas(a) == canvas(b) else None
+    )
+
 
 def close(a: Bbox, b: Bbox) -> bool:
     return max(abs(x - y) for x, y in zip(a, b)) <= PX_TOLERANCE
@@ -155,7 +190,9 @@ def cluster(bboxes: list[Bbox], threshold: float) -> list[list[int]]:
     members = {i: [i] for i in owner}
     for i, j in sorted(edges, key=edges.get, reverse=True):
         a, b = owner[i], owner[j]
-        if a != b and all((min(x, y), max(x, y)) in edges for x in members[a] for y in members[b]):
+        if a != b and all(
+            (min(x, y), max(x, y)) in edges for x in members[a] for y in members[b]
+        ):
             for x in members[b]:
                 owner[x] = a
             members[a] += members.pop(b)
@@ -168,13 +205,18 @@ def fetch_distinct_images(digit_ids: list[int] | None = None) -> set[str]:
     where = "WHERE digit_{i} = ANY(%(d)s)" if digit_ids is not None else ""
     with connection.cursor() as cur:
         cur.execute(
-            " UNION ".join(f"SELECT img_{i} FROM webapp_regionpair {where.format(i=i)}" for i in (1, 2)),
+            " UNION ".join(
+                f"SELECT img_{i} FROM webapp_regionpair {where.format(i=i)}"
+                for i in (1, 2)
+            ),
             {"d": digit_ids},
         )
         return {r[0] for r in cur}
 
 
-def build_mapping(threshold: float, log, digit_ids: list[int] | None = None) -> tuple[dict[str, str], dict]:
+def build_mapping(
+    threshold: float, log, digit_ids: list[int] | None = None
+) -> tuple[dict[str, str], dict]:
     """
     Group the overlapping regions of each page → name each group after its largest region
     Returns the mapping of the images to rename and clustering stats
@@ -188,7 +230,9 @@ def build_mapping(threshold: float, log, digit_ids: list[int] | None = None) -> 
         if not (ref := parse_img(img, no_error=True)):
             skipped += 1
         elif ref.bbox:
-            canvases[canvas(ref)].append(Region(img, norm_img(ref), parse_bbox(ref.bbox)))
+            canvases[canvas(ref)].append(
+                Region(img, norm_img(ref), parse_bbox(ref.bbox))
+            )
     if skipped:
         log(f"Skipped {skipped} unparseable images")
 
@@ -211,13 +255,19 @@ def build_mapping(threshold: float, log, digit_ids: list[int] | None = None) -> 
 
 
 def save_plan(mapping: dict, stats: dict, threshold: float, path: Path) -> None:
-    path.write_text(json.dumps({
-        "version": 2,
-        "iou_threshold": threshold,
-        "generated_at": datetime.now(timezone.utc).isoformat(),
-        "stats": stats,
-        "mapping": mapping,
-    }, indent=2, sort_keys=True))
+    path.write_text(
+        json.dumps(
+            {
+                "version": 2,
+                "iou_threshold": threshold,
+                "generated_at": datetime.now(timezone.utc).isoformat(),
+                "stats": stats,
+                "mapping": mapping,
+            },
+            indent=2,
+            sort_keys=True,
+        )
+    )
 
 
 def load_plan(path: Path) -> tuple[dict, dict]:
@@ -232,7 +282,9 @@ def fetch_rows(where: str, params=None) -> list[dict]:
     returns dicts with category_x as a sorted list
     """
     with connection.cursor() as cur:
-        cur.execute(f"SELECT {', '.join(COLS)} FROM webapp_regionpair WHERE {where}", params)
+        cur.execute(
+            f"SELECT {', '.join(COLS)} FROM webapp_regionpair WHERE {where}", params
+        )
         rows = [oriented(dict(zip(COLS, r))) for r in cur.fetchall()]
     for r in rows:
         r["category_x"] = sorted(r["category_x"] or [])
@@ -242,7 +294,11 @@ def fetch_rows(where: str, params=None) -> list[dict]:
 def fetch_touching(mapping: dict[str, str], where: str = "TRUE") -> list[dict]:
     """RegionPairs containing an image of the mapping (renamed or canonical)"""
     imgs = list({*mapping, *mapping.values()})
-    return fetch_rows(f"(img_1 = ANY(%s) OR img_2 = ANY(%s)) AND {where}", [imgs, imgs]) if imgs else []
+    return (
+        fetch_rows(f"(img_1 = ANY(%s) OR img_2 = ANY(%s)) AND {where}", [imgs, imgs])
+        if imgs
+        else []
+    )
 
 
 def swap(r: dict) -> dict:
@@ -256,21 +312,17 @@ def oriented(r: dict) -> dict:
 
 def db_oriented(rows: list[dict], batch_size: int = BATCH_SIZE) -> list[dict]:
     """Sides in Postgres collation order, required by the pair_ordering constraint"""
-    out = []
-    with connection.cursor() as cur:
-        for i in range(0, len(rows), batch_size):
-            batch = rows[i:i + batch_size]
-            cur.execute(
-                "SELECT b < a FROM unnest(%s::text[], %s::text[]) WITH ORDINALITY AS t(a, b, n) ORDER BY n",
-                [[r["img_1"] for r in batch], [r["img_2"] for r in batch]],
-            )
-            out += [swap(r) if s else r for r, (s,) in zip(batch, cur.fetchall())]
-    return out
+    return [
+        swap(r) if s else r
+        for r, s in zip(rows, db_misordered([(r["img_1"], r["img_2"]) for r in rows]))
+    ]
 
 
 def renamed(r: dict, mapping: dict[str, str]) -> dict:
     """Copy of the region_pair with its images renamed, sides swapped if needed to keep img_1 <= img_2"""
-    return oriented(r | {f"img_{i}": mapping.get(r[f"img_{i}"], r[f"img_{i}"]) for i in (1, 2)})
+    return oriented(
+        r | {f"img_{i}": mapping.get(r[f"img_{i}"], r[f"img_{i}"]) for i in (1, 2)}
+    )
 
 
 def side_owners(rows, mapping: dict[str, str]) -> dict[str, dict]:
@@ -287,18 +339,28 @@ def side_owners(rows, mapping: dict[str, str]) -> dict[str, dict]:
     return owners
 
 
-def adopt_sides(r: dict, owners: dict[str, dict], targets, mapping: dict[str, str]) -> dict:
+def adopt_sides(
+    r: dict, owners: dict[str, dict], targets, mapping: dict[str, str]
+) -> dict:
     """Copy of the regionPair where each renamed image takes the sided fields of its canonical image name"""
     return r | {
         f"{k}_{i}": v
-        for i in (1, 2) if (img := r[f"img_{i}"]) in targets
+        for i in (1, 2)
+        if (img := r[f"img_{i}"]) in targets
         for k, v in owners.get(mapping.get(img, img), {}).items()
     }
 
 
 def merge_group(rows: list[dict]) -> dict:
     """Best pair of a group of duplicates, complemented with the annotations of the others"""
-    rows = sorted(rows, key=lambda r: (TYPE_PRIORITY.get(r["similarity_type"], 99), -(r["score"] or 0.0), r["id"]))
+    rows = sorted(
+        rows,
+        key=lambda r: (
+            TYPE_PRIORITY.get(r["similarity_type"], 99),
+            -(r["score"] or 0.0),
+            r["id"],
+        ),
+    )
 
     def present(col: str) -> list:
         return [r[col] for r in rows if r[col] not in (None, "")]
@@ -313,14 +375,22 @@ def merge_group(rows: list[dict]) -> dict:
 
 
 # ---------- Execution ----------
-def plan_changes(mapping: dict[str, str], null_hash: bool, log, sides: dict[str, dict] | None = None) -> tuple[list[dict], list[int]]:
+def plan_changes(
+    mapping: dict[str, str], null_hash: bool, log, sides: dict[str, dict] | None = None
+) -> tuple[list[dict], list[int]]:
     """
     Compute (without writing anything) the changes needed to apply the mapping:
     - rows to update: renamed and merged with their duplicates
     - rows to delete: merged duplicates and self-pair regions
     null_hash: also merge manual pairs (no hash) stored several times
     """
-    rows = {r["id"]: r for r in [*fetch_touching(mapping), *(fetch_rows(NULL_HASH_DUPLICATES) if null_hash else [])]}
+    rows = {
+        r["id"]: r
+        for r in [
+            *fetch_touching(mapping),
+            *(fetch_rows(NULL_HASH_DUPLICATES) if null_hash else []),
+        ]
+    }
     log(f"Fetched {len(rows)} candidate pairs")
     owners = side_owners(rows.values(), mapping) | (sides or {})
     targets = mapping.keys() | (sides or {}).keys()
@@ -341,8 +411,10 @@ def plan_changes(mapping: dict[str, str], null_hash: bool, log, sides: dict[str,
             to_update.append({c: s[c] for c in ("id", *WRITE)})
         to_delete += [r["id"] for r in group if r["id"] != s["id"]]
 
-    log(f"Plan: {len(to_update)} updates, {len(to_delete)} deletions, "
-        f"{conflicts} merges with conflicting categories (lowest kept)")
+    log(
+        f"Plan: {len(to_update)} updates, {len(to_delete)} deletions, "
+        f"{conflicts} merges with conflicting categories (lowest kept)"
+    )
     return to_update, to_delete
 
 
@@ -351,24 +423,39 @@ def write_changes(to_update: list[dict], to_delete: list[int], batch_size: int) 
     sql = f"UPDATE webapp_regionpair SET {', '.join(f'{c} = %({c})s' for c in WRITE)} WHERE id = %(id)s"
     with connection.cursor() as cur:
         for i in range(0, len(to_delete), batch_size):
-            cur.execute("DELETE FROM webapp_regionpair WHERE id = ANY(%s)", [to_delete[i:i + batch_size]])
+            cur.execute(
+                "DELETE FROM webapp_regionpair WHERE id = ANY(%s)",
+                [to_delete[i : i + batch_size]],
+            )
         execute_batch(cur.cursor, sql, to_update, page_size=batch_size)
 
 
 def inherit_categories(digit_ids: list[int] | None, dry_run: bool, log) -> None:
     """Apply the category and user ids (category_x) of a pair to all its rows, whatever their hash"""
-    scope = "AND (rp.digit_1 = ANY(%(d)s) OR rp.digit_2 = ANY(%(d)s))" if digit_ids else ""
+    scope = (
+        "AND (rp.digit_1 = ANY(%(d)s) OR rp.digit_2 = ANY(%(d)s))" if digit_ids else ""
+    )
     cte, params = ANNOTATED_CTE.format(scope=scope), {"d": digit_ids}
 
     with connection.cursor() as cur:
-        cur.execute(f"{cte} SELECT count(*) FROM annotated WHERE n_categories > 1", params)
-        log(f"{cur.fetchone()[0]} pairs with conflicting categories across hashes (left unchanged)")
+        cur.execute(
+            f"{cte} SELECT count(*) FROM annotated WHERE n_categories > 1", params
+        )
+        log(
+            f"{cur.fetchone()[0]} pairs with conflicting categories across hashes (left unchanged)"
+        )
 
         if dry_run:
-            cur.execute(f"{cte} SELECT count(*) FROM annotated a JOIN webapp_regionpair n ON {INHERIT_ON}", params)
+            cur.execute(
+                f"{cte} SELECT count(*) FROM annotated a JOIN webapp_regionpair n ON {INHERIT_ON}",
+                params,
+            )
             log(f"Category inheritance: {cur.fetchone()[0]} rows to update")
         else:
-            cur.execute(f"{cte} UPDATE webapp_regionpair n SET {INHERIT_SET} FROM annotated a WHERE {INHERIT_ON}", params)
+            cur.execute(
+                f"{cte} UPDATE webapp_regionpair n SET {INHERIT_SET} FROM annotated a WHERE {INHERIT_ON}",
+                params,
+            )
             log(f"Category inheritance: {cur.rowcount} rows updated")
 
 
@@ -378,7 +465,7 @@ def apply_mapping(
     log=no_log,
     digit_ids: list[int] | None = None,
     dry_run: bool = False,
-    sides: dict[str, dict] | None = None
+    sides: dict[str, dict] | None = None,
 ) -> None:
     with transaction.atomic():
         if not dry_run:
@@ -396,7 +483,7 @@ def dedupe(
     digit_ids: list[int] | None = None,
     threshold: float = DEFAULT_THRESHOLD,
     batch_size: int = BATCH_SIZE,
-    log=no_log
+    log=no_log,
 ) -> None:
     """
     Merge the duplicate regions of the given digitizations (all if None).
@@ -416,7 +503,9 @@ def pair_conflicts(mapping: dict[str, str]) -> dict[tuple[str, str], list[int]]:
     the pairs would carry several categories once renamed, all hashes included
     """
     cats = defaultdict(set)
-    for r in (renamed(r, mapping) for r in fetch_touching(mapping, "category IS NOT NULL")):
+    for r in (
+        renamed(r, mapping) for r in fetch_touching(mapping, "category IS NOT NULL")
+    ):
         if r["img_1"] != r["img_2"]:
             cats[r["img_1"], r["img_2"]].add(r["category"])
     return {p: sorted(c) for p, c in cats.items() if len(c) > 1}
@@ -427,7 +516,9 @@ def auto_delete(score: float | None) -> bool:
     return (score or 0) >= DEFAULT_THRESHOLD
 
 
-def sync_aiiinotate(keep_anno, drop_anno, keep: ImgRef, score: float | None, delete_drop: bool) -> bool:
+def sync_aiiinotate(
+    keep_anno, drop_anno, keep: ImgRef, score: float | None, delete_drop: bool
+) -> bool:
     """
     Apply the result of the merge in aiiinotate after merging `drop` into `keep`.
     Returns False if the update failed: the merge must then be rolled back
@@ -436,7 +527,11 @@ def sync_aiiinotate(keep_anno, drop_anno, keep: ImgRef, score: float | None, del
         return True
 
     if keep_anno:
-        return delete_annotation(drop_anno["@id"]) if delete_drop or auto_delete(score) else True
+        return (
+            delete_annotation(drop_anno["@id"])
+            if delete_drop or auto_delete(score)
+            else True
+        )
 
     # only the dropped region is aiiinotated → overwrite its xywh with the kept region's (same page only)
     return update_annotation_xywh(drop_anno, keep.bbox) if score is not None else True

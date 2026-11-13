@@ -9,7 +9,9 @@ class ImgRef(NamedTuple):
     page: str
     bbox: str | None  # None = page-level
 
+
 Bbox = tuple[int, int, int, int]
+
 
 class Region(NamedTuple):
     img: str  # name stored in RegionPair
@@ -26,6 +28,7 @@ class SimilarityType(IntEnum):
     AUTO = 1
     MANUAL = 2
     PROPAGATED = 3
+    REMAPPED = 4
 
 
 class SimilarityCategory(IntEnum):

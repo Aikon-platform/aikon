@@ -158,6 +158,11 @@ urlpatterns = [
         cancel_treatment,
         name="cancel-treatment",
     ),
+    path(
+        f"{APP_NAME}/treatment/<str:treatment_id>/relaunch",
+        relaunch_treatment,
+        name="relaunch-treatment",
+    ),
 ]
 
 # DELETE VIEWS
@@ -324,7 +329,9 @@ urlpatterns += [
         get_json_docset_simil,
         name="get_json_document_set_similarity",
     ),
-    path(f"{APP_NAME}/raw/<str:model_name>/<int:rid>", get_json_record, name="record-raw"),
+    path(
+        f"{APP_NAME}/raw/<str:model_name>/<int:rid>", get_json_record, name="record-raw"
+    ),
     path(
         f"{APP_NAME}/witness/select",
         witness_select_fields,
