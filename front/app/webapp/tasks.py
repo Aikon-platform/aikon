@@ -130,6 +130,7 @@ def start_import(treatment_id):
     treatment.update(status="IN PROGRESS")
 
     ctx = ImportContext(treatment)
+    ctx.errors.clear()
     source_url = ctx.opts.get("source_url", "")
     log(
         f"[start_import] Treatment #{treatment_id}: importing from {source_url}",
@@ -160,10 +161,11 @@ def start_import(treatment_id):
         )
         return
 
-    doc_set = DocumentSet.objects.create(
-        title=title or source_url, user=treatment.requested_by
-    )
-    treatment.update(document_set=doc_set)
+    if not (doc_set := treatment.document_set):
+        doc_set = DocumentSet.objects.create(
+            title=(title or source_url)[:50], user=treatment.requested_by
+        )
+        treatment.update(document_set=doc_set)
 
     chains = []
     for wit_url in wit_urls.values():
@@ -182,13 +184,28 @@ def start_import(treatment_id):
             )
 
         for digit, manifest_url, regions_url in digits:
-            sig = chain(
-                extract_images_from_iiif_manifest.s(manifest_url, digit.id),
-                update_image_json.s(digit.id),
+            sig = (
+                None
+                if (digit.json or {}).get("img_nb")
+                else chain(
+                    extract_images_from_iiif_manifest.s(manifest_url, digit.id),
+                    update_image_json.s(digit.id),
+                )
             )
-            if regions_url and ctx.opts.get("import_regions"):
-                sig |= import_regions_task.s(digit.id, regions_url, treatment_id)
-            chains.append(sig)
+            if (
+                regions_url
+                and ctx.opts.get("import_regions")
+                and str(digit.id) not in ctx.mapping["regions"]
+            ):
+                sig = (
+                    sig | import_regions_task.s(digit.id, regions_url, treatment_id)
+                    if sig
+                    else import_regions_task.s(
+                        digit.id, digit.id, regions_url, treatment_id
+                    )
+                )
+            if sig:
+                chains.append(sig)
 
     log(
         f"[start_import] Treatment #{treatment_id}: {len(ctx.mapping['witnesses'])} witness(es) mapped, "

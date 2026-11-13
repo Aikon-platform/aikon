@@ -154,13 +154,6 @@
                     input.disabled = !isVisible;
                 });
             }
-
-            const docSetField = document.getElementById("id_document_set")?.closest(".field");
-            if (docSetField) {
-                const isImport = selectedTask === "import";
-                docSetField.style.display = isImport ? "none" : "";
-                disabled_hidden(docSetField, !isImport);
-            }
         });
     </script>
 {% endblock %}

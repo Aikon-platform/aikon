@@ -2,7 +2,7 @@ import json
 import os
 import requests
 
-from django.http import HttpResponse, JsonResponse
+from django.http import JsonResponse
 from django.shortcuts import render, redirect, get_object_or_404
 from django.views.decorators.csrf import csrf_exempt
 
@@ -14,7 +14,8 @@ from app.config.settings import API_URL
 from app.webapp.models.treatment import Treatment
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.paths import MEDIA_PATH
-from webapp.forms import WitnessForm
+from app.webapp.forms import WitnessForm
+from app.webapp.tasks import start_import
 
 
 def admin_app(request):
@@ -162,6 +163,19 @@ def cancel_treatment(request, treatment_id):
         return JsonResponse({"success": True})
     except Exception as e:
         return JsonResponse({"error": "Treatment not found"}, e)
+
+
+def relaunch_treatment(request, treatment_id):
+    treatment = get_object_or_404(Treatment, pk=treatment_id, task_type="import")
+    if not (request.user.is_superuser or treatment.requested_by == request.user):
+        return JsonResponse({"success": False, "error": "Forbidden"}, status=403)
+    if treatment.status not in ("ERROR", "CANCELLED"):
+        return JsonResponse(
+            {"success": False, "error": "Treatment is still running"}, status=409
+        )
+    treatment.update(status="IN PROGRESS")
+    start_import.delay(str(treatment.id))
+    return JsonResponse({"success": True})
 
 
 def set_title(request, set_id):

@@ -499,11 +499,19 @@ def pair_priority(pair: RegionPairTuple, user_id) -> tuple:
         # uncategorized get 3.5 as rank so they rank in between cat 3 and cat 4
         return (0 if is_x else 3.5), 0, -(pair.score or 0)
 
-    return pair.category, 0 if is_x else 1 if pair.similarity_type == SimilarityType.MANUAL else 2, -(pair.score or 0)
+    return (
+        pair.category,
+        0 if is_x else 1 if pair.similarity_type == SimilarityType.MANUAL else 2,
+        -(pair.score or 0),
+    )
 
 
 def is_auto(pair: RegionPairTuple, user_id) -> bool:
-    return pair.category is None and user_id not in pair.category_x and pair.similarity_type == SimilarityType.AUTO
+    return (
+        pair.category is None
+        and user_id not in pair.category_x
+        and pair.similarity_type == SimilarityType.AUTO
+    )
 
 
 def get_best_pairs(
@@ -701,28 +709,29 @@ def normalize_pair(img_1: str, img_2: str):
 
 def stream_pairs_ndjson(qs: QuerySet, user_id: int | None, batch_size=10_000):
     """Gzipped NDJSON, one line per batch: [new image names, flat (img_idx_1, img_idx_2, score, category, is_user_match) tuples]"""
-    rows = qs.values_list("img_1", "img_2", "score", CATEGORY, "category_x").iterator(
-        chunk_size=batch_size
-    )
-    ids, gz = {}, zlib.compressobj(1, wbits=31)
-    while batch := list(islice(rows, batch_size)):
-        n = len(ids)
-        flat = [
-            v
-            for a, b, s, c, x in batch
-            for v in (
-                ids.setdefault(a, len(ids)),
-                ids.setdefault(b, len(ids)),
-                s and round(s, 4),
-                c,
-                int(user_id in (x or ())),
+    with transaction.atomic():
+        rows = qs.values_list(
+            "img_1", "img_2", "score", CATEGORY, "category_x"
+        ).iterator(chunk_size=batch_size)
+        ids, gz = {}, zlib.compressobj(1, wbits=31)
+        while batch := list(islice(rows, batch_size)):
+            n = len(ids)
+            flat = [
+                v
+                for a, b, s, c, x in batch
+                for v in (
+                    ids.setdefault(a, len(ids)),
+                    ids.setdefault(b, len(ids)),
+                    s and round(s, 4),
+                    c,
+                    int(user_id in (x or ())),
+                )
+            ]
+            new = [*islice(reversed(ids), len(ids) - n)][::-1]
+            yield gz.compress(orjson.dumps([new, flat]) + b"\n") + gz.flush(
+                zlib.Z_SYNC_FLUSH
             )
-        ]
-        new = [*islice(reversed(ids), len(ids) - n)][::-1]
-        yield gz.compress(orjson.dumps([new, flat]) + b"\n") + gz.flush(
-            zlib.Z_SYNC_FLUSH
-        )
-    yield gz.flush()
+        yield gz.flush()
 
 
 def export_pairs(digit_ids, after_id: int = 0, limit: int | None = None) -> dict:

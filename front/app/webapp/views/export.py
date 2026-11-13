@@ -289,13 +289,20 @@ def get_json_vecto(request, wid, rid):
 def get_json_document_set(request, dsid):
     if request.method == "GET":
         doc_set = get_object_or_404(DocumentSet, id=dsid)
+        wits = [w for w in doc_set.all_witnesses() if w.is_public]
+
+        if not wits:
+            return JsonResponse(
+                {
+                    "title": doc_set.title,
+                    "error": "No public witnesses found in this document set",
+                },
+                status=404,
+            )
+
         ds_data = {
             "title": doc_set.title,
-            **{
-                w.id: f"{APP_URL}/{APP_NAME}/witness/{w.id}/json"
-                for w in doc_set.all_witnesses()
-                if w.is_public
-            },
+            **{w.id: f"{APP_URL}/{APP_NAME}/witness/{w.id}/json" for w in wits},
         }
         if "similarity" in ADDITIONAL_MODULES and ds_data:
             ds_data[

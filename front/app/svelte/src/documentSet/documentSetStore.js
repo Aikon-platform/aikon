@@ -12,6 +12,40 @@ const createWorker = () => new Worker(
     { type: "module" }
 );
 
+const pairKey = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
+
+function buildPairs({ id1, id2, score, cat, w, rank1, rank2, order, start, byImage }, names, imgMap) {
+    const byIdx = Array.from(id1, (a, i) => {
+        const img1 = imgMap.get(names[a]), img2 = imgMap.get(names[id2[i]]);
+        return {
+            id_1: img1.id,
+            id_2: img2.id,
+            digit_1: img1.digit,
+            digit_2: img2.digit,
+            page_1: img1.canvas,
+            page_2: img2.canvas,
+            score: isNaN(score[i]) ? null : score[i],
+            weightedScore: w[i],
+            category: cat[i],
+            rank_1: rank1[i],
+            rank_2: rank2[i],
+        };
+    });
+
+    const byDocPair = new Map();
+    for (const p of byIdx) {
+        const key = pairKey(p.digit_1, p.digit_2);
+        (byDocPair.get(key) ?? byDocPair.set(key, []).get(key)).push(p);
+    }
+
+    const byImg = new Map();
+    names.forEach((name, j) => {
+        if (start[j + 1] > start[j]) byImg.set(name, Array.from(byImage.subarray(start[j], start[j + 1]), i => byIdx[i]));
+    });
+
+    return { sorted: Array.from(order, i => byIdx[i]), index: { byImage: byImg, byDocPair } };
+}
+
 export function createDocumentSetStore(documentSetId) {
 
     // TO DELETE
@@ -24,6 +58,7 @@ export function createDocumentSetStore(documentSetId) {
     // const documentSetId = 436; // Jombert complet
     // const documentSetId = 432; // Jombert incomplet
     // documentSetId = 455; // Set benchmark
+    // documentSetId = 468; // Set gros
     // TO DELETE
 
     const error = writable(null);
@@ -126,17 +161,13 @@ export function createDocumentSetStore(documentSetId) {
                 if (type !== "complete") return;
 
                 const {
-                    allPairs: sorted,
+                    columns,
                     imageIds,
                     imageNodes: imgMap,
-                    pairIndex: idx,
                     categories: cats,
                     stats
                 } = e.data;
-                for (const p of sorted) {
-                    p.id_1 = imageIds[p.id_1];
-                    p.id_2 = imageIds[p.id_2];
-                }
+                const { sorted, index: idx } = buildPairs(columns, imageIds, imgMap);
 
                 pairIndex.set(idx);
                 pairStats.set(stats.pairStats);
@@ -680,6 +711,17 @@ export function createDocumentSetStore(documentSetId) {
         pairCat.set(findCategory);
     };
 
+    const removeImages = (ids) => {
+        const del = new Set(ids);
+        const pairs = get(allPairs).filter(p => !del.has(p.id_1) && !del.has(p.id_2));
+        const kept = new Set();
+        for (const p of pairs) kept.add(p.id_1).add(p.id_2);
+        imageNodes.update(m => (m.forEach((_, id) => kept.has(id) || m.delete(id)), m));
+        documentNodes.update(m => (m.forEach(d => d.images = d.images.filter(i => kept.has(i.id))), m));
+        docSetNumber.update(n => ({...n, pairs: pairs.length, images: kept.size}));
+        allPairs.set(pairs);
+    };
+
 
     return {
         documentSetId,
@@ -687,10 +729,6 @@ export function createDocumentSetStore(documentSetId) {
 
         error,
         loadingProgress,
-        cancelLoading: () => {
-            worker?.terminate();
-            loading.set(false);
-        },
 
         allPairs,
         visiblePairs: filteredPairs,
@@ -699,6 +737,7 @@ export function createDocumentSetStore(documentSetId) {
         pairIndex,
         imageNodes,
         documentNodes,
+        witnessNodes,
         docSort,
         sortedDocumentNodes,
         fetchPairs,
@@ -714,6 +753,7 @@ export function createDocumentSetStore(documentSetId) {
         selectedNodes,
         selectedDocuments,
         updateSelectedNodes: (nodes) => selectedNodes.set(nodes),
+        removeImages,
         toggleCategory,
         toggleDoc,
         toggleAllDocuments,
