@@ -38,6 +38,20 @@
             )
         }
     }
+
+    async function relaunchTreatment(e) {
+        if (item.task_type !== "import") return;
+        e.preventDefault();
+        if (await getSuccess(`/${appName}/treatment/${item.id}/relaunch`)) {
+            finished = false;
+            task_status = "IN PROGRESS";
+        } else {
+            await showMessage(
+                appLang === "en" ? "Failed to relaunch treatment" : "Erreur lors de la relance du traitement",
+                appLang === "en" ? "Error" : "Erreur"
+            );
+        }
+    }
 </script>
 
 <Item {item} {recordsStore}>
@@ -51,7 +65,7 @@
             </button>
         {:else if finished && task_status === "ERROR"}
             {@const relaunchTitle = appLang === 'en' ? "Relaunch same treatment" : "Relancer le même traitement"}
-            <a href="add/{item.query_parameters}" class="button is-small is-rounded is-primary is-outlined px-2 py-1 mr-2" title={relaunchTitle}>
+            <a href="add/{item.query_parameters}" on:click={relaunchTreatment} class="button is-small is-rounded is-primary is-outlined px-2 py-1 mr-2" title={relaunchTitle}>
                 <i class="fa-solid fa-arrow-rotate-left"/>
                 <span>{relaunchTitle}</span>
             </a>
@@ -59,7 +73,7 @@
 
         {#if task_status === "SUCCESS"}
             <span class="tag is-success p-1 mb-1">{task_status}</span>
-        {:else if task_status === ("ERROR" || "CANCELLED")}
+        {:else if ["ERROR", "CANCELLED"].includes(task_status)}
             <span class="tag is-danger p-1 mb-1" title="{item.info || 'Unknown error'}">{task_status}</span>
         {:else}
             <span class="tag is-info p-1 mb-1">{task_status}</span>

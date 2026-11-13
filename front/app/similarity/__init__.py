@@ -28,6 +28,7 @@ class SimilarityType(IntEnum):
     AUTO = 1
     MANUAL = 2
     PROPAGATED = 3
+    REMAPPED = 4
 
 
 class SimilarityCategory(IntEnum):

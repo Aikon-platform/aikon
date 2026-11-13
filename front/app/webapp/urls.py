@@ -158,6 +158,11 @@ urlpatterns = [
         cancel_treatment,
         name="cancel-treatment",
     ),
+    path(
+        f"{APP_NAME}/treatment/<str:treatment_id>/relaunch",
+        relaunch_treatment,
+        name="relaunch-treatment",
+    ),
 ]
 
 # DELETE VIEWS
