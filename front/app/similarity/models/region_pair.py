@@ -14,7 +14,7 @@ from app.webapp.models.region_extraction import RegionExtraction
 from app.similarity.models.similarity_parameters import SimilarityParameters
 from app.similarity import ImgRef
 
-IMG_RE = re.compile(r"^wit(\d+)_(\w{3})(\d+)_(\d+)(?:_([\d.,]+))?\.jpg$")
+IMG_RE = re.compile(r"^wit(\d+)_(\w{3})(\d+)_(\d+)(?:_([-\d.,]+))?\.jpg$")
 
 
 def get_region_digit_id(region_extraction_id: int) -> int | None:
@@ -63,7 +63,13 @@ def add_jpg(img: str) -> str:
 
 
 def norm_bbox(bbox: str | None) -> str | None:
-    return ",".join(c.split(".")[0] for c in bbox.split(",")) if bbox else None
+    """
+    Canonical x,y,w,h: decimals truncated, negative values clamped at 0 (as get_coord_from_annotation)
+    ⚠️ must stay identical to region_key() in the API, which matches these names with the aiiinotate xywh
+    """
+    return (
+        ",".join(str(max(0, int(float(c)))) for c in bbox.split(",")) if bbox else None
+    )
 
 
 def norm_img(ref: ImgRef | str) -> str:

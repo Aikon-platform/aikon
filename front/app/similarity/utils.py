@@ -1,13 +1,12 @@
 import os
 import re
 import zlib
-from collections import defaultdict
 
 import numpy as np
 
 import orjson
 import requests
-from itertools import combinations_with_replacement, product, islice
+from itertools import combinations_with_replacement, islice
 
 from pathlib import Path
 from django.db import transaction
@@ -56,11 +55,20 @@ from app.webapp.utils.iiif.annotation import (
 
 
 def prepare_request(witnesses, treatment_id, parameters=None):
-    """Prepare similarity request, excluding already computed pairs."""
+    """
+    Prepare similarity request:
+    - document pairs already computed for these parameters are skipped, unless `force`
+    - REMAPPED pairs of these parameters are sent to be rescored one by one
+    """
     params = similarity_param(parameters)
     uids = {doc["uid"] for w in witnesses for doc in prepare_document(w, **params)}
-    computed = get_existing_pairs(uids, params)
-    if computed and len(computed) == len(uids) * (len(uids) + 1) // 2:
+    computed = set() if params["force"] else get_existing_pairs(uids, params)
+    pairs = (
+        remapped_pairs(uids, similarity_hash(params), only_categorized=params["force"])
+        if params["source_type"] == SourceType.REGIONS
+        else []
+    )
+    if not pairs and computed and len(computed) == len(uids) * (len(uids) + 1) // 2:
         return {"message": "All similarity pairs already computed for these parameters"}
 
     return tasking.prepare_request(
@@ -68,8 +76,27 @@ def prepare_request(witnesses, treatment_id, parameters=None):
         treatment_id,
         prepare_document,
         "similarity",
-        {**params, "skip_pairs": sorted(computed)},
+        {**params, "skip_pairs": sorted(computed), "pairs": pairs},
     )
+
+
+def remapped_pairs(
+    wids: set[str], param_hash: str, only_categorized=False
+) -> list[list[str]]:
+    """
+    REMAPPED pairs of `param_hash` with both witnesses in `wids`, to be rescored one by one
+    only_categorized (forced recomputation): uncategorized ones are left to the new score files, which delete them if absent
+    """
+    digits = Digitization.objects.filter(witness_id__in=wids).values("id")
+    rows = RegionPair.objects.filter(
+        similarity_type=SimilarityType.REMAPPED,
+        similarity_hash=param_hash,
+        digit_1__in=digits,
+        digit_2__in=digits,
+    )
+    if only_categorized:
+        rows = rows.exclude(id__in=uncategorized(rows).values("id"))
+    return [list(pair) for pair in rows.values_list("img_1", "img_2")]
 
 
 DOC_REF_RE = re.compile(r"^\w+-\w+$")
@@ -115,7 +142,7 @@ def process_results(data, completed=True):
     }
     """
     from app.webapp.models.treatment import Treatment
-    from app.similarity.tasks import download_similarity_file
+    from app.similarity.tasks import download_similarity_file, rescore_similarity_pairs
 
     log(f"[process_results] Received data", msg_type="cyan")
     log(data, msg_type="cyan")
@@ -132,15 +159,24 @@ def process_results(data, completed=True):
         raise ValueError(error if isinstance(error, str) else "\n".join(error))
     # TODO when process results error => treatment status should be error
 
-    h = similarity_hash(Treatment.objects.get(id=data["experiment_id"]).api_parameters)
+    treatment = Treatment.objects.get(id=data["experiment_id"])
+    params = similarity_param(treatment.api_parameters)
+    h = similarity_hash(params)
     for pair_scores in results_url:
-        regions_ref_pair = pair_scores.get("doc_pair")
-        if regions_ref_pair == "dataset" or not DOC_REF_RE.match(regions_ref_pair):
-            # do not index scores for the entire set of document pairs (used in AIKON-demo)
-            continue
-
-        if not (path := score_file(*regions_ref_pair.split("-"), h)).exists():
-            download_similarity_file.delay(pair_scores["result_url"], str(path))
+        doc_pair, url = pair_scores.get("doc_pair"), pair_scores["result_url"]
+        if doc_pair == "pairs":
+            rescore_similarity_pairs.delay(url, h)
+        elif DOC_REF_RE.match(doc_pair):
+            # "dataset" scores (entire set of document pairs, used in AIKON-demo) are not indexed
+            path = score_file(*doc_pair.split("-"), h)
+            # with force, a file not written by this treatment is replaced (results are notified twice: PROGRESS and SUCCESS)
+            replace = (
+                params["force"]
+                and path.exists()
+                and path.stat().st_mtime < treatment.requested_on.timestamp()
+            )
+            if replace or not path.exists():
+                download_similarity_file.delay(url, str(path), replace, params["force"])
 
 
 def prepare_document(document: Witness | Digitization | RegionExtraction, **kwargs):
@@ -187,8 +223,8 @@ def load_scores(score_path: Path):
     return None
 
 
-def download_scores(url: str, path: Path) -> bool:
-    if path.exists():
+def download_scores(url: str, path: Path, replace=False) -> bool:
+    if path.exists() and not replace:
         return False
     response = requests.get(url, timeout=(10, 300))
     response.raise_for_status()
@@ -313,47 +349,41 @@ def similarity_hash(parameters: dict) -> str:
     )
 
 
-def legacy_refs(wids) -> dict[str, list[str]]:
-    legacy = defaultdict(list)
-    for regions in RegionExtraction.objects.filter(
-        digitization__witness_id__in=wids
-    ).select_related("digitization"):
-        legacy[str(regions.digitization.witness_id)].append(regions.get_ref())
-    return legacy
-
-
 def get_existing_pairs(doc_refs: set[str], parameters: dict) -> set[str]:
     """
-    A document pair is considered computed as long as its score file exists:
-    ⚠️ regions added or corrected after the computation are not compared until score files are deleted
+    Document pairs already computed for these parameters
+    - regions (doc_refs = witness ids): region pairs of the hash exist between the two witnesses,
+      with or without score file (imported or restored pairs, hash set by hand)
+    - pages (doc_refs = digitization refs): the score file exists
+    ⚠️ regions added after the computation are not compared unless forced
     """
     param_hash = similarity_hash(parameters)
-    # score folders are "wid1-wid2" or (legacy) "regions_ref1-regions_ref2"
-    legacy = (
-        legacy_refs(doc_refs) if parameters["source_type"] == SourceType.REGIONS else {}
-    )
-
-    def is_computed(r1, r2):
-        return any(
-            (Path(SCORES_PATH) / f"{a}-{b}" / f"{param_hash}.json").exists()
-            for a, b in ((r1, r2), (r2, r1))
-        )
-
-    def is_pair_computed(r1, r2):
-        if is_computed(r1, r2):
-            return True
-        l1, l2 = legacy.get(r1), legacy.get(r2)
-        return bool(l1 and l2) and all(
-            is_computed(a, b)
-            for a, b in (
-                combinations_with_replacement(l1, 2) if r1 == r2 else product(l1, l2)
+    if parameters["source_type"] == SourceType.REGIONS:
+        wit = dict(
+            Digitization.objects.filter(witness_id__in=doc_refs).values_list(
+                "id", "witness_id"
             )
         )
+        digit_pairs = (
+            RegionPair.objects.filter(
+                similarity_hash=param_hash,
+                digit_1__in=list(wit),
+                digit_2__in=list(wit),
+                img_1__contains=",",  # region pairs only (page names have no bbox)
+            )
+            .values_list("digit_1", "digit_2")
+            .distinct()
+        )
+        return {
+            RegionPair.order_pair((str(wit[d1]), str(wit[d2])), as_string=True)
+            for d1, d2 in digit_pairs
+        }
 
+    # TODO pages: rely on score files, page pairs could be checked in the same way (names without bbox)
     return {
         RegionPair.order_pair((r1, r2), as_string=True)
         for r1, r2 in combinations_with_replacement(sorted(doc_refs), 2)
-        if is_pair_computed(r1, r2)
+        if score_file(r1, r2, param_hash).exists()
     }
 
 
@@ -365,10 +395,11 @@ def score_file(r1: str, r2: str, param_hash: str) -> Path:
     )
 
 
-def score_file_to_db(file_path):
+def score_file_to_db(file_path, clean=False):
     """
     Load scores from a .json file and add all of its pairs in the RegionPair table
     If pair already exists, only score is updated
+    If clean (forced recomputation), uncategorized pairs of the same hash absent from the file are deleted
     """
     p = Path(file_path)
     pair_scores = load_scores(p)
@@ -428,12 +459,84 @@ def score_file_to_db(file_path):
                 ],
                 match_fields=["img_1", "img_2", "similarity_hash"],
             )
+            if clean and ref_1.isdigit() and ref_2.isdigit():
+                # bulk_update_or_create oriented the pairs as stored
+                delete_absent_pairs(
+                    ref_1,
+                    ref_2,
+                    param_hash,
+                    {(p.img_1, p.img_2) for p in pairs_to_update},
+                )
+            # TODO pages: score files named after digitization refs are not cleaned
     except Exception as e:
         log(f"[score_file_to_db] error while adding pairs to db {pair_ref}", e)
         return False
 
     log(f"Processed {len(pair_scores)} image pairs from {pair_ref}", msg_type="success")
     return True
+
+
+def uncategorized(qs: QuerySet) -> QuerySet:
+    return qs.filter(
+        Q(category_x__isnull=True) | Q(category_x=[]), category__isnull=True
+    )
+
+
+def delete_absent_pairs(
+    wid_1: str, wid_2: str, param_hash: str, kept: set[tuple[str, str]]
+):
+    """Delete the uncategorized AUTO, REMAPPED or PROPAGATED pairs between two witnesses that their new score file does not contain"""
+    d1, d2 = (
+        Digitization.objects.filter(witness_id=wid).values("id")
+        for wid in (wid_1, wid_2)
+    )
+    rows = uncategorized(
+        RegionPair.objects.filter(
+            Q(digit_1__in=d1, digit_2__in=d2) | Q(digit_1__in=d2, digit_2__in=d1),
+            similarity_hash=param_hash,
+            similarity_type__in=[
+                SimilarityType.AUTO,
+                SimilarityType.REMAPPED,
+                SimilarityType.PROPAGATED,
+            ],
+        )
+    ).values_list("id", "img_1", "img_2")
+    if absent := [i for i, img_1, img_2 in rows if (img_1, img_2) not in kept]:
+        RegionPair.objects.filter(id__in=absent).delete()
+        log(f"[delete_absent_pairs] {len(absent)} pairs deleted for {wid_1}-{wid_2}")
+
+
+def rescore_to_db(pair_scores: list[tuple[float, str, str]], param_hash: str):
+    """
+    Update the pairs rescored one by one (names as stored, see prepare_request)
+    Uncategorized pairs scoring <= 0 are deleted
+    """
+    scores = {(img_1, img_2): float(score) for score, img_1, img_2 in pair_scores}
+    rows = RegionPair.objects.filter(
+        similarity_hash=param_hash,
+        img_1__in={img_1 for img_1, _ in scores},
+        img_2__in={img_2 for _, img_2 in scores},
+    ).only("id", "img_1", "img_2", "category", "category_x")
+
+    to_update, to_delete = [], []
+    for rp in rows:
+        if (score := scores.get((rp.img_1, rp.img_2))) is None:
+            continue
+        if score <= 0 and rp.category is None and not rp.category_x:
+            to_delete.append(rp.id)
+            continue
+        rp.score, rp.similarity_type = score, SimilarityType.AUTO
+        to_update.append(rp)
+
+    with transaction.atomic():
+        RegionPair.objects.bulk_update(
+            to_update, ["score", "similarity_type"], batch_size=1000
+        )
+        RegionPair.objects.filter(id__in=to_delete).delete()
+    log(
+        f"[rescore_to_db] {len(to_update)} pairs rescored, {len(to_delete)} deleted",
+        msg_type="success",
+    )
 
 
 def get_digit_pairs(digit_id: int):
@@ -510,7 +613,7 @@ def is_auto(pair: RegionPairTuple, user_id) -> bool:
     return (
         pair.category is None
         and user_id not in pair.category_x
-        and pair.similarity_type == SimilarityType.AUTO
+        and pair.similarity_type in (SimilarityType.AUTO, SimilarityType.REMAPPED)
     )
 
 

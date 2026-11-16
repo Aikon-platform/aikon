@@ -35,6 +35,19 @@ class SimilarityForm(InputSourceForm):
         else "Algorithme de similarité",
     )
 
+    force = forms.BooleanField(
+        required=False,
+        initial=False,
+        label="Recompute all pairs"
+        if APP_LANG == "en"
+        else "Recalculer toutes les paires",
+        help_text=(
+            "By default, only document pairs not yet compared with these parameters are computed"
+            if APP_LANG == "en"
+            else "Par défaut, seules les paires de documents pas encore comparées avec ces paramètres sont calculées"
+        ),
+    )
+
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
         self.algorithm_forms = {}
@@ -111,6 +124,7 @@ class SimilarityForm(InputSourceForm):
         #     parameters["transpositions"] = ["none", "rot90", "rot270", "hflip", "vflip"]
 
         parameters["source_type"] = self.cleaned_data.get("source_type", "regions")
+        parameters["force"] = bool(self.cleaned_data.get("force"))
 
         return parameters
 

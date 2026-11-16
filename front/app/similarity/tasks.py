@@ -19,11 +19,20 @@ def process_similarity_file(file):
 
 
 @celery_app.task
-def download_similarity_file(url: str, path: str):
+def download_similarity_file(url: str, path: str, replace=False, clean=False):
     from app.similarity.utils import download_scores, score_file_to_db
 
-    if download_scores(url, Path(path)):
-        score_file_to_db(path)
+    if download_scores(url, Path(path), replace):
+        score_file_to_db(path, clean)
+
+
+@celery_app.task
+def rescore_similarity_pairs(url: str, param_hash: str):
+    from app.similarity.utils import json_to_scores_tuples, rescore_to_db
+
+    response = requests.get(url, timeout=(10, 300))
+    response.raise_for_status()
+    rescore_to_db(json_to_scores_tuples(response.json()), param_hash)
 
 
 @celery_app.task
