@@ -61,4 +61,5 @@ SIM_DEFAULTS = {
     "segswap_n": 10,
     "transpositions": ["none"],
     "source_type": SourceType.REGIONS,
+    "force": False,
 }
