@@ -128,6 +128,11 @@ urlpatterns = [
         name="witness-regions-pairs",
     ),
     path(
+        f"{APP_NAME}/document-set/<int:dsid>/reset-categories",
+        reset_document_set_categories,
+        name="reset-document-set-categories",
+    ),
+    path(
         f"document-set/<int:dsid>/pairs/stream",
         stream_document_set_pairs,
         name="stream-document-set-pairs",
