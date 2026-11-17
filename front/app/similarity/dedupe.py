@@ -200,9 +200,17 @@ def cluster(bboxes: list[Bbox], threshold: float) -> list[list[int]]:
 
 
 # ---------- Mapping ----------
-def fetch_distinct_images(digit_ids: list[int] | None = None) -> set[str]:
-    """List of the images in the pairs involving digit_ids (all images if None)"""
-    where = "WHERE digit_{i} = ANY(%(d)s)" if digit_ids is not None else ""
+def fetch_distinct_images(
+    digit_ids: list[int] | None = None, exclusive: bool = False
+) -> set[str]:
+    """List of the images in the pairs involving digit_ids (all images if None), on both sides if exclusive"""
+    where = (
+        ""
+        if digit_ids is None
+        else "WHERE digit_1 = ANY(%(d)s) AND digit_2 = ANY(%(d)s)"
+        if exclusive
+        else "WHERE digit_{i} = ANY(%(d)s)"
+    )
     with connection.cursor() as cur:
         cur.execute(
             " UNION ".join(

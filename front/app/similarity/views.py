@@ -13,7 +13,12 @@ from django.db import transaction, connection
 from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.http import require_POST
 
-from app.similarity.models.region_pair import RegionPair, parse_img, add_jpg, RegionPairTuple
+from app.similarity.models.region_pair import (
+    RegionPair,
+    parse_img,
+    add_jpg,
+    RegionPairTuple,
+)
 from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import (
@@ -201,16 +206,35 @@ def get_propagated_matches(request, img_id: str = "") -> JsonResponse:
             return JsonResponse([], safe=False)
 
         q_digit = parse_img(add_jpg(img_id)).digit
-        rows = pairs_with(img_id).filter(Q(img_1__in=propagated_imgs) | Q(img_2__in=propagated_imgs))
-        existing = {p.s_img: p for p in
-                    get_best_pairs(img_id, rows.values_list(*PAIR_FIELDS, named=True), user_id=request.user.id)}
+        rows = pairs_with(img_id).filter(
+            Q(img_1__in=propagated_imgs) | Q(img_2__in=propagated_imgs)
+        )
+        existing = {
+            p.s_img: p
+            for p in get_best_pairs(
+                img_id,
+                rows.values_list(*PAIR_FIELDS, named=True),
+                user_id=request.user.id,
+            )
+        }
 
         result = []
         for p_img in propagated_imgs:
             try:
-                result.append(existing.get(p_img) or RegionPairTuple(
-                    None, img_id, p_img, q_digit, parse_img(p_img).digit, None, [], SimilarityType.PROPAGATED, None
-                ))
+                result.append(
+                    existing.get(p_img)
+                    or RegionPairTuple(
+                        None,
+                        img_id,
+                        p_img,
+                        q_digit,
+                        parse_img(p_img).digit,
+                        None,
+                        [],
+                        SimilarityType.PROPAGATED,
+                        None,
+                    )
+                )
             except ValueError:
                 continue
 
@@ -431,14 +455,18 @@ def add_region_pair(request):
             update_category_x(rp, request.user.id).save(validate=True)
 
         created = not pairs
-        region_pair = pairs[0] if pairs else RegionPair.objects.create(
-            img_1=img_1,
-            img_2=img_2,
-            digit_1=ref1.digit,
-            digit_2=ref2.digit,
-            score=None,
-            similarity_type=SimilarityType.MANUAL,
-            category_x=[request.user.id],
+        region_pair = (
+            pairs[0]
+            if pairs
+            else RegionPair.objects.create(
+                img_1=img_1,
+                img_2=img_2,
+                digit_1=ref1.digit,
+                digit_2=ref2.digit,
+                score=None,
+                similarity_type=SimilarityType.MANUAL,
+                category_x=[request.user.id],
+            )
         )
         is_q1 = q_img == img_1
 
@@ -508,7 +536,9 @@ def delete_matches(request):
     except (json.JSONDecodeError, ValueError) as e:
         return JsonResponse({"error": f"Could not parse images: {e}"}, status=400)
 
-    deleted, _ = RegionPair.objects.filter(Q(img_1__in=imgs) | Q(img_2__in=imgs)).delete()
+    deleted, _ = RegionPair.objects.filter(
+        Q(img_1__in=imgs) | Q(img_2__in=imgs)
+    ).delete()
     return JsonResponse(
         {"success": f"Successfully deleted {deleted} pairs"}, status=200
     )
@@ -589,7 +619,9 @@ def add_user_to_pair(request):
             rp = RegionPair.objects.create(
                 **query,
                 category_x=[user_id],
-                similarity_type=int(data.get("similarity_type") or SimilarityType.MANUAL),
+                similarity_type=int(
+                    data.get("similarity_type") or SimilarityType.MANUAL
+                ),
                 digit_1=ref1.digit,
                 digit_2=ref2.digit,
             )
@@ -950,7 +982,7 @@ def stream_document_set_pairs(request, dsid=None):
         "user_id": request.user.id,
     }
 
-    qs = filter_pairs(digit_ids, **params)
+    qs = filter_pairs(digit_ids, unique=True, **params)
     response = StreamingHttpResponse(
         stream_pairs_ndjson(qs if params["topk"] else qs.order_by(), params["user_id"]),
         content_type="application/x-ndjson",
@@ -1083,6 +1115,10 @@ def get_pair(request):
     except ValueError as e:
         return JsonResponse({"error": f"Invalid image: {e}"}, status=400)
 
-    rows = pairs_with(q_img).filter(Q(img_1=s_img) | Q(img_2=s_img)).values_list(*PAIR_FIELDS, named=True)
+    rows = (
+        pairs_with(q_img)
+        .filter(Q(img_1=s_img) | Q(img_2=s_img))
+        .values_list(*PAIR_FIELDS, named=True)
+    )
     pairs = get_best_pairs(q_img, rows, user_id=request.user.id)
     return JsonResponse(pairs[0] if pairs else [], safe=False)

@@ -22,7 +22,7 @@ class Command(BaseCommand):
 
     """
     1. Match
-    Each image of a pair belonging to a digitization of the document set is compared to the aiiinotate regions of its canvas:
+    Each image of a pair whose two sides belong to the document set is compared to the aiiinotate regions of its canvas:
     - same bbox: unchanged
     - IoU >= `--iou` or IoA >= `--ioa`: renamed (one region) or duplicated (split: one pair per region)
     - no linked region: orphan

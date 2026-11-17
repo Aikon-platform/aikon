@@ -6,11 +6,12 @@ import numpy as np
 
 import orjson
 import requests
+from collections import defaultdict
 from itertools import combinations_with_replacement, islice
 
 from pathlib import Path
 from django.db import transaction
-from django.db.models import Q, F, QuerySet, Value
+from django.db.models import Q, F, QuerySet, Value, Case, When
 from django.db.models.functions import Coalesce
 
 from app.similarity.const import SCORES_PATH
@@ -40,7 +41,12 @@ from app.webapp.utils import tasking
 from app.webapp.utils.iiif import parse_ref
 from app.webapp.utils.functions import delete_path
 from app.webapp.utils.logger import log
-from app.similarity.dedupe import fetch_distinct_images, close, parse_bbox
+from app.similarity.dedupe import (
+    fetch_distinct_images,
+    close,
+    parse_bbox,
+    TYPE_PRIORITY,
+)
 from app.webapp.utils.iiif.annotation import (
     get_canvas_annotations,
     get_coord_from_annotation,
@@ -84,19 +90,22 @@ def remapped_pairs(
     wids: set[str], param_hash: str, only_categorized=False
 ) -> list[list[str]]:
     """
-    REMAPPED pairs of `param_hash` with both witnesses in `wids`, to be rescored one by one
-    only_categorized (forced recomputation): uncategorized ones are left to the new score files, which delete them if absent
+    REMAPPED pairs of `param_hash` or without hash (imported, adopted by `param_hash` once rescored)
+    with both witnesses in `wids`, to be rescored one by one
+    only_categorized (forced recomputation): uncategorized ones of `param_hash` are left to the new score files, which delete them if absent
     """
     digits = Digitization.objects.filter(witness_id__in=wids).values("id")
     rows = RegionPair.objects.filter(
+        Q(similarity_hash=param_hash) | Q(similarity_hash__isnull=True),
         similarity_type=SimilarityType.REMAPPED,
-        similarity_hash=param_hash,
         digit_1__in=digits,
         digit_2__in=digits,
     )
     if only_categorized:
-        rows = rows.exclude(id__in=uncategorized(rows).values("id"))
-    return [list(pair) for pair in rows.values_list("img_1", "img_2")]
+        rows = rows.exclude(
+            id__in=uncategorized(rows.filter(similarity_hash=param_hash)).values("id")
+        )
+    return [list(p) for p in rows.order_by().values_list("img_1", "img_2").distinct()]
 
 
 DOC_REF_RE = re.compile(r"^\w+-\w+$")
@@ -509,30 +518,47 @@ def delete_absent_pairs(
 def rescore_to_db(pair_scores: list[tuple[float, str, str]], param_hash: str):
     """
     Update the pairs rescored one by one (names as stored, see prepare_request)
+    REMAPPED pairs without hash are adopted by `param_hash`: merged into its row if it exists, otherwise given the hash
     Uncategorized pairs scoring <= 0 are deleted
     """
     scores = {(img_1, img_2): float(score) for score, img_1, img_2 in pair_scores}
     rows = RegionPair.objects.filter(
-        similarity_hash=param_hash,
+        Q(similarity_hash=param_hash)
+        | Q(similarity_hash__isnull=True, similarity_type=SimilarityType.REMAPPED),
         img_1__in={img_1 for img_1, _ in scores},
         img_2__in={img_2 for _, img_2 in scores},
-    ).only("id", "img_1", "img_2", "category", "category_x")
+    ).only("id", "img_1", "img_2", "category", "category_x", "similarity_hash")
+
+    groups = defaultdict(list)
+    for rp in rows:
+        if (rp.img_1, rp.img_2) in scores:
+            groups[rp.img_1, rp.img_2].append(rp)
 
     to_update, to_delete = [], []
-    for rp in rows:
-        if (score := scores.get((rp.img_1, rp.img_2))) is None:
+    for pair, group in groups.items():
+        keep = next((rp for rp in group if rp.similarity_hash), group[0])
+        to_delete += [rp.id for rp in group if rp is not keep]
+        keep.category = min(
+            (rp.category for rp in group if rp.category is not None), default=None
+        )
+        keep.category_x = sorted({u for rp in group for u in rp.category_x or []})
+        if scores[pair] <= 0 and keep.category is None and not keep.category_x:
+            to_delete.append(keep.id)
             continue
-        if score <= 0 and rp.category is None and not rp.category_x:
-            to_delete.append(rp.id)
-            continue
-        rp.score, rp.similarity_type = score, SimilarityType.AUTO
-        to_update.append(rp)
+        keep.score, keep.similarity_type, keep.similarity_hash = (
+            scores[pair],
+            SimilarityType.AUTO,
+            param_hash,
+        )
+        to_update.append(keep)
 
     with transaction.atomic():
-        RegionPair.objects.bulk_update(
-            to_update, ["score", "similarity_type"], batch_size=1000
-        )
         RegionPair.objects.filter(id__in=to_delete).delete()
+        RegionPair.objects.bulk_update(
+            to_update,
+            ["score", "similarity_type", "similarity_hash", "category", "category_x"],
+            batch_size=1000,
+        )
     log(
         f"[rescore_to_db] {len(to_update)} pairs rescored, {len(to_delete)} deleted",
         msg_type="success",
@@ -769,6 +795,10 @@ def update_category_x(region_pair: RegionPair, user_id: int):
 
 
 CATEGORY = Coalesce("category", Value(0))
+TYPE_RANK = Case(
+    *(When(similarity_type=t, then=Value(p)) for t, p in TYPE_PRIORITY.items()),
+    default=Value(99),
+)
 
 
 def filter_pairs(
@@ -780,7 +810,9 @@ def filter_pairs(
     exclude_self=False,
     categories=None,
     user_id=None,
+    unique=False,
 ) -> QuerySet:
+    """unique: one row per pair of images whatever its hash (all its rows share the same categories)"""
     if exclusive:
         query = Q(digit_1__in=digit_ids) & Q(digit_2__in=digit_ids)
     else:
@@ -801,6 +833,15 @@ def filter_pairs(
         if user_id and SimilarityCategory.USER_MATCH in categories:
             cat_query |= Q(category_x__contains=[user_id])
         qs = qs.alias(cat=CATEGORY).filter(cat_query)
+
+    if unique:
+        qs = RegionPair.objects.filter(
+            id__in=qs.order_by(
+                "img_1", "img_2", TYPE_RANK, F("score").desc(nulls_last=True)
+            )
+            .distinct("img_1", "img_2")
+            .values("id")
+        )
 
     qs = qs.order_by(F("score").desc(nulls_first=True))
     return qs[:topk] if topk else qs
