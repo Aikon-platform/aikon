@@ -12,9 +12,12 @@ const createWorker = () => new Worker(
     { type: "module" }
 );
 
+/** categories of a pair, the user match of the current user counting as category 5 */
+export const pairCats = p => p.userMatch ? [p.category, 5] : [p.category];
+
 const pairKey = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
 
-function buildPairs({ id1, id2, score, cat, w, rank1, rank2, order, start, byImage }, names, imgMap) {
+function buildPairs({ id1, id2, score, cat, um, st, w, rank1, rank2, order, start, byImage }, names, imgMap) {
     const byIdx = Array.from(id1, (a, i) => {
         const img1 = imgMap.get(names[a]), img2 = imgMap.get(names[id2[i]]);
         return {
@@ -27,6 +30,8 @@ function buildPairs({ id1, id2, score, cat, w, rank1, rank2, order, start, byIma
             score: isNaN(score[i]) ? null : score[i],
             weightedScore: w[i],
             category: cat[i],
+            userMatch: !!um[i],
+            similarityType: st[i],
             rank_1: rank1[i],
             rank_2: rank2[i],
         };

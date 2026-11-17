@@ -188,7 +188,8 @@ export function createClusterStore(documentSetStore, clusterSelection) {
                 ? `Categorize ${imgRefs.length} images as "${categoryInfo[category].title}"?`
                 : `Catégoriser ${imgRefs.length} images en tant que « ${categoryInfo[category].title} » ?`,
             appLang === "en" ? "Confirm categorization" : "Confirmer la catégorisation",
-            true
+            true,
+            Object.values(selectedImages())
         );
         if (!confirmed) return false;
 
@@ -253,7 +254,8 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         const confirmed = await showMessage(
             appLang === "en" ? "Do you want to create a cluster out of these images?" : "Voulez-vous créer un cluster à partir de ces images ?",
             appLang === "en" ? "Confirm creation" : "Confirmer la création",
-            true
+            true,
+            Object.values(selectedImages())
         );
         if (!confirmed) {
             return;
@@ -284,7 +286,8 @@ export function createClusterStore(documentSetStore, clusterSelection) {
         const confirmed = await showMessage(
             appLang === "en" ? "Do you want to remove these images from their clusters?" : "Voulez-vous supprimer ces images de leurs clusters ?",
             appLang === "en" ? "Confirm deletion" : "Confirmer la suppression",
-            true
+            true,
+            Object.values(selectedImages())
         );
         if (!confirmed) {
             return;
