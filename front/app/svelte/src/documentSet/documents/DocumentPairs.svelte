@@ -13,7 +13,6 @@
     import {pairCats} from "../documentSetStore.js";
     import {i18n, initPagination, pageUpdate, shorten, syncStoreWithURL} from "../../utils.js";
     import {pageSize} from "../../constants.js";
-    import DownloadPng from "../../ui/DownloadPng.svelte";
 
     export let documentSetStore;
     /** pairs already filtered by selected documents (and score if enabled) */
@@ -23,7 +22,7 @@
     /** Map<digitId, witnessId> */
     export let witOfDigit;
 
-    const {imageNodes, patchPairs} = documentSetStore;
+    const {imageNodes, sortedDocumentNodes, patchPairs} = documentSetStore;
 
     const CATS = [1, 2, 3, 5];
     const t = {
@@ -52,7 +51,11 @@
     const typeIcon = type => `<span class="icon is-small is-align-self-center" title="${typeInfo[type].title}">${typeInfo[type].svg}</span>`;
     const barTitle = (c, s, type) => i18n("bar", t).replace("{s}", s).replace("{c}", c).replace("{type}", typeInfo[type].title);
 
-    let modalOpen = false, modalIndex = 0;
+    const compare = (a, b) => a.reduce((d, v, i) => d || v - b[i], 0);
+
+    /** `swapped`: the modal was opened from the right image, which is the query until the next navigation */
+    let modalOpen = false, modalIndex = 0, swapped = false;
+    const openModal = (i, right) => [modalIndex, swapped, modalOpen] = [i, right, true];
 
     $: inScope = pairs.filter(p => pairCats(p).some(c => CATS.includes(c))
         && (!$wits.size || ($wits.has(witOfDigit.get(p.digit_1)) && $wits.has(witOfDigit.get(p.digit_2)))));
@@ -63,9 +66,15 @@
         key: +type, total, part: inCatCounts[type] ?? 0, label: typeIcon(type), title: barTitle(total, inCatCounts[type] ?? 0, type)
     }));
     $: filtered = inCat.filter(p => !$types.size || $types.has(p.similarityType));
-    $: pagePairs = filtered.slice(($currentPage - 1) * pageSize, $currentPage * pageSize);
-    /** images of the page, the partner of image `i` being `i ^ 1` */
-    $: pageImgs = pagePairs.flatMap(p => [p.id_1, p.id_2]);
+
+    /** document order: [sidebar rank of the digitization, page, y] */
+    $: rank = new Map($sortedDocumentNodes.map(([id], i) => [id, i]));
+    $: position = img => [rank.get(img.digit), img.canvas, +img.xywh?.[1] || 0];
+    $: sorted = filtered
+        .map(p => [$imageNodes.get(p.id_1), $imageNodes.get(p.id_2)].sort((a, b) => compare(position(a), position(b))))
+        .map(([l, r], i) => ({p: filtered[i], l, r, key: [...position(l), ...position(r)]}))
+        .sort((a, b) => compare(a.key, b.key));
+    $: pagePairs = sorted.slice(($currentPage - 1) * pageSize, $currentPage * pageSize);
 </script>
 
 <div class="level-left is-flex is-justify-content-space-between">
@@ -87,12 +96,11 @@
 {/if}
 
 <div class="grid is-gap-2" style="--bulma-grid-column-min: 20rem">
-    {#each pagePairs as p, i (p)}
+    {#each pagePairs as {p, l, r}, i (p)}
         <div class="cell box p-2 mb-0">
             <div class="is-flex is-justify-content-center is-gap-1">
-                {#each [p.id_1, p.id_2] as id, k}
-                    <RegionCard item={$imageNodes.get(id)} index={2 * i + k} height={96} selectable={false}
-                                on:openModal={e => [modalIndex, modalOpen] = [e.detail.index, true]}/>
+                {#each [l, r] as img, k}
+                    <RegionCard item={img} height={96} selectable={false} on:openModal={() => openModal(i, !!k)}/>
                 {/each}
             </div>
             <div class="is-flex is-align-items-center is-justify-content-space-between mt-2">
@@ -110,8 +118,10 @@
     {/each}
 </div>
 
-<RegionModal items={pageImgs.map(id => $imageNodes.get(id))} bind:currentIndex={modalIndex} bind:open={modalOpen}>
+<RegionModal items={pagePairs.map(({l, r}, i) => swapped && i === modalIndex ? r : l)} bind:currentIndex={modalIndex} bind:open={modalOpen}
+             on:navigate={() => swapped = false}>
     <svelte:fragment let:item let:index>
-        <RegionTabs {item} comparison={pageImgs[index] && {qImg: pageImgs[index], sImg: pageImgs[index ^ 1]}} activeTab="similarity"/>
+        {@const {l, r} = pagePairs[index] ?? {}}
+        <RegionTabs {item} comparison={l && {qImg: (swapped ? r : l).id, sImg: (swapped ? l : r).id}} activeTab="similarity"/>
     </svelte:fragment>
 </RegionModal>

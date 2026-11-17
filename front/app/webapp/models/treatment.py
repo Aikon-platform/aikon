@@ -327,7 +327,7 @@ class Treatment(AbstractSearchableModel):
                 exception=e,
                 completed=completed,
             )
-        finally:
+        else:
             if completed:
                 self.on_task_success(
                     {

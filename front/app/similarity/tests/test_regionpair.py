@@ -408,9 +408,11 @@ class RegionPairTestCase(TestCase):
     def remapped_row(self, **fields) -> RegionPair:
         rp = self.get_random_row()
         RegionPair.objects.filter(pk=rp.pk).update(
-            similarity_type=SimilarityType.REMAPPED,
-            similarity_hash="test0000",
-            **fields
+            **{
+                "similarity_type": SimilarityType.REMAPPED,
+                "similarity_hash": "test0000",
+                **fields,
+            }
         )
         return RegionPair.objects.get(pk=rp.pk)
 
@@ -469,6 +471,35 @@ class RegionPairTestCase(TestCase):
         rescore_to_db([(12.5, uncategorized.img_1, uncategorized.img_2)], "test0000")
         rp = RegionPair.objects.get(pk=uncategorized.pk)
         self.assertEqual((rp.score, rp.similarity_type), (12.5, SimilarityType.AUTO))
+
+    def test_rescore_adopts_unhashed(self):
+        """REMAPPED pairs without hash are sent, then given the hash, or merged into the row of the hash"""
+        lone = self.remapped_row(similarity_hash=None, category=3, category_x=[])
+        sent = [lone.img_1, lone.img_2]
+        self.assertIn(
+            sent,
+            remapped_pairs(set(self.wits(lone)), "test0000", only_categorized=True),
+        )
+
+        rescore_to_db([(7.0, *sent)], "test0000")
+        rp = RegionPair.objects.get(pk=lone.pk)
+        self.assertEqual(
+            (rp.score, rp.similarity_type, rp.similarity_hash, rp.category),
+            (7.0, SimilarityType.AUTO, "test0000", 3),
+        )
+
+        twin = RegionPair.objects.create(
+            img_1=rp.img_1,
+            img_2=rp.img_2,
+            digit_1=rp.digit_1,
+            digit_2=rp.digit_2,
+            similarity_type=SimilarityType.REMAPPED,
+            category_x=[5],
+        )
+        rescore_to_db([(9.0, *sent)], "test0000")
+        self.assertFalse(RegionPair.objects.filter(pk=twin.pk).exists())
+        rp = RegionPair.objects.get(pk=lone.pk)
+        self.assertEqual((rp.score, rp.category, rp.category_x), (9.0, 3, [5]))
 
     def test_delete_absent_pairs(self):
         """only uncategorized AUTO / REMAPPED / PROPAGATED pairs of the hash absent from the new score file are deleted (force mode)"""

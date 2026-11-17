@@ -100,11 +100,11 @@ def build_remap(
                 f"Digitization #{d.id}: no region in aiiinotate (or request failed), skipped"
             )
 
-    images = fetch_distinct_images(list(regions))
+    images = fetch_distinct_images([d.id for d in digits], exclusive=True)
     mapping, sides, stats = {}, {}, Counter()
     for img in sorted(images):
         ref = parse_img(img, no_error=True)
-        if not (ref and ref.bbox):
+        if not (ref and ref.bbox and ref.digit in regions):
             stats["skipped"] += 1
             continue
         box = parse_bbox(ref.bbox)
@@ -177,14 +177,20 @@ def expand(r: dict, mapping: dict, sides: dict):
 
 
 def plan_changes(
-    mapping: dict, sides: dict, log
+    mapping: dict, sides: dict, digit_ids: list[int], log
 ) -> tuple[list[dict], list[dict], list[int], list[dict]]:
-    """(rows to update, rows to insert, ids to delete, deleted pairs of category 1 with an orphan image)"""
+    """
+    (rows to update, rows to insert, ids to delete, deleted pairs of category 1 with an orphan image)
+    Only pairs with both sides in digit_ids are remapped
+    """
     imgs = list({*mapping, *sides})
     rows = (
         {
             r["id"]: r
-            for r in fetch_rows("img_1 = ANY(%s) OR img_2 = ANY(%s)", [imgs, imgs])
+            for r in fetch_rows(
+                "(img_1 = ANY(%s) OR img_2 = ANY(%s)) AND digit_1 = ANY(%s) AND digit_2 = ANY(%s)",
+                [imgs, imgs, digit_ids, digit_ids],
+            )
         }
         if imgs
         else {}
@@ -243,7 +249,9 @@ def apply_remap(
         if not dry_run:
             with connection.cursor() as cur:
                 cur.execute("LOCK TABLE webapp_regionpair IN SHARE ROW EXCLUSIVE MODE")
-        to_update, to_insert, to_delete, lost = plan_changes(mapping, sides, log)
+        to_update, to_insert, to_delete, lost = plan_changes(
+            mapping, sides, digit_ids, log
+        )
 
         if not dry_run:
             write_changes(to_update, to_delete, batch_size)
