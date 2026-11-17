@@ -6,6 +6,7 @@
     import InputSlider from "../../ui/InputSlider.svelte";
     import {i18n} from "../../utils.js";
     import InputToggle from "../../ui/InputToggle.svelte";
+    import CategoryFilter from "./CategoryFilter.svelte";
 
     export let docSet = null;
     export let documentSetStore;
@@ -154,20 +155,22 @@
                     {/each}
                 </div>
 
-                <div class="level" class:is-disabled={filterMode === "all"}>
-                    {#each allCategories as cat}
-                        <div class="level-item has-text-centered">
-                            <div>
-                                <CategoryButton
-                                    category={cat}
-                                    isSelected={$selectedCategories.includes(cat)}
-                                    toggle={(cat) => filterMode === "filtered" ? toggleCategory(cat) : null}
-                                    selectable={filterMode === "filtered"}/>
-                                <p class="is-size-7 mt-1">{$docSetNumber.categories[cat] || 0}</p>
-                            </div>
-                        </div>
-                    {/each}
-                </div>
+<!--                <div class="level" class:is-disabled={filterMode === "all"}>-->
+<!--                    {#each allCategories as cat}-->
+<!--                        <div class="level-item has-text-centered">-->
+<!--                            <div>-->
+<!--                                <CategoryButton-->
+<!--                                    category={cat}-->
+<!--                                    isSelected={$selectedCategories.includes(cat)}-->
+<!--                                    toggle={(cat) => filterMode === "filtered" ? toggleCategory(cat) : null}-->
+<!--                                    selectable={filterMode === "filtered"}/>-->
+<!--                                <p class="is-size-7 mt-1">{$docSetNumber.categories[cat] || 0}</p>-->
+<!--                            </div>-->
+<!--                        </div>-->
+<!--                    {/each}-->
+<!--                </div>-->
+                <CategoryFilter categories={allCategories} counts={$docSetNumber.categories} selected={new Set($selectedCategories)}
+                                toggle={toggleCategory} disabled={filterMode === "all"}/>
             </div>
 
             <hr>

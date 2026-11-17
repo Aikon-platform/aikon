@@ -4,6 +4,7 @@
     export let visibleCategories = [1, 2, 3, 4, 5];
     export let toggleFct = () => null;
     export let userToggleFct = () => null;
+    /** @type {number|number[]|null} */
     export let selectedCategory = null;
     export let isSelectedByUser = false;
     export let horizontal = true;
@@ -16,7 +17,7 @@
     {#each visibleCategories as cat, i}
         <CategoryButton category={cat}
             padding={i === 0 ? paddingStart : i === visibleCategories.length -1 ? paddingEnd : ""}
-            isSelected={cat === 5 ? isSelectedByUser : selectedCategory === cat}
+            isSelected={cat === 5 ? isSelectedByUser : [].concat(selectedCategory).includes(cat)}
             toggle={cat === 5 ? userToggleFct : toggleFct}/>
     {/each}
 </div>

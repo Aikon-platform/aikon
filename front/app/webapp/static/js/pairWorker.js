@@ -6,7 +6,8 @@
 const IMG_REGEX = /^(wit\d+_[a-z]{3}(\d+)_(\d+))(?:_([\d,]+))?\.jpg$/;
 // const weights = { 1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125 };
 const weights = { 0: 1, 1: 1, 2: 1.5, 3: 1.25, 4: -1.0, 5: 1.25 };
-const COLS = { id1: Uint32Array, id2: Uint32Array, score: Float64Array, cat: Uint8Array, um: Uint8Array };
+const COLS = { id1: Uint32Array, id2: Uint32Array, score: Float64Array, cat: Uint8Array, um: Uint8Array, st: Uint8Array };
+const STRIDE = 6;
 const pairKey = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
 
 let state = null;
@@ -56,10 +57,10 @@ function processBatch(newNames, flat) {
     const { names, imgs, categories } = state;
     for (const name of newNames) names.push(name);
 
-    reserve(state.n + flat.length / 5);
-    const { id1, id2, score, cat, um } = state.cols;
+    reserve(state.n + flat.length / STRIDE);
+    const { id1, id2, score, cat, um, st } = state.cols;
 
-    for (let i = 0; i < flat.length; i += 5) {
+    for (let i = 0; i < flat.length; i += STRIDE) {
         const a = flat[i], b = flat[i + 1], c = flat[i + 3], u = flat[i + 4];
         if (c === 4) continue;
 
@@ -75,6 +76,7 @@ function processBatch(newNames, flat) {
         score[k] = flat[i + 2] ?? NaN;
         cat[k] = c;
         um[k] = u;
+        st[k] = flat[i + 5] ?? 1;
     }
 
     self.postMessage({ type: 'progress', count: state.n });
@@ -82,7 +84,7 @@ function processBatch(newNames, flat) {
 
 function finalize() {
     const { names, imgs, imageMap, categories, n } = state;
-    const { id1, id2, score, cat, um } = Object.fromEntries(
+    const { id1, id2, score, cat, um, st } = Object.fromEntries(
         Object.entries(state.cols).map(([k, a]) => [k, a.slice(0, n)])
     );
     const weightOf = i => weights[cat[i] || (um[i] && 5)] || 0;
@@ -143,7 +145,7 @@ function finalize() {
 
     const order = new Uint32Array(n).map((_, i) => i).sort(byW);
     const digits = i => [imgs[id1[i]].digit, imgs[id2[i]].digit];
-    const columns = { id1, id2, score, cat, w, rank1, rank2, order, start, byImage };
+    const columns = { id1, id2, score, cat, um, st, w, rank1, rank2, order, start, byImage };
 
     self.postMessage({
         type: 'complete',

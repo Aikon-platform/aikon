@@ -9,6 +9,7 @@
     export let isSelectedByUser = users.includes(Number(userId));
     export let similarityType = null;
     export let similarityHash = null;
+    export let onChange = () => {};
 
     const post = (endpoint, body) => fetch(`${window.location.origin}/${appName}/${endpoint}`, {
         method: "POST",
@@ -26,7 +27,7 @@
         const ok = await post("save-category", {
             img_1: qImg, img_2: sImg, category, similarity_type: similarityType, similarity_hash: similarityHash
         });
-        if (!ok) category = previous;
+        ok ? onChange(category) : category = previous;
     }
 
     async function addUserToPair() {
