@@ -4,7 +4,8 @@
     import {getContext} from "svelte";
     import Legend from "./Legend.svelte";
     import InputSlider from "../../ui/InputSlider.svelte";
-    import {i18n} from "../../utils.js";
+    import {i18n, showMessage, withLoading} from "../../utils.js";
+    import {appName, csrfToken, isSuperuser} from "../../constants.js";
     import InputToggle from "../../ui/InputToggle.svelte";
     import CategoryFilter from "./CategoryFilter.svelte";
 
@@ -52,8 +53,28 @@
         setScoreMode(mode)
     }
 
+    async function resetCategories() {
+        if (!await showMessage(i18n("resetConfirm", t), i18n("resetCat", t), true)) return;
+        try {
+            const response = await withLoading(() => fetch(`${window.location.origin}/${appName}/document-set/${docSet.id}/reset-categories`, {
+                method: "POST",
+                headers: { "X-CSRFToken": csrfToken },
+            }));
+            if (!response.ok) throw new Error(`Failed to reset categories: '${response.statusText}'`);
+            window.location.reload();
+        } catch (error) {
+            console.error(error);
+            await showMessage(error.message, "Error");
+        }
+    }
+
     const t = {
         pairs: {en: "Pairs", fr: "Paires"},
+        resetCat: {en: "Reset all categories", fr: "Réinitialiser toutes les catégories"},
+        resetConfirm: {
+            en: "Are you sure you want to remove the categories of all pairs between documents of this set? Categories are stored on the pairs: they will also be removed from every other document set containing these documents. This cannot be undone.",
+            fr: "Voulez-vous vraiment retirer les catégories de toutes les paires pour les documents de ce set ? Les catégories étant enregistrées sur les paires, elles seront aussi retirées de tous les autres sets contenant ces documents. Cette action est irréversible."
+        },
         hideEmpty: {en: "Hide when no match", fr: "Masquer si aucune correspondance"},
         simCat: {en: "Similarity categories", fr: "Catégories de similarité"},
         allPairs: {en: "All pairs", fr: "Toutes les paires"},
@@ -155,22 +176,16 @@
                     {/each}
                 </div>
 
-<!--                <div class="level" class:is-disabled={filterMode === "all"}>-->
-<!--                    {#each allCategories as cat}-->
-<!--                        <div class="level-item has-text-centered">-->
-<!--                            <div>-->
-<!--                                <CategoryButton-->
-<!--                                    category={cat}-->
-<!--                                    isSelected={$selectedCategories.includes(cat)}-->
-<!--                                    toggle={(cat) => filterMode === "filtered" ? toggleCategory(cat) : null}-->
-<!--                                    selectable={filterMode === "filtered"}/>-->
-<!--                                <p class="is-size-7 mt-1">{$docSetNumber.categories[cat] || 0}</p>-->
-<!--                            </div>-->
-<!--                        </div>-->
-<!--                    {/each}-->
-<!--                </div>-->
                 <CategoryFilter categories={allCategories} counts={$docSetNumber.categories} selected={new Set($selectedCategories)}
                                 toggle={toggleCategory} disabled={filterMode === "all"}/>
+
+                {#if isSuperuser}
+                    <div class="is-center">
+                        <button on:click={resetCategories} class="tag mt-3 is-danger">
+                            {i18n("resetCat", t)}
+                        </button>
+                    </div>
+                {/if}
             </div>
 
             <hr>

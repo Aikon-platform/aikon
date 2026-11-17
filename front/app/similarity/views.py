@@ -872,6 +872,16 @@ def reset_regions_similarity(request, rid=None):
     return JsonResponse({"error": f"Invalid request method"}, status=400)
 
 
+@require_POST
+@user_passes_test(is_superuser)
+def reset_document_set_categories(request, dsid):
+    ids = get_object_or_404(DocumentSet, id=dsid).get_digit_ids()
+    reset = RegionPair.objects.filter(
+        digit_1__in=ids, digit_2__in=ids, category__isnull=False
+    ).update(category=None)
+    return JsonResponse({"reset": reset})
+
+
 # NOTE unused => delete ?
 def get_regions_pairs(request, wid, rid=None):
     """
