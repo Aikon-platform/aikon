@@ -46,6 +46,7 @@ from app.similarity.dedupe import (
     close,
     parse_bbox,
     TYPE_PRIORITY,
+    inherit_categories,
 )
 from app.webapp.utils.iiif.annotation import (
     get_canvas_annotations,
@@ -64,13 +65,13 @@ def prepare_request(witnesses, treatment_id, parameters=None):
     """
     Prepare similarity request:
     - document pairs already computed for these parameters are skipped, unless `force`
-    - REMAPPED pairs of these parameters are sent to be rescored one by one
+    - pairs_to_score() are sent to be scored one by one
     """
     params = similarity_param(parameters)
     uids = {doc["uid"] for w in witnesses for doc in prepare_document(w, **params)}
     computed = set() if params["force"] else get_existing_pairs(uids, params)
     pairs = (
-        remapped_pairs(uids, similarity_hash(params), only_categorized=params["force"])
+        pairs_to_score(uids, similarity_hash(params), force=params["force"])
         if params["source_type"] == SourceType.REGIONS
         else []
     )
@@ -86,25 +87,26 @@ def prepare_request(witnesses, treatment_id, parameters=None):
     )
 
 
-def remapped_pairs(
-    wids: set[str], param_hash: str, only_categorized=False
-) -> list[list[str]]:
+def pairs_to_score(wids: set[str], param_hash: str, force=False) -> list[list[str]]:
     """
-    REMAPPED pairs of `param_hash` or without hash (imported, adopted by `param_hash` once rescored)
-    with both witnesses in `wids`, to be rescored one by one
-    only_categorized (forced recomputation): uncategorized ones of `param_hash` are left to the new score files, which delete them if absent
+    Pairs of `param_hash` or without hash, with both witnesses in `wids`, to be scored one by one whatever their rank:
+    - REMAPPED pairs (force: uncategorized ones of `param_hash` are left to the new score files, which delete them if absent)
+    - categorized pairs without score (MANUAL, PROPAGATED)
+    - force: categorized pairs without hash (scored before hashes existed)
     """
     digits = Digitization.objects.filter(witness_id__in=wids).values("id")
+    unscored = Q(score__isnull=True)
+    if force:
+        unscored |= Q(similarity_hash__isnull=True)
+    q = Q(similarity_type=SimilarityType.REMAPPED) | (~UNCATEGORIZED & unscored)
+    if force:
+        q &= ~(UNCATEGORIZED & Q(similarity_hash=param_hash))
     rows = RegionPair.objects.filter(
+        q,
         Q(similarity_hash=param_hash) | Q(similarity_hash__isnull=True),
-        similarity_type=SimilarityType.REMAPPED,
         digit_1__in=digits,
         digit_2__in=digits,
     )
-    if only_categorized:
-        rows = rows.exclude(
-            id__in=uncategorized(rows.filter(similarity_hash=param_hash)).values("id")
-        )
     return [list(p) for p in rows.order_by().values_list("img_1", "img_2").distinct()]
 
 
@@ -407,7 +409,7 @@ def score_file(r1: str, r2: str, param_hash: str) -> Path:
 def score_file_to_db(file_path, clean=False):
     """
     Load scores from a .json file and add all of its pairs in the RegionPair table
-    If pair already exists, only score is updated
+    Rows of the same images without hash are absorbed (see absorb)
     If clean (forced recomputation), uncategorized pairs of the same hash absent from the file are deleted
     """
     p = Path(file_path)
@@ -427,74 +429,137 @@ def score_file_to_db(file_path, clean=False):
     else:
         rid1 = rid2 = None
 
-    pairs_to_update = []
     try:
-        for score, img1, img2 in pair_scores:
-            score = float(score)
-            if score <= 0:
-                continue
-
-            img1, img2 = RegionPair.order_pair((img1, img2), normalize=True)
-            ref1, ref2 = parse_img(img1), parse_img(img2)
-            pairs_to_update.append(
-                RegionPair(
-                    img_1=img1,
-                    img_2=img2,
-                    digit_1=ref1.digit,
-                    digit_2=ref2.digit,
-                    score=score,
-                    regions_id_1=rid1,
-                    regions_id_2=rid2,
-                    similarity_type=SimilarityType.AUTO,
-                    similarity_hash=param_hash,
-                )
+        pairs = [
+            new_pair(
+                *RegionPair.order_pair((img1, img2), normalize=True),
+                float(score),
+                rid1,
+                rid2,
             )
+            for score, img1, img2 in pair_scores
+            if float(score) > 0
+        ]
     except ValueError as e:
         log(f"[score_file_to_db] error while processing {pair_ref}", e)
         return False
 
-    # Bulk update existing pairs
     try:
         with transaction.atomic():
-            RegionPair.objects.bulk_update_or_create(
-                pairs_to_update,
-                update_fields=[
-                    "score",
-                    "digit_1",
-                    "digit_2",
-                    "regions_id_1",
-                    "regions_id_2",
-                    "similarity_type",
-                ],
-                match_fields=["img_1", "img_2", "similarity_hash"],
-            )
+            kept = absorb(pairs, param_hash)
             if clean and ref_1.isdigit() and ref_2.isdigit():
-                # bulk_update_or_create oriented the pairs as stored
-                delete_absent_pairs(
-                    ref_1,
-                    ref_2,
-                    param_hash,
-                    {(p.img_1, p.img_2) for p in pairs_to_update},
-                )
+                delete_absent_pairs(ref_1, ref_2, param_hash, kept)
             # TODO pages: score files named after digitization refs are not cleaned
     except Exception as e:
         log(f"[score_file_to_db] error while adding pairs to db {pair_ref}", e)
         return False
 
+    spread_categories(kept)
+
     log(f"Processed {len(pair_scores)} image pairs from {pair_ref}", msg_type="success")
     return True
 
 
+UNCATEGORIZED = Q(category__isnull=True) & (
+    Q(category_x__isnull=True) | Q(category_x=[])
+)
+ABSORBED_FIELDS = [
+    "score",
+    "similarity_type",
+    "similarity_hash",
+    "category",
+    "category_x",
+]
+
+
 def uncategorized(qs: QuerySet) -> QuerySet:
-    return qs.filter(
-        Q(category_x__isnull=True) | Q(category_x=[]), category__isnull=True
+    return qs.filter(UNCATEGORIZED)
+
+
+def new_pair(
+    img_1: str, img_2: str, score: float, rid_1=None, rid_2=None
+) -> RegionPair:
+    ref_1, ref_2 = parse_img(img_1), parse_img(img_2)
+    return RegionPair(
+        img_1=img_1,
+        img_2=img_2,
+        digit_1=ref_1.digit,
+        digit_2=ref_2.digit,
+        score=score,
+        regions_id_1=rid_1,
+        regions_id_2=rid_2,
+        similarity_type=SimilarityType.AUTO,
     )
+
+
+def absorb(
+    pairs: list[RegionPair], param_hash: str, create=True
+) -> set[tuple[str, str]]:
+    """
+    Write the scores of `pairs` under `param_hash`, one row per pair of images:
+    rows of `param_hash` and without hash are merged (categories united, MANUAL kept, others become AUTO)
+    A score <= 0 deletes uncategorized pairs and is set to 0 for categorized ones
+    create: pairs without row are created (score files), otherwise ignored (pairs scored one by one)
+    Returns the pairs of images as stored
+    """
+    scored = {(p.img_1, p.img_2): p for p in RegionPair.objects.orient(pairs)}
+    to_create, to_update, to_delete = [], [], []
+    with transaction.atomic():
+        rows = defaultdict(list)
+        for rp in (
+            RegionPair.objects.select_for_update()
+            .filter(
+                Q(similarity_hash=param_hash) | Q(similarity_hash__isnull=True),
+                img_1__in={a for a, _ in scored},
+                img_2__in={b for _, b in scored},
+            )
+            .order_by("id")
+        ):
+            if (rp.img_1, rp.img_2) in scored:
+                rows[rp.img_1, rp.img_2].append(rp)
+
+        for key, new in scored.items():
+            if not (group := rows.get(key) or ([new] if create else [])):
+                continue
+            keep = next((rp for rp in group if rp.similarity_hash), group[0])
+            before = [getattr(keep, f) for f in ABSORBED_FIELDS]
+            to_delete += [rp.id for rp in group if rp is not keep]
+            keep.category = min(
+                (rp.category for rp in group if rp.category is not None), default=None
+            )
+            keep.category_x = sorted({u for rp in group for u in rp.category_x or []})
+            if new.score <= 0 and keep.category is None and not keep.category_x:
+                to_delete += [keep.id] if keep.pk else []
+                continue
+            keep.score = max(new.score, 0.0)
+            keep.similarity_hash = param_hash
+            keep.similarity_type = (
+                SimilarityType.MANUAL
+                if any(rp.similarity_type == SimilarityType.MANUAL for rp in group)
+                else SimilarityType.AUTO
+            )
+            if not keep.pk:
+                to_create.append(keep)
+            elif [getattr(keep, f) for f in ABSORBED_FIELDS] != before:
+                to_update.append(keep)
+
+        RegionPair.objects.filter(id__in=to_delete).delete()
+        RegionPair.objects.bulk_update(to_update, ABSORBED_FIELDS, batch_size=1000)
+        RegionPair.objects.bulk_create(
+            to_create, batch_size=1000, ignore_conflicts=True
+        )
+
+    log(
+        f"[absorb] {len(to_create)} pairs created, {len(to_update)} updated, {len(to_delete)} deleted",
+        msg_type="success",
+    )
+    return set(scored)
 
 
 def delete_absent_pairs(
     wid_1: str, wid_2: str, param_hash: str, kept: set[tuple[str, str]]
 ):
-    """Delete the uncategorized AUTO, REMAPPED or PROPAGATED pairs between two witnesses that their new score file does not contain"""
+    """Delete the uncategorized AUTO, REMAPPED or PROPAGATED pairs of `param_hash` or without hash between two witnesses that their new score file does not contain"""
     d1, d2 = (
         Digitization.objects.filter(witness_id=wid).values("id")
         for wid in (wid_1, wid_2)
@@ -502,7 +567,7 @@ def delete_absent_pairs(
     rows = uncategorized(
         RegionPair.objects.filter(
             Q(digit_1__in=d1, digit_2__in=d2) | Q(digit_1__in=d2, digit_2__in=d1),
-            similarity_hash=param_hash,
+            Q(similarity_hash=param_hash) | Q(similarity_hash__isnull=True),
             similarity_type__in=[
                 SimilarityType.AUTO,
                 SimilarityType.REMAPPED,
@@ -516,53 +581,31 @@ def delete_absent_pairs(
 
 
 def rescore_to_db(pair_scores: list[tuple[float, str, str]], param_hash: str):
-    """
-    Update the pairs rescored one by one (names as stored, see prepare_request)
-    REMAPPED pairs without hash are adopted by `param_hash`: merged into its row if it exists, otherwise given the hash
-    Uncategorized pairs scoring <= 0 are deleted
-    """
-    scores = {(img_1, img_2): float(score) for score, img_1, img_2 in pair_scores}
-    rows = RegionPair.objects.filter(
-        Q(similarity_hash=param_hash)
-        | Q(similarity_hash__isnull=True, similarity_type=SimilarityType.REMAPPED),
-        img_1__in={img_1 for img_1, _ in scores},
-        img_2__in={img_2 for _, img_2 in scores},
-    ).only("id", "img_1", "img_2", "category", "category_x", "similarity_hash")
-
-    groups = defaultdict(list)
-    for rp in rows:
-        if (rp.img_1, rp.img_2) in scores:
-            groups[rp.img_1, rp.img_2].append(rp)
-
-    to_update, to_delete = [], []
-    for pair, group in groups.items():
-        keep = next((rp for rp in group if rp.similarity_hash), group[0])
-        to_delete += [rp.id for rp in group if rp is not keep]
-        keep.category = min(
-            (rp.category for rp in group if rp.category is not None), default=None
-        )
-        keep.category_x = sorted({u for rp in group for u in rp.category_x or []})
-        if scores[pair] <= 0 and keep.category is None and not keep.category_x:
-            to_delete.append(keep.id)
-            continue
-        keep.score, keep.similarity_type, keep.similarity_hash = (
-            scores[pair],
-            SimilarityType.AUTO,
+    """Pairs scored one by one (names as stored, see pairs_to_score), absorbed by `param_hash`"""
+    spread_categories(
+        absorb(
+            [new_pair(a, b, float(score)) for score, a, b in pair_scores],
             param_hash,
+            create=False,
         )
-        to_update.append(keep)
-
-    with transaction.atomic():
-        RegionPair.objects.filter(id__in=to_delete).delete()
-        RegionPair.objects.bulk_update(
-            to_update,
-            ["score", "similarity_type", "similarity_hash", "category", "category_x"],
-            batch_size=1000,
-        )
-    log(
-        f"[rescore_to_db] {len(to_update)} pairs rescored, {len(to_delete)} deleted",
-        msg_type="success",
     )
+
+
+def spread_categories(pairs: set[tuple[str, str]]):
+    """
+    Apply the categories of the digitizations of `pairs` to their rows of every hash
+    Called once the scores are committed: a failure is only logged
+    """
+    if not pairs:
+        return
+    try:
+        inherit_categories(
+            sorted({parse_img(img).digit for pair in pairs for img in pair}),
+            dry_run=False,
+            log=log,
+        )
+    except Exception as e:
+        log("[spread_categories] failed to apply categories across hashes", e)
 
 
 def get_digit_pairs(digit_id: int):

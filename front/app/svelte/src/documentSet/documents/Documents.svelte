@@ -125,7 +125,7 @@
             {/each}
         </div>
         <div class="level-item">
-            <InputToggle start={true} buttonDisplay={true} toggleLabel={i18n("scoreFilter", t)} on:updateChecked={e => scoreFilter = e.detail}/>
+            <InputToggle start={false} buttonDisplay={true} toggleLabel={i18n("scoreFilter", t)} on:updateChecked={e => scoreFilter = e.detail}/>
         </div>
     </div>
 </div>
