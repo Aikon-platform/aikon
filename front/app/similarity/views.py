@@ -67,6 +67,12 @@ from app.similarity.dedupe import (
     parse_bbox,
     close,
 )
+from app.similarity.remap import (
+    plan_path,
+    remap_document_set,
+    remap_links,
+    running_similarity,
+)
 from app.webapp.utils.iiif.annotation import (
     get_regions_id_from_annotation,
     get_id_from_annotation,
@@ -1132,3 +1138,22 @@ def get_pair(request):
     )
     pairs = get_best_pairs(q_img, rows, user_id=request.user.id)
     return JsonResponse(pairs[0] if pairs else [], safe=False)
+
+
+@user_passes_test(is_superuser)
+def remap_preview(request, dsid):
+    """Dry run of the remap of a document set: its plan is saved to be applied by the remap treatment"""
+    doc_set = get_object_or_404(DocumentSet, pk=dsid)
+    if running_similarity(doc_set):
+        return JsonResponse(
+            {"error": "A similarity treatment is running on these documents"},
+            status=409,
+        )
+    plan = plan_path(dsid)
+    plan.unlink(missing_ok=True)
+    try:
+        summary = remap_document_set(doc_set, plan)
+    except Exception as e:
+        log(f"[remap_preview] Dry run failed for document set #{dsid}", e)
+        return JsonResponse({"error": f"Dry run failed: {e}"}, status=500)
+    return JsonResponse({**summary, "links": remap_links(dsid, summary["hashes"])})

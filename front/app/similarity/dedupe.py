@@ -443,8 +443,11 @@ def write_changes(
         execute_batch(cur.cursor, sql, to_update, page_size=batch_size)
 
 
-def inherit_categories(digit_ids: list[int] | None, dry_run: bool, log) -> None:
-    """Apply the category and user ids (category_x) of a pair to all its rows, whatever their hash"""
+def inherit_categories(digit_ids: list[int] | None, dry_run: bool, log) -> dict:
+    """
+    Apply the category and user ids (category_x) of a pair to all its rows, whatever their hash
+    Returns {"conflicts": pairs with conflicting categories, "inherited": rows updated (or to update)}
+    """
     scope = (
         "AND (rp.digit_1 = ANY(%(d)s) OR rp.digit_2 = ANY(%(d)s))" if digit_ids else ""
     )
@@ -454,8 +457,9 @@ def inherit_categories(digit_ids: list[int] | None, dry_run: bool, log) -> None:
         cur.execute(
             f"{cte} SELECT count(*) FROM annotated WHERE n_categories > 1", params
         )
+        conflicts = cur.fetchone()[0]
         log(
-            f"{cur.fetchone()[0]} pairs with conflicting categories across hashes (left unchanged)"
+            f"{conflicts} pairs with conflicting categories across hashes (left unchanged)"
         )
 
         if dry_run:
@@ -463,13 +467,16 @@ def inherit_categories(digit_ids: list[int] | None, dry_run: bool, log) -> None:
                 f"{cte} SELECT count(*) FROM annotated a JOIN webapp_regionpair n ON {INHERIT_ON}",
                 params,
             )
-            log(f"Category inheritance: {cur.fetchone()[0]} rows to update")
+            inherited = cur.fetchone()[0]
+            log(f"Category inheritance: {inherited} rows to update")
         else:
             cur.execute(
                 f"{cte} UPDATE webapp_regionpair n SET {INHERIT_SET} FROM annotated a WHERE {INHERIT_ON}",
                 params,
             )
-            log(f"Category inheritance: {cur.rowcount} rows updated")
+            inherited = cur.rowcount
+            log(f"Category inheritance: {inherited} rows updated")
+    return {"conflicts": conflicts, "inherited": inherited}
 
 
 def apply_mapping(

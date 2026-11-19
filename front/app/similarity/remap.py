@@ -5,11 +5,14 @@ from collections import Counter, defaultdict
 from datetime import datetime, timezone
 from itertools import count, product
 from pathlib import Path
+from urllib.parse import urlencode
 
 from django.db import connection, transaction
 from django.db.models import Count
+from django.urls import reverse
 from psycopg2.extras import execute_batch
 
+from app.config.settings import APP_URL
 from app.similarity import Bbox, SimilarityType
 from app.similarity.dedupe import (
     BATCH_SIZE,
@@ -25,9 +28,11 @@ from app.similarity.dedupe import (
     parse_bbox,
     write_changes,
 )
+from app.similarity.forms import similarity_query
 from app.similarity.models.region_pair import RegionPair, norm_img, parse_img
 from app.similarity.models.similarity_parameters import SimilarityParameters
 from app.webapp.models.digitization import Digitization
+from app.webapp.utils.paths import MEDIA_PATH
 from app.webapp.utils.iiif.annotation import (
     get_coord_from_annotation,
     get_id_from_annotation,
@@ -160,8 +165,8 @@ def load_plan(path: Path) -> tuple[dict, dict, dict]:
     return data["mapping"], data["sides"], data
 
 
-def log_hashes(digit_ids: list[int], log=no_log) -> None:
-    """Number of pairs of each similarity hash between digit_ids, with its parameters"""
+def hash_counts(digit_ids: list[int]) -> list[dict]:
+    """Number of pairs of each similarity hash between digit_ids, with its parameters, most frequent first"""
     counts = (
         RegionPair.objects.filter(digit_1__in=digit_ids, digit_2__in=digit_ids)
         .values_list("similarity_hash")
@@ -169,11 +174,7 @@ def log_hashes(digit_ids: list[int], log=no_log) -> None:
         .order_by("-n")
     )
     params = dict(SimilarityParameters.objects.values_list("hash", "parameters"))
-    log("Pairs by similarity hash:")
-    for h, n in counts:
-        log(
-            f"  {h} ({n} pairs): {json.dumps(params.get(h), sort_keys=True) if h else 'no hash'}"
-        )
+    return [{"hash": h, "pairs": n, "parameters": params.get(h)} for h, n in counts]
 
 
 # ---------- Rows ----------
@@ -200,7 +201,7 @@ def plan_changes(
     mapping: dict, sides: dict, digit_ids: list[int], log
 ) -> tuple[list[dict], list[dict], list[int], list[dict]]:
     """
-    (rows to update, rows to insert, ids to delete, deleted pairs of category 1 with an orphan image)
+    (rows to update, rows to insert, ids to delete, deleted pairs with an orphan image)
     Only pairs with both sides in digit_ids are remapped
     """
     imgs = list({*mapping, *sides})
@@ -219,11 +220,8 @@ def plan_changes(
 
     orphans = {img for img, linked in mapping.items() if not linked}
     to_delete = [i for i, r in rows.items() if {r["img_1"], r["img_2"]} & orphans]
-    lost = [rows[i] for i in to_delete if rows[i]["category"] == 1]
-    by_cat = Counter(str(rows[i]["category"]) for i in to_delete)
-    log(
-        f"Orphan pairs to delete by category: {json.dumps(dict(sorted(by_cat.items())))}"
-    )
+    orphaned = [rows[i] for i in to_delete]
+    log(f"Orphan pairs to delete by category: {json.dumps(count_categories(orphaned))}")
 
     new_id, groups = count(-1, -1), defaultdict(list)
     for i in rows.keys() - set(to_delete):
@@ -250,7 +248,7 @@ def plan_changes(
     log(
         f"Plan: {len(to_update)} updates, {len(to_insert)} insertions (splits), {len(to_delete)} deletions"
     )
-    return to_update, to_insert, to_delete, lost
+    return to_update, to_insert, to_delete, orphaned
 
 
 def insert_rows(rows: list[dict], batch_size: int) -> None:
@@ -266,13 +264,13 @@ def apply_remap(
     batch_size: int = BATCH_SIZE,
     log=no_log,
     dry_run: bool = False,
-) -> list[dict]:
-    """Returns the deleted pairs of category 1 that had an orphan image"""
+) -> dict:
+    """Counts of the changes, with the deleted pairs of category 1 that had an orphan image (lost)"""
     with transaction.atomic():
         if not dry_run:
             with connection.cursor() as cur:
                 cur.execute("LOCK TABLE webapp_regionpair IN SHARE ROW EXCLUSIVE MODE")
-        to_update, to_insert, to_delete, lost = plan_changes(
+        to_update, to_insert, to_delete, orphaned = plan_changes(
             mapping, sides, digit_ids, log
         )
 
@@ -280,5 +278,139 @@ def apply_remap(
             write_changes(to_update, to_delete, batch_size, REMAP_WRITE)
             insert_rows(to_insert, batch_size)
 
-        inherit_categories(digit_ids, dry_run, log)
-    return lost
+        inherited = inherit_categories(digit_ids, dry_run, log)
+    return {
+        "updates": len(to_update),
+        "insertions": len(to_insert),
+        "deletions": len(to_delete),
+        "orphans_by_category": count_categories(orphaned),
+        "lost": [
+            {k: r[k] for k in ("id", "img_1", "img_2", "similarity_hash")}
+            for r in orphaned
+            if r["category"] == 1
+        ],
+        **inherited,
+    }
+
+
+def count_categories(rows: list[dict]) -> dict[str, int]:
+    return dict(sorted(Counter(str(r["category"]) for r in rows).items()))
+
+
+# ---------- Document set ----------
+def plan_path(doc_set_id: int) -> Path:
+    """Plan computed by the preview of the remap treatment, deleted once applied"""
+    return MEDIA_PATH / "remap" / f"document_set_{doc_set_id}.json"
+
+
+def running_similarity(doc_set) -> bool:
+    """A similarity treatment sharing witnesses with doc_set is running"""
+    from app.webapp.models.treatment import Treatment
+
+    wids = set(doc_set.all_witness_ids())
+    return any(
+        wids & set(t.document_set.all_witness_ids())
+        for t in Treatment.objects.filter(
+            task_type="similarity",
+            status__in=["STARTED", "IN PROGRESS"],
+            document_set__isnull=False,
+        ).select_related("document_set")
+    )
+
+
+def remap_document_set(
+    doc_set,
+    plan: Path | None = None,
+    apply: bool = False,
+    iou: float = REMAP_IOU,
+    ioa: float = REMAP_IOA,
+    batch_size: int = BATCH_SIZE,
+    log=no_log,
+) -> dict:
+    """
+    Remap the pairs of a document set (dry run unless apply)
+    If `plan` exists, the mapping is loaded from it, otherwise it is computed and saved there
+    A loaded plan is flagged stale when the number of pairs changed since it was computed
+    """
+    digits = list(Digitization.objects.filter(id__in=doc_set.get_digit_ids()))
+    digit_ids = [d.id for d in digits]
+    hashes = hash_counts(digit_ids)
+    n_pairs = sum(h["pairs"] for h in hashes)
+    log(f"Document set #{doc_set.id}: {len(digits)} digitizations, {n_pairs} pairs")
+    for h in hashes:
+        log(
+            f"  {h['hash'] or 'no hash'} ({h['pairs']} pairs): {json.dumps(h['parameters'], sort_keys=True)}"
+        )
+
+    stale = False
+    if plan and plan.exists():
+        mapping, sides, meta = load_plan(plan)
+        stats, stale = meta["stats"], meta.get("n_pairs") != n_pairs
+        log(
+            f"Loaded plan from {plan} (iou={meta.get('iou')}, ioa={meta.get('ioa')}, {meta.get('generated_at')})"
+        )
+        if stale:
+            log("⚠️ Pairs changed since the plan was computed: it may be stale")
+    else:
+        mapping, sides, stats = build_remap(digits, iou, ioa, log)
+        if plan:
+            plan.parent.mkdir(parents=True, exist_ok=True)
+            params = {
+                "document_set": doc_set.id,
+                "iou": iou,
+                "ioa": ioa,
+                "n_pairs": n_pairs,
+            }
+            save_plan(mapping, sides, stats, params, plan)
+            log(f"Saved plan to {plan}")
+
+    changes = apply_remap(mapping, sides, digit_ids, batch_size, log, dry_run=not apply)
+    return {
+        "digitizations": len(digits),
+        "pairs": n_pairs,
+        "hashes": hashes,
+        "stats": stats,
+        "stale": stale,
+        **changes,
+    }
+
+
+def remap_links(doc_set_id: int, hashes: list[dict]) -> dict:
+    """Pairs view filtered on remapped pairs, and similarity form prefilled with the parameters of each hash"""
+    create = reverse("webapp:treatment_create")
+    return {
+        "pairs": f"{reverse('webapp:document_set_view', args=[doc_set_id])}"
+        "?categories=0%2C1%2C2%2C3%2C5&docView=pairs&ptype=4&pp=1",
+        "similarity": {
+            h["hash"]: f"{create}?"
+            + urlencode(
+                {
+                    "document_set": doc_set_id,
+                    "task_type": "similarity",
+                    **similarity_query(h["parameters"]),
+                }
+            )
+            for h in hashes
+            if h["parameters"]
+        },
+    }
+
+
+def remap_message(doc_set_id: int, summary: dict) -> str:
+    links = remap_links(doc_set_id, summary["hashes"])
+    advised = next((h["hash"] for h in summary["hashes"] if h["parameters"]), None)
+    relaunch = "\n".join(
+        f"- {h} ({'advised' if h == advised else 'other hash'}): {APP_URL}{url}"
+        for h, url in links["similarity"].items()
+    )
+    stale = (
+        "⚠️ Pairs changed between the preview and the remap.\n"
+        if summary["stale"]
+        else ""
+    )
+    return (
+        f"{stale}{summary['updates']} pairs updated, {summary['insertions']} inserted (splits), "
+        f"{summary['deletions']} deleted, including {len(summary['lost'])} of category 1.\n"
+        f"1. Correct the remapped pairs: {APP_URL}{links['pairs']}\n"
+        f"2. Then relaunch the similarity to rescore them:\n{relaunch}"
+    )

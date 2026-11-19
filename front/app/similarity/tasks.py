@@ -48,3 +48,38 @@ def delete_api_similarity(ref, algorithm=None, feat_net=None):
     response = requests.post(f"{API_URL}/similarity/{ref}/delete", params=args)
     response.raise_for_status()
     return response.json()
+
+
+@celery_app.task
+def start_remap(treatment_id):
+    """Apply the remap plan of the document set computed by the preview (recomputed if missing)"""
+    from app.similarity.remap import (
+        plan_path,
+        remap_document_set,
+        remap_message,
+        running_similarity,
+    )
+    from app.webapp.models.treatment import Treatment
+
+    treatment = Treatment.objects.get(pk=treatment_id)
+    doc_set, notify = treatment.document_set, treatment.notify_email
+    if running_similarity(doc_set):
+        return treatment.on_task_error(
+            {
+                "error": "A similarity treatment is running on these documents",
+                "notify": notify,
+            }
+        )
+
+    treatment.update(status="IN PROGRESS")
+    plan = plan_path(doc_set.id)
+    try:
+        summary = remap_document_set(doc_set, plan, apply=True)
+        plan.unlink(missing_ok=True)
+    except Exception as e:
+        return treatment.on_task_error(
+            {"error": f"Remap failed: {e}", "notify": notify}, exception=e
+        )
+    treatment.on_task_success(
+        {"notify": notify, "message": remap_message(doc_set.id, summary)}
+    )

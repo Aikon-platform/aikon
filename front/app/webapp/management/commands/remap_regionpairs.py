@@ -5,16 +5,7 @@ from pathlib import Path
 from django.core.management import BaseCommand
 
 from app.similarity.dedupe import BATCH_SIZE
-from app.similarity.remap import (
-    REMAP_IOU,
-    REMAP_IOA,
-    build_remap,
-    log_hashes,
-    load_plan,
-    save_plan,
-    apply_remap,
-)
-from app.webapp.models.digitization import Digitization
+from app.similarity.remap import REMAP_IOU, REMAP_IOA, remap_document_set
 from app.webapp.models.document_set import DocumentSet
 
 
@@ -77,31 +68,16 @@ class Command(BaseCommand):
             else (lambda s: None)
         )
         dry_run = not opts["apply"]
-        plan_path: Path | None = opts["plan"]
-        doc_set = DocumentSet.objects.get(pk=opts["document_set_id"])
-        digits = list(Digitization.objects.filter(id__in=doc_set.get_digit_ids()))
-        log(f"Document set #{doc_set.id}: {len(digits)} digitizations")
-        log_hashes([d.id for d in digits], log)
-
-        if plan_path and plan_path.exists():
-            mapping, sides, meta = load_plan(plan_path)
-            log(
-                f"Loaded plan from {plan_path}: {len(mapping)} images (iou={meta.get('iou')}, ioa={meta.get('ioa')})"
-            )
-        else:
-            mapping, sides, stats = build_remap(digits, opts["iou"], opts["ioa"], log)
-            if plan_path:
-                params = {
-                    "document_set": doc_set.id,
-                    "iou": opts["iou"],
-                    "ioa": opts["ioa"],
-                }
-                save_plan(mapping, sides, stats, params, plan_path)
-                log(f"Saved plan to {plan_path}")
-
-        lost = apply_remap(
-            mapping, sides, [d.id for d in digits], opts["batch_size"], log, dry_run
+        summary = remap_document_set(
+            DocumentSet.objects.get(pk=opts["document_set_id"]),
+            opts["plan"],
+            not dry_run,
+            opts["iou"],
+            opts["ioa"],
+            opts["batch_size"],
+            log,
         )
+        lost = summary["lost"]
         log(
             f"{len(lost)} pairs of category 1 {'to delete' if dry_run else 'deleted'} (orphan image):"
         )

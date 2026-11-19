@@ -148,4 +148,9 @@ urlpatterns = [
         name="merge-preview",
     ),
     path(f"{APP_NAME}/similarity/merge-regions", merge_regions, name="merge-regions"),
+    path(
+        f"{APP_NAME}/document-set/<int:dsid>/remap-preview",
+        remap_preview,
+        name="remap-preview",
+    ),
 ]
