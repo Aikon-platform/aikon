@@ -49,6 +49,7 @@ from app.similarity.dedupe import (
     inherit_categories,
 )
 from app.webapp.utils.iiif.annotation import (
+    has_annotation,
     get_canvas_annotations,
     get_coord_from_annotation,
 )
@@ -90,17 +91,19 @@ def prepare_request(witnesses, treatment_id, parameters=None):
 def pairs_to_score(wids: set[str], param_hash: str, force=False) -> list[list[str]]:
     """
     Pairs of `param_hash` or without hash, with both witnesses in `wids`, to be scored one by one whatever their rank:
-    - REMAPPED pairs (force: uncategorized ones of `param_hash` are left to the new score files, which delete them if absent)
+    - REMAPPED pairs (force: only categorized ones, the new score files absorb or delete the others)
     - categorized pairs without score (MANUAL, PROPAGATED)
     - force: categorized pairs without hash (scored before hashes existed)
     """
     digits = Digitization.objects.filter(witness_id__in=wids).values("id")
-    unscored = Q(score__isnull=True)
-    if force:
-        unscored |= Q(similarity_hash__isnull=True)
-    q = Q(similarity_type=SimilarityType.REMAPPED) | (~UNCATEGORIZED & unscored)
-    if force:
-        q &= ~(UNCATEGORIZED & Q(similarity_hash=param_hash))
+    remapped, unscored = Q(similarity_type=SimilarityType.REMAPPED), Q(
+        score__isnull=True
+    )
+    q = (
+        ~UNCATEGORIZED & (remapped | unscored | Q(similarity_hash__isnull=True))
+        if force
+        else remapped | (~UNCATEGORIZED & unscored)
+    )
     rows = RegionPair.objects.filter(
         q,
         Q(similarity_hash=param_hash) | Q(similarity_hash__isnull=True),
@@ -203,15 +206,25 @@ def prepare_document(document: Witness | Digitization | RegionExtraction, **kwar
             for d in digits
         ]
 
-    return [
-        {
-            "type": "url_list",
-            "src": f"{APP_URL}/{APP_NAME}/witness/{wid}/list/",
-            "uid": str(wid),
-        }
-        for wid in get_witness_ids(document)
-        if RegionExtraction.objects.filter(digitization__witness_id=wid).exists()
-    ]
+    documents = []
+    for wid in get_witness_ids(document):
+        if not any(
+            has_annotation(d.get_ref())
+            for d in Digitization.objects.filter(witness_id=wid)
+        ):
+            log(
+                f"[prepare_document] Witness #{wid} skipped: no annotation in aiiinotate (or aiiinotate unreachable)",
+                msg_type="warning",
+            )
+            continue
+        documents.append(
+            {
+                "type": "url_list",
+                "src": f"{APP_URL}/{APP_NAME}/witness/{wid}/list/",
+                "uid": str(wid),
+            }
+        )
+    return documents
 
 
 def send_request(witnesses):
