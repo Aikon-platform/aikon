@@ -432,7 +432,7 @@ def write_changes(
     batch_size: int,
     cols: list[str] = WRITE,
 ) -> None:
-    to_update = db_oriented(to_update, batch_size)
+    to_update = db_oriented(to_update)
     sql = f"UPDATE webapp_regionpair SET {', '.join(f'{c} = %({c})s' for c in cols)} WHERE id = %(id)s"
     with connection.cursor() as cur:
         for i in range(0, len(to_delete), batch_size):
