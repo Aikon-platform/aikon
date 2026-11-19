@@ -9,6 +9,7 @@ from app.similarity.remap import (
     REMAP_IOU,
     REMAP_IOA,
     build_remap,
+    log_hashes,
     load_plan,
     save_plan,
     apply_remap,
@@ -80,6 +81,7 @@ class Command(BaseCommand):
         doc_set = DocumentSet.objects.get(pk=opts["document_set_id"])
         digits = list(Digitization.objects.filter(id__in=doc_set.get_digit_ids()))
         log(f"Document set #{doc_set.id}: {len(digits)} digitizations")
+        log_hashes([d.id for d in digits], log)
 
         if plan_path and plan_path.exists():
             mapping, sides, meta = load_plan(plan_path)
