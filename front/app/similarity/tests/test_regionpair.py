@@ -33,6 +33,8 @@ from app.similarity.utils import (
     similarity_hash,
 )
 from app.similarity.models.region_pair import parse_img, RegionPair, db_misordered
+from app.similarity.dedupe import SIDED
+from app.similarity.remap import expand
 from app.webapp.utils.functions import sort_key
 from app.similarity.tests.helpers import (
     clean_data,
@@ -417,6 +419,28 @@ class RegionPairTestCase(TestCase):
 
         RegionPair.objects.filter(pk=rp.pk).update(category=1)
         self.assertIn(sent, pairs_to_score(wits, "test0000", force=True))
+
+        RegionPair.objects.filter(pk=rp.pk).update(category=None, similarity_hash=None)
+        self.assertIn(sent, pairs_to_score(wits, "test0000"))
+        self.assertNotIn(sent, pairs_to_score(wits, "test0000", force=True))
+
+    def test_remap_expand(self):
+        """a renamed image of IoU <= EQUIV_IOU makes its pair REMAPPED without hash, a closer one keeps type and hash"""
+        rp = self.get_random_row()
+        row = {
+            "img_1": rp.img_1,
+            "img_2": rp.img_2,
+            "similarity_type": SimilarityType.AUTO,
+            "similarity_hash": "test0000",
+            **{f"{k}_{i}": None for k in SIDED for i in (1, 2)},
+        }
+        side = {"digit": rp.digit_1, "anno": None, "regions_id": None}
+        for iou, expected in (
+            (0.6, (SimilarityType.REMAPPED, None)),
+            (0.9, (SimilarityType.AUTO, "test0000")),
+        ):
+            (r,) = expand(row, {rp.img_1: {"new.jpg": iou}}, {"new.jpg": side})
+            self.assertEqual((r["similarity_type"], r["similarity_hash"]), expected)
 
     def test_pairs_to_score_unhashed(self):
         """categorized pairs without score are sent; categorized pairs without hash only in force mode; uncategorized AUTO never"""

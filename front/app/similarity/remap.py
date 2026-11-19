@@ -40,7 +40,8 @@ Each image of a pair (old bbox) is matched with the aiiinotate regions of its ca
 - unchanged: a region has the same bbox → left as is
 - linked: regions with IoU >= iou or IoA >= ioa → renamed (one region) or duplicated (split, one pair per region)
 - orphan: no linked region → its pairs are deleted
-A renamed image with IoU <= EQUIV_IOU makes its pair REMAPPED (score kept but stale)
+A renamed image with IoU <= EQUIV_IOU makes its pair REMAPPED without hash (score kept but stale, computed on a bbox that no longer exists):
+its stale rows of every hash are merged, then rescored or deleted by the next computation of any hash
 Pairs collapsing onto an existing pair are merged: the existing pair keeps its score and type
 
 Vocabulary:
@@ -51,6 +52,7 @@ Vocabulary:
 REMAP_IOU = 0.5
 REMAP_IOA = 0.8
 EQUIV_IOU = 0.8
+REMAP_WRITE = ["similarity_hash", *WRITE]
 
 
 # ---------- Geometry ----------
@@ -169,7 +171,7 @@ def expand(r: dict, mapping: dict, sides: dict):
             for k, v in sides[new].items()
         }
         stale = (
-            {"similarity_type": SimilarityType.REMAPPED}
+            {"similarity_type": SimilarityType.REMAPPED, "similarity_hash": None}
             if min(iou_a, iou_b) <= EQUIV_IOU
             else {}
         )
@@ -219,7 +221,7 @@ def plan_changes(
             s["score"] = merge_group(fresh)["score"]
         if s["id"] < 0:
             to_insert.append(s)
-        elif any(s[c] != rows[s["id"]][c] for c in WRITE):
+        elif any(s[c] != rows[s["id"]][c] for c in REMAP_WRITE):
             to_update.append(s)
         to_delete += [r["id"] for r in group if 0 < r["id"] != s["id"]]
 
@@ -230,8 +232,7 @@ def plan_changes(
 
 
 def insert_rows(rows: list[dict], batch_size: int) -> None:
-    cols = ["similarity_hash", *WRITE]
-    sql = f"INSERT INTO webapp_regionpair ({', '.join(cols)}) VALUES ({', '.join(f'%({c})s' for c in cols)})"
+    sql = f"INSERT INTO webapp_regionpair ({', '.join(REMAP_WRITE)}) VALUES ({', '.join(f'%({c})s' for c in REMAP_WRITE)})"
     with connection.cursor() as cur:
         execute_batch(cur.cursor, sql, db_oriented(rows), page_size=batch_size)
 
@@ -254,7 +255,7 @@ def apply_remap(
         )
 
         if not dry_run:
-            write_changes(to_update, to_delete, batch_size)
+            write_changes(to_update, to_delete, batch_size, REMAP_WRITE)
             insert_rows(to_insert, batch_size)
 
         inherit_categories(digit_ids, dry_run, log)

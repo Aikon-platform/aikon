@@ -30,7 +30,7 @@ class Command(BaseCommand):
 
     2. Remap (one locked transaction)
     - renamed images take the anno_id and regions_id of the aiiinotate region
-    - a pair with a renamed image of IoU <= 0.8 becomes REMAPPED (score kept, but stale)
+    - a pair with a renamed image of IoU <= 0.8 becomes REMAPPED without hash (score kept, but stale)
     - pairs collapsing onto an existing pair are merged: the existing pair keeps its score and type
     - pairs with an orphan image are deleted (category 1 ones are listed)
     - self-pairs are deleted

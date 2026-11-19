@@ -426,9 +426,14 @@ def plan_changes(
     return to_update, to_delete
 
 
-def write_changes(to_update: list[dict], to_delete: list[int], batch_size: int) -> None:
+def write_changes(
+    to_update: list[dict],
+    to_delete: list[int],
+    batch_size: int,
+    cols: list[str] = WRITE,
+) -> None:
     to_update = db_oriented(to_update, batch_size)
-    sql = f"UPDATE webapp_regionpair SET {', '.join(f'{c} = %({c})s' for c in WRITE)} WHERE id = %(id)s"
+    sql = f"UPDATE webapp_regionpair SET {', '.join(f'{c} = %({c})s' for c in cols)} WHERE id = %(id)s"
     with connection.cursor() as cur:
         for i in range(0, len(to_delete), batch_size):
             cur.execute(

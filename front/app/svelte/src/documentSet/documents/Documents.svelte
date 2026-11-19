@@ -61,7 +61,7 @@
     const label = n => n === MAX ? `${MAX}+` : n;
     const dot = color => `<i class="fa-solid fa-circle" style="color: ${color}"></i>`;
 
-    let witId, buckets = new Set(), hidden = new Set(), cats = new Set(), scoreFilter = true, modalOpen = false, modalIndex = 0;
+    let witId, buckets = new Set(), hidden = new Set(), cats = new Set(), scoreFilter = false, modalOpen = false, modalIndex = 0;
     const reset = () => {
         buckets = new Set();
         hidden = new Set();
@@ -125,7 +125,7 @@
             {/each}
         </div>
         <div class="level-item">
-            <InputToggle start={false} buttonDisplay={true} toggleLabel={i18n("scoreFilter", t)} on:updateChecked={e => scoreFilter = e.detail}/>
+            <InputToggle start={scoreFilter} buttonDisplay={true} toggleLabel={i18n("scoreFilter", t)} on:updateChecked={e => scoreFilter = e.detail}/>
         </div>
     </div>
 </div>

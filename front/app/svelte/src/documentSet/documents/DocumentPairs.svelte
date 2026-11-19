@@ -52,10 +52,13 @@
     const barTitle = (c, s, type) => i18n("bar", t).replace("{s}", s).replace("{c}", c).replace("{type}", typeInfo[type].title);
 
     const compare = (a, b) => a.reduce((d, v, i) => d || v - b[i], 0);
+    /** document order: [sidebar rank of the digitization, page, y] */
+    const position = (rank, img) => [rank.get(img.digit), img.canvas, +img.xywh?.[1] || 0];
 
     /** `swapped`: the modal was opened from the right image, which is the query until the next navigation */
     let modalOpen = false, modalIndex = 0, swapped = false;
-    const openModal = (i, right) => [modalIndex, swapped, modalOpen] = [i, right, true];
+    const openModal = (i, right) => [modalIndex, swapped, modalOpen] = [offset + i, right, true];
+    const onNavigate = ({detail}) => (swapped = false, pager.handlePageUpdate(Math.floor(detail.index / pageSize) + 1));
 
     $: inScope = pairs.filter(p => pairCats(p).some(c => CATS.includes(c))
         && (!$wits.size || ($wits.has(witOfDigit.get(p.digit_1)) && $wits.has(witOfDigit.get(p.digit_2)))));
@@ -67,14 +70,16 @@
     }));
     $: filtered = inCat.filter(p => !$types.size || $types.has(p.similarityType));
 
-    /** document order: [sidebar rank of the digitization, page, y] */
     $: rank = new Map($sortedDocumentNodes.map(([id], i) => [id, i]));
-    $: position = img => [rank.get(img.digit), img.canvas, +img.xywh?.[1] || 0];
     $: sorted = filtered
-        .map(p => [$imageNodes.get(p.id_1), $imageNodes.get(p.id_2)].sort((a, b) => compare(position(a), position(b))))
-        .map(([l, r], i) => ({p: filtered[i], l, r, key: [...position(l), ...position(r)]}))
+        .map(p => {
+            const [l, r] = [p.id_1, p.id_2].map(id => $imageNodes.get(id)).map(img => ({img, pos: position(rank, img)}))
+                .sort((a, b) => compare(a.pos, b.pos));
+            return {p, l: l.img, r: r.img, key: [...l.pos, ...r.pos]};
+        })
         .sort((a, b) => compare(a.key, b.key));
-    $: pagePairs = sorted.slice(($currentPage - 1) * pageSize, $currentPage * pageSize);
+    $: offset = ($currentPage - 1) * pageSize;
+    $: pagePairs = sorted.slice(offset, offset + pageSize);
 </script>
 
 <div class="level-left is-flex is-justify-content-space-between">
@@ -118,10 +123,10 @@
     {/each}
 </div>
 
-<RegionModal items={pagePairs.map(({l, r}, i) => swapped && i === modalIndex ? r : l)} bind:currentIndex={modalIndex} bind:open={modalOpen}
-             on:navigate={() => swapped = false}>
+<RegionModal items={sorted.map(({l, r}, i) => swapped && i === modalIndex ? r : l)} bind:currentIndex={modalIndex} bind:open={modalOpen}
+             on:navigate={onNavigate}>
     <svelte:fragment let:item let:index>
-        {@const {l, r} = pagePairs[index] ?? {}}
+        {@const {l, r} = sorted[index] ?? {}}
         <RegionTabs {item} comparison={l && {qImg: (swapped ? r : l).id, sImg: (swapped ? l : r).id}} activeTab="similarity"/>
     </svelte:fragment>
 </RegionModal>
