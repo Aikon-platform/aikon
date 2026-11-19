@@ -137,7 +137,20 @@ urlpatterns = [
         stream_document_set_pairs,
         name="stream-document-set-pairs",
     ),
-    path(f"{APP_NAME}/similarity/duplicates/<str:img>", get_region_duplicates, name="region-duplicates"),
-    path(f"{APP_NAME}/similarity/merge-preview", merge_regions_preview, name="merge-preview"),
+    path(
+        f"{APP_NAME}/similarity/duplicates/<str:img>",
+        get_region_duplicates,
+        name="region-duplicates",
+    ),
+    path(
+        f"{APP_NAME}/similarity/merge-preview",
+        merge_regions_preview,
+        name="merge-preview",
+    ),
     path(f"{APP_NAME}/similarity/merge-regions", merge_regions, name="merge-regions"),
+    path(
+        f"{APP_NAME}/document-set/<int:dsid>/remap-preview",
+        remap_preview,
+        name="remap-preview",
+    ),
 ]

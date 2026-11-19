@@ -94,6 +94,10 @@ def generate_all_json():
 def launch_task(treatment):
     if treatment.task_type == "import":
         return start_import(str(treatment.id))
+    if treatment.task_type == "remap":
+        from app.similarity.tasks import start_remap
+
+        return start_remap(str(treatment.id))
     try:
         witnesses = treatment.get_witnesses()
         treatment.start_task(witnesses)

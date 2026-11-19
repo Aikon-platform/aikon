@@ -243,3 +243,18 @@ class SimilarityAlgorithm(Enum):
     @classmethod
     def choices(cls):
         return [(algo.name, algo.config.display_name) for algo in cls]
+
+
+def similarity_query(params: dict) -> dict:
+    """TreatmentForm GET parameters reproducing the hashed parameters of similarity_hash()"""
+    algo = params["algorithm"]
+    query = {
+        "similarity_algorithm": algo,
+        f"similarity_{algo}_feat_net": params["feat_net"],
+    }
+    if algo == "segswap":
+        query |= {
+            "similarity_segswap_cosine_preprocessing": params["segswap_prefilter"],
+            "similarity_segswap_cosine_n_filter": params["segswap_n"],
+        }
+    return query

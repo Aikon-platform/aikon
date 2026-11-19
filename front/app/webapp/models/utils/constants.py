@@ -184,17 +184,27 @@ SIMILARITY = (
 )
 VECTORIZATION = "Vectorization" if APP_LANG == "en" else "Vectorisation"
 IMPORT = "Import" if APP_LANG == "en" else "Import"
+REMAP = (
+    "Remap region pairs on corrected regions"
+    if APP_LANG == "en"
+    else "Réassigner les paires aux régions corrigées"
+)
 
 TASK_TYPE = {
     "region_extraction": REGIONS,
     "similarity": SIMILARITY,
     "vectorization": VECTORIZATION,
-    "import": IMPORT
+    "import": IMPORT,
+    "remap": REMAP,
 }
+
+# tasks run by the app itself, without the API
+LOCAL_TASKS = ["import"] + (["remap"] if "similarity" in ADDITIONAL_MODULES else [])
+SUPERUSER_TASKS = ["remap"]
 
 TRMT_TYPE = ()
 
-for x in ADDITIONAL_MODULES + ["import"]:
+for x in ADDITIONAL_MODULES + LOCAL_TASKS:
     trmt = (x, TASK_TYPE.get(x, x))
     TRMT_TYPE += (trmt,)
 

@@ -4,10 +4,11 @@ from django import forms
 from app.config.settings import ADDITIONAL_MODULES
 from app.similarity.forms import SimilarityForm
 from app.region_extraction.forms import RegionExtractionForm
+from app.similarity.remap import plan_path
 from app.vectorization.forms import VectorizationForm
 from app.webapp.forms import SEARCH_MSG
 from app.webapp.models.treatment import Treatment
-from app.webapp.models.utils.constants import TRMT_TYPE
+from app.webapp.models.utils.constants import TRMT_TYPE, LOCAL_TASKS, SUPERUSER_TASKS
 
 
 class ImportForm(forms.Form):
@@ -20,9 +21,7 @@ class ImportForm(forms.Form):
     regions = forms.BooleanField(
         required=False, initial=True, label="Import region extractions"
     )
-    similarities = forms.BooleanField(
-        required=False, label="Import similarity pairs"
-    )
+    similarities = forms.BooleanField(required=False, label="Import similarity pairs")
 
     def __init__(self, *args, **kwargs):
         super().__init__(*args, **kwargs)
@@ -63,13 +62,14 @@ class TreatmentForm(forms.ModelForm):
 
     def __init__(self, *args, **kwargs):
         self._user = kwargs.pop("user", None)
-        self._document_set = kwargs.pop("document_set", None)
-        self._task_type = kwargs.pop("task_type", None)
-        self._notify_email = kwargs.pop("notify_email", None)
+        self._prefill_data = kwargs.pop("prefill", {})
 
         super().__init__(*args, **kwargs)
 
-        self.fields["task_type"].choices = (("", "-"),) + TRMT_TYPE
+        is_superuser = getattr(self._user, "is_superuser", False)
+        self.fields["task_type"].choices = (("", "-"),) + tuple(
+            t for t in TRMT_TYPE if is_superuser or t[0] not in SUPERUSER_TASKS
+        )
 
         self.subforms = {}
         form_mapping = {
@@ -79,7 +79,7 @@ class TreatmentForm(forms.ModelForm):
             "import": ImportForm,
         }
 
-        for task_name in ADDITIONAL_MODULES:
+        for task_name in ADDITIONAL_MODULES + LOCAL_TASKS:
             if task_name in form_mapping:
                 self.add_subform(
                     task_name,
@@ -87,17 +87,18 @@ class TreatmentForm(forms.ModelForm):
                     kwargs.get("data"),
                     kwargs.get("files"),
                 )
-        self.add_subform("import", ImportForm, kwargs.get("data"), kwargs.get("files"))
 
         self._prefill()
 
     def _prefill(self):
-        if self._document_set:
-            self.initial["document_set"] = self._document_set
-        if self._task_type:
-            self.initial["task_type"] = self._task_type
-        if self._notify_email:
-            self.initial["notify_email"] = self._notify_email.lower() == "true"
+        """Initial values from GET parameters, e.g. ?document_set=1&task_type=similarity&similarity_algorithm=cosine"""
+        self.initial.update(
+            {
+                k: {"true": True, "false": False}.get(v.lower(), v)
+                for k, v in self._prefill_data.items()
+                if k in self.fields
+            }
+        )
 
     def _populate_instance(self, instance):
         instance.requested_by = self._user
@@ -143,6 +144,10 @@ class TreatmentForm(forms.ModelForm):
 
         if not cleaned_data.get("document_set") and task_type != "import":
             self.add_error("document_set", "A document set is required.")
+
+        doc_set = cleaned_data.get("document_set")
+        if task_type == "remap" and doc_set and not plan_path(doc_set.id).exists():
+            self.add_error("task_type", "Preview the remap before applying it.")
 
         subform = self.subforms.get(task_type)
         # Only validate selected subtask form
