@@ -7,6 +7,7 @@ from itertools import count, product
 from pathlib import Path
 
 from django.db import connection, transaction
+from django.db.models import Count
 from psycopg2.extras import execute_batch
 
 from app.similarity import Bbox, SimilarityType
@@ -24,7 +25,8 @@ from app.similarity.dedupe import (
     parse_bbox,
     write_changes,
 )
-from app.similarity.models.region_pair import norm_img, parse_img
+from app.similarity.models.region_pair import RegionPair, norm_img, parse_img
+from app.similarity.models.similarity_parameters import SimilarityParameters
 from app.webapp.models.digitization import Digitization
 from app.webapp.utils.iiif.annotation import (
     get_coord_from_annotation,
@@ -158,6 +160,22 @@ def load_plan(path: Path) -> tuple[dict, dict, dict]:
     return data["mapping"], data["sides"], data
 
 
+def log_hashes(digit_ids: list[int], log=no_log) -> None:
+    """Number of pairs of each similarity hash between digit_ids, with its parameters"""
+    counts = (
+        RegionPair.objects.filter(digit_1__in=digit_ids, digit_2__in=digit_ids)
+        .values_list("similarity_hash")
+        .annotate(n=Count("id"))
+        .order_by("-n")
+    )
+    params = dict(SimilarityParameters.objects.values_list("hash", "parameters"))
+    log("Pairs by similarity hash:")
+    for h, n in counts:
+        log(
+            f"  {h} ({n} pairs): {json.dumps(params.get(h), sort_keys=True) if h else 'no hash'}"
+        )
+
+
 # ---------- Rows ----------
 def expand(r: dict, mapping: dict, sides: dict):
     """Copies of the pair, one per combination of new images"""
@@ -202,6 +220,10 @@ def plan_changes(
     orphans = {img for img, linked in mapping.items() if not linked}
     to_delete = [i for i, r in rows.items() if {r["img_1"], r["img_2"]} & orphans]
     lost = [rows[i] for i in to_delete if rows[i]["category"] == 1]
+    by_cat = Counter(str(rows[i]["category"]) for i in to_delete)
+    log(
+        f"Orphan pairs to delete by category: {json.dumps(dict(sorted(by_cat.items())))}"
+    )
 
     new_id, groups = count(-1, -1), defaultdict(list)
     for i in rows.keys() - set(to_delete):
