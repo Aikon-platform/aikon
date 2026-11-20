@@ -10,7 +10,13 @@ from django.db import connection, transaction
 from psycopg2.extras import execute_batch
 
 from app.similarity import Bbox, Region, SimilarityType
-from app.similarity.models.region_pair import parse_img, norm_img, norm_ref, ImgRef
+from app.similarity.models.region_pair import (
+    parse_img,
+    norm_img,
+    norm_ref,
+    ImgRef,
+    db_misordered,
+)
 from app.webapp.utils.iiif.annotation import delete_annotation, update_annotation_xywh
 from similarity import SimilarityType
 
@@ -34,7 +40,12 @@ DEFAULT_THRESHOLD = 0.9
 DUPLICATE_IOU = 0.5
 PX_TOLERANCE = 0
 BATCH_SIZE = 10_000
-TYPE_PRIORITY = {SimilarityType.MANUAL: 0, SimilarityType.AUTO: 1, SimilarityType.PROPAGATED: 2}
+TYPE_PRIORITY = {
+    SimilarityType.MANUAL: 0,
+    SimilarityType.AUTO: 1,
+    SimilarityType.PROPAGATED: 2,
+    SimilarityType.REMAPPED: 3,
+}
 SIDED = ("digit", "anno", "regions_id")
 WRITE = [
     "img_1",
@@ -74,7 +85,9 @@ INHERIT_SET = """
     category = COALESCE(n.category, CASE WHEN a.n_categories = 1 THEN a.category END),
     category_x = a.category_x
 """
-IMG_DIGIT = r"coalesce(substring(rp.img_{i} from '^wit\d+_\w{{3}}(\d+)_')::int, rp.digit_{i})"
+IMG_DIGIT = (
+    r"coalesce(substring(rp.img_{i} from '^wit\d+_\w{{3}}(\d+)_')::int, rp.digit_{i})"
+)
 IMG_WIT = r"substring(rp.img_{i} from '^wit(\d+)_')::int"
 
 
@@ -84,21 +97,32 @@ def no_log(_: str) -> None:
 
 # ---------- Orphans ----------
 def sides(fmt: str, sep: str) -> str:
-    return sep.join(fmt.format(i=i, digit=IMG_DIGIT.format(i=i), wit=IMG_WIT.format(i=i)) for i in (1, 2))
+    return sep.join(
+        fmt.format(i=i, digit=IMG_DIGIT.format(i=i), wit=IMG_WIT.format(i=i))
+        for i in (1, 2)
+    )
 
 
 # pairs whose digitization does not exist or belongs to another witness than the one in the image name
 ORPHAN_IDS = (
     "SELECT rp.id FROM webapp_regionpair rp "
     + sides("LEFT JOIN webapp_digitization d{i} ON d{i}.id = {digit}", " ")
-    + " WHERE " + sides("d{i}.id IS NULL OR d{i}.witness_id <> {wit}", " OR ")
+    + " WHERE "
+    + sides("d{i}.id IS NULL OR d{i}.witness_id <> {wit}", " OR ")
 )
 PURGE = (
     ("orphan pairs deleted", None, f"rp.id IN ({ORPHAN_IDS})"),
-    ("digit ids resynced from image names", sides("digit_{i} = {digit}", ", "), sides("rp.digit_{i} IS DISTINCT FROM {digit}", " OR ")),
+    (
+        "digit ids resynced from image names",
+        sides("digit_{i} = {digit}", ", "),
+        sides("rp.digit_{i} IS DISTINCT FROM {digit}", " OR "),
+    ),
     *(
-        (f"regions_id_{i} of deleted region extractions nulled", f"regions_id_{i} = NULL",
-         f"rp.regions_id_{i} IS NOT NULL AND NOT EXISTS (SELECT 1 FROM webapp_regionextraction r WHERE r.id = rp.regions_id_{i})")
+        (
+            f"regions_id_{i} of deleted region extractions nulled",
+            f"regions_id_{i} = NULL",
+            f"rp.regions_id_{i} IS NOT NULL AND NOT EXISTS (SELECT 1 FROM webapp_regionextraction r WHERE r.id = rp.regions_id_{i})",
+        )
         for i in (1, 2)
     ),
 )
@@ -111,8 +135,11 @@ def purge_orphans(dry_run: bool, log=no_log) -> None:
                 cur.execute(f"SELECT count(*) FROM webapp_regionpair rp WHERE {where}")
                 n = cur.fetchone()[0]
             else:
-                cur.execute(f"UPDATE webapp_regionpair rp SET {assign} WHERE {where}" if assign
-                            else f"DELETE FROM webapp_regionpair rp WHERE {where}")
+                cur.execute(
+                    f"UPDATE webapp_regionpair rp SET {assign} WHERE {where}"
+                    if assign
+                    else f"DELETE FROM webapp_regionpair rp WHERE {where}"
+                )
                 n = cur.rowcount
             log(f"{label}: {n}")
 
@@ -173,9 +200,17 @@ def cluster(bboxes: list[Bbox], threshold: float) -> list[list[int]]:
 
 
 # ---------- Mapping ----------
-def fetch_distinct_images(digit_ids: list[int] | None = None) -> set[str]:
-    """List of the images in the pairs involving digit_ids (all images if None)"""
-    where = "WHERE digit_{i} = ANY(%(d)s)" if digit_ids is not None else ""
+def fetch_distinct_images(
+    digit_ids: list[int] | None = None, exclusive: bool = False
+) -> set[str]:
+    """List of the images in the pairs involving digit_ids (all images if None), on both sides if exclusive"""
+    where = (
+        ""
+        if digit_ids is None
+        else "WHERE digit_1 = ANY(%(d)s) AND digit_2 = ANY(%(d)s)"
+        if exclusive
+        else "WHERE digit_{i} = ANY(%(d)s)"
+    )
     with connection.cursor() as cur:
         cur.execute(
             " UNION ".join(
@@ -255,7 +290,9 @@ def fetch_rows(where: str, params=None) -> list[dict]:
     returns dicts with category_x as a sorted list
     """
     with connection.cursor() as cur:
-        cur.execute(f"SELECT {', '.join(COLS)} FROM webapp_regionpair WHERE {where}", params)
+        cur.execute(
+            f"SELECT {', '.join(COLS)} FROM webapp_regionpair WHERE {where}", params
+        )
         rows = [oriented(dict(zip(COLS, r))) for r in cur.fetchall()]
     for r in rows:
         r["category_x"] = sorted(r["category_x"] or [])
@@ -283,19 +320,17 @@ def oriented(r: dict) -> dict:
 
 def db_oriented(rows: list[dict]) -> list[dict]:
     """Sides in Postgres collation order, required by the pair_ordering constraint"""
-    if not rows:
-        return rows
-    with connection.cursor() as cur:
-        cur.execute(
-            "SELECT b < a FROM unnest(%s::text[], %s::text[]) WITH ORDINALITY AS t(a, b, n) ORDER BY n",
-            [[r["img_1"] for r in rows], [r["img_2"] for r in rows]],
-        )
-        return [swap(r) if s else r for r, (s,) in zip(rows, cur.fetchall())]
+    return [
+        swap(r) if s else r
+        for r, s in zip(rows, db_misordered([(r["img_1"], r["img_2"]) for r in rows]))
+    ]
 
 
 def renamed(r: dict, mapping: dict[str, str]) -> dict:
     """Copy of the region_pair with its images renamed, sides swapped if needed to keep img_1 <= img_2"""
-    return oriented(r | {f"img_{i}": mapping.get(r[f"img_{i}"], r[f"img_{i}"]) for i in (1, 2)})
+    return oriented(
+        r | {f"img_{i}": mapping.get(r[f"img_{i}"], r[f"img_{i}"]) for i in (1, 2)}
+    )
 
 
 def side_owners(rows, mapping: dict[str, str]) -> dict[str, dict]:
@@ -391,9 +426,14 @@ def plan_changes(
     return to_update, to_delete
 
 
-def write_changes(to_update: list[dict], to_delete: list[int], batch_size: int) -> None:
+def write_changes(
+    to_update: list[dict],
+    to_delete: list[int],
+    batch_size: int,
+    cols: list[str] = WRITE,
+) -> None:
     to_update = db_oriented(to_update)
-    sql = f"UPDATE webapp_regionpair SET {', '.join(f'{c} = %({c})s' for c in WRITE)} WHERE id = %(id)s"
+    sql = f"UPDATE webapp_regionpair SET {', '.join(f'{c} = %({c})s' for c in cols)} WHERE id = %(id)s"
     with connection.cursor() as cur:
         for i in range(0, len(to_delete), batch_size):
             cur.execute(
@@ -403,8 +443,11 @@ def write_changes(to_update: list[dict], to_delete: list[int], batch_size: int) 
         execute_batch(cur.cursor, sql, to_update, page_size=batch_size)
 
 
-def inherit_categories(digit_ids: list[int] | None, dry_run: bool, log) -> None:
-    """Apply the category and user ids (category_x) of a pair to all its rows, whatever their hash"""
+def inherit_categories(digit_ids: list[int] | None, dry_run: bool, log) -> dict:
+    """
+    Apply the category and user ids (category_x) of a pair to all its rows, whatever their hash
+    Returns {"conflicts": pairs with conflicting categories, "inherited": rows updated (or to update)}
+    """
     scope = (
         "AND (rp.digit_1 = ANY(%(d)s) OR rp.digit_2 = ANY(%(d)s))" if digit_ids else ""
     )
@@ -414,8 +457,9 @@ def inherit_categories(digit_ids: list[int] | None, dry_run: bool, log) -> None:
         cur.execute(
             f"{cte} SELECT count(*) FROM annotated WHERE n_categories > 1", params
         )
+        conflicts = cur.fetchone()[0]
         log(
-            f"{cur.fetchone()[0]} pairs with conflicting categories across hashes (left unchanged)"
+            f"{conflicts} pairs with conflicting categories across hashes (left unchanged)"
         )
 
         if dry_run:
@@ -423,13 +467,16 @@ def inherit_categories(digit_ids: list[int] | None, dry_run: bool, log) -> None:
                 f"{cte} SELECT count(*) FROM annotated a JOIN webapp_regionpair n ON {INHERIT_ON}",
                 params,
             )
-            log(f"Category inheritance: {cur.fetchone()[0]} rows to update")
+            inherited = cur.fetchone()[0]
+            log(f"Category inheritance: {inherited} rows to update")
         else:
             cur.execute(
                 f"{cte} UPDATE webapp_regionpair n SET {INHERIT_SET} FROM annotated a WHERE {INHERIT_ON}",
                 params,
             )
-            log(f"Category inheritance: {cur.rowcount} rows updated")
+            inherited = cur.rowcount
+            log(f"Category inheritance: {inherited} rows updated")
+    return {"conflicts": conflicts, "inherited": inherited}
 
 
 def apply_mapping(

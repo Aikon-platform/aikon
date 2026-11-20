@@ -3,6 +3,8 @@ import {miradorUrl, cantaloupeUrl, appName, appLang, aiiinotateUrl, model2title,
 
 export const loading = writable(false);
 export const errorMsg = writable("");
+/** images ({img, xywh, title}) displayed under the message of `showMessage` */
+export const msgImages = writable([]);
 
 const isString = (x) => typeof x === "string" || x instanceof String;
 
@@ -200,7 +202,8 @@ export function parseData(elementId) {
     return JSON.parse(document.getElementById(elementId).textContent);
 }
 
-export function showMessage(msg, title = null, confirm = false) {
+export function showMessage(msg, title = null, confirm = false, images = []) {
+    msgImages.set(images);
     return new Promise((resolve) => {
         const msgModal = document.getElementById("msg-modal");
         if (msgModal) {

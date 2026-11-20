@@ -92,6 +92,8 @@ function createSimilarityStore() {
     const propagateFilterByRegions = writable(JSON.parse(localStorage.getItem("propagateFilterByRegions")) || false);
     propagateFilterByRegions.subscribe((value) => localStorage.setItem("propagateFilterByRegions", JSON.stringify(value)));
 
+    const isCurrentWitness = ref => ref.startsWith(`wit${currentPageId}_`);
+
     /** @type {writable<PropagateParamsType>} no localStorage syncing since individual stores are aldready synced */
     const propagateParams = derived([propagateRecursionDepth, propagateFilterByRegions], ([$propagateRecursionDepth, $propagateFilterByRegions]) => ({
         propagateRecursionDepth: $propagateRecursionDepth,
@@ -251,10 +253,11 @@ function createSimilarityStore() {
         );
 
         const getDigitIds = () => {
-            const sel = get(selectedRegions);
-            return [...new Set(
-                Object.values(sel[currentPageId] || {}).map(r => r.digitization_id)
-            )];
+            const regions = Object.values(get(selectedRegions)[currentPageId] || {}).filter(r => !isCurrentWitness(r.ref));
+            if (get(showSameWitness)) {
+                regions.push(...Object.values(get(comparedRegions)).filter(r => isCurrentWitness(r.ref)));
+            }
+            return [...new Set(regions.map(r => r.digitization_id))];
         };
 
         const fetchComputed = async (digitIds) => {
@@ -315,20 +318,21 @@ function createSimilarityStore() {
         const unsubs = [
             refreshSignal.subscribe(() => visible && fetchRow()),
             propagateParams.subscribe(() => visible && fetchPropagated(getDigitIds())),
-            selectedRegions.subscribe(() => visible && fetchRow())
+            selectedRegions.subscribe(() => visible && fetchRow()),
+            showSameWitness.subscribe(() => visible && !isInModal && fetchRow())
         ];
 
         return {
             items, loading, propagatedLoading, error, fetchRow,
-            propagated: isInModal ? sameWitnessFilter(propagated) : propagated,
+            propagated: sameWitnessFilter(propagated),
             setVisible: (v) => { visible = v; if (v) fetchRow(); },
-            filtered: isInModal
-                ? sameWitnessFilter(derived(items, $i => $i.filter(([, , , , , cat]) => cat !== noId)))
+            filtered: sameWitnessFilter(isInModal
+                ? derived(items, $i => $i.filter(([, , , , , cat]) => cat !== noId))
                 : derived([items, excludedCategories, similarityScoreCutoff], ([$i, $e, $s]) =>
                     $i.filter(([score, , , , , cat]) =>
                         !$e.includes(cat) && (score == null || $s == null || Number(score) >= $s)
                     )
-                ),
+                )),
             destroy: () => unsubs.forEach(fn => fn())
         };
     }
@@ -361,6 +365,7 @@ function createSimilarityStore() {
         select,
         addComparedRegions,
         isSelected,
+        isCurrentWitness,
         pageLength,
         createRowStore,
         triggerRefresh,

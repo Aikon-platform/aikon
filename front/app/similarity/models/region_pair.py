@@ -14,7 +14,7 @@ from app.webapp.models.region_extraction import RegionExtraction
 from app.similarity.models.similarity_parameters import SimilarityParameters
 from app.similarity import ImgRef
 
-IMG_RE = re.compile(r"^wit(\d+)_(\w{3})(\d+)_(\d+)(?:_([\d.,]+))?\.jpg$")
+IMG_RE = re.compile(r"^wit(\d+)_(\w{3})(\d+)_(\d+)(?:_([-\d.,]+))?\.jpg$")
 
 
 def get_region_digit_id(region_extraction_id: int) -> int | None:
@@ -63,7 +63,13 @@ def add_jpg(img: str) -> str:
 
 
 def norm_bbox(bbox: str | None) -> str | None:
-    return ",".join(c.split(".")[0] for c in bbox.split(",")) if bbox else None
+    """
+    Canonical x,y,w,h: decimals truncated, negative values clamped at 0 (as get_coord_from_annotation)
+    ⚠️ must stay identical to region_key() in the API, which matches these names with the aiiinotate xywh
+    """
+    return (
+        ",".join(str(max(0, int(float(c)))) for c in bbox.split(",")) if bbox else None
+    )
 
 
 def norm_img(ref: ImgRef | str) -> str:
@@ -134,10 +140,31 @@ def get_name(fieldname, plural=False):
     return get_fieldname(fieldname, fields, plural)
 
 
+def db_misordered(pairs: list[tuple[str, str]]) -> list[bool]:
+    """Pairs whose sides break the pair_ordering constraint under the database collation"""
+    if not pairs:
+        return []
+    with connection.cursor() as cursor:
+        cursor.execute(
+            "SELECT b < a FROM unnest(%s::text[], %s::text[]) WITH ORDINALITY AS t(a, b, n) ORDER BY n",
+            list(map(list, zip(*pairs))),
+        )
+        return [s for (s,) in cursor.fetchall()]
+
+
 class RegionPairManager(models.Manager):
+    def orient(self, objs):
+        for obj, misordered in zip(
+            objs, db_misordered([(o.img_1, o.img_2) for o in objs])
+        ):
+            if misordered:
+                obj.swap()
+        return objs
+
     def bulk_update_or_create(self, objs, update_fields, match_fields):
         if not objs:
             return
+        self.orient(objs)
 
         model = self.model
         fields = [
@@ -186,7 +213,7 @@ class RegionPair(models.Model):
         indexes = [
             models.Index(fields=["digit_1", "digit_2"]),
             models.Index(fields=["digit_1", "digit_2", "score"]),
-            models.Index(fields=["img_1", "img_2"]),
+            # models.Index(fields=["img_1", "img_2"]), # redundant because unique constraint on ["img_1", "img_2", "similarity_hash"]
             models.Index(fields=["img_1"]),
             models.Index(fields=["img_2"]),
             models.Index(fields=["category"]),
@@ -231,9 +258,10 @@ class RegionPair(models.Model):
     category_x = ArrayField(models.IntegerField(), null=True, blank=True, default=list)
     """
     Type of similarity.
-    1 =_pair  automatic / computed similarity
+    1 = automatic / computed similarity
     2 = manual similarity
     3 = propagated similarity
+    4 = remapped similarity (bbox corrected after computation, score to recompute)
     """
     similarity_type = models.IntegerField(blank=True, null=True, default=1)
     """
@@ -257,6 +285,12 @@ class RegionPair(models.Model):
             ref1, ref2 = ref2, ref1
         return f"{ref1}-{ref2}" if as_string else (ref1, ref2)
 
+    def swap(self):
+        self.img_1, self.img_2 = self.img_2, self.img_1
+        self.regions_id_1, self.regions_id_2 = self.regions_id_2, self.regions_id_1
+        self.anno_1, self.anno_2 = self.anno_2, self.anno_1
+        self.digit_1, self.digit_2 = self.digit_2, self.digit_1
+
     def clean(self):
         super().clean()
         ref1, ref2 = parse_img(self.img_1), parse_img(self.img_2)
@@ -264,10 +298,7 @@ class RegionPair(models.Model):
         self.digit_1, self.digit_2 = ref1.digit, ref2.digit
 
         if norm_ref(self.img_2) < norm_ref(self.img_1):
-            self.img_1, self.img_2 = self.img_2, self.img_1
-            self.regions_id_1, self.regions_id_2 = self.regions_id_2, self.regions_id_1
-            self.anno_1, self.anno_2 = self.anno_2, self.anno_1
-            self.digit_1, self.digit_2 = self.digit_2, self.digit_1
+            self.swap()
 
     def save(self, validate=False, *args, **kwargs):
         if validate:

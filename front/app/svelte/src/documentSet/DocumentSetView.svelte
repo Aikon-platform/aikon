@@ -3,12 +3,14 @@
     import { activeLayout } from "../ui/tabStore.js";
 
     import {appLang} from "../constants";
-    import {syncStoreWithURL} from "../utils";
+    import {syncStoreWithURL, msgImages} from "../utils";
 
     import Layout from "../Layout.svelte";
     import Sidebar from "./sidebar/Sidebar.svelte";
     import NetworkVisualization from "./network/NetworkVisualization.svelte";
     import DocumentMatrix from "./document-matrix/DocumentMatrix.svelte";
+    import FriezeView from "./frieze/FriezeView.svelte";
+    import Documents from "./documents/Documents.svelte";
     import {createDocumentSetStore} from "./documentSetStore.js";
     import Clusters from "./clusters/Clusters.svelte";
     import {createClusterStore} from "./clusters/clusterStore.js";
@@ -35,10 +37,6 @@
     onDestroy(() => unsubs.forEach(u => u()));
 
     import {clusterSelection} from "../selection/selectionStore.js";
-    import FriezeView from "./frieze/FriezeView.svelte";
-
-    const {selected} = clusterSelection;
-
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
     $: if ($activeLayout === "sim") documentSetStore.setScoreFilter(true);
@@ -50,6 +48,7 @@
         "fri": appLang === "en" ? "Spatial Frieze" : "Frise spatiale",
         "img": appLang === "en" ? "Image Network" : "Réseau d'images",
         "doc": appLang === "en" ? "Document Network" : "Réseau de documents",
+        "wit": "Documents",
     };
 
     const selectedDocs = docSet?.selection?.selected || {
@@ -70,7 +69,7 @@
         <Modal>
             <div slot="content" class="fixed-grid has-6-cols">
                 <div class="grid is-gap-2">
-                    {#each Object.values(Object.values($selected)[0] || {}) as meta}
+                    {#each $msgImages as meta}
                         <div class="selection cell">
                             <figure class="image is-64x64 card">
                                 <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="Extracted region"/>
@@ -119,6 +118,8 @@
                             <StemmaBuilder {documentSetStore} {clusterStore}/>
                         {:else if $activeLayout === "fri"}
                             <FriezeView {documentSetStore} {clusterStore}/>
+                        {:else if $activeLayout === "wit"}
+                            <Documents {documentSetStore}/>
                         {/if}
                     </div>
                 {/if}

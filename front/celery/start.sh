@@ -11,5 +11,4 @@ export PYTHONPATH=$APP_ROOT
 export DJANGO_SETTINGS_MODULE="app.config.settings"
 
 cd "$APP_ROOT" || exit 1
-"$CELERY_BIN" -A app.config.celery worker --loglevel=info -P threads
-"$CELERY_BIN" -A app.config.celery beat --schedule="$SCHEDULE_FILE" --loglevel=info
+"$CELERY_BIN" -A app.config.celery worker -B --schedule="$SCHEDULE_FILE" --loglevel=info -P threads

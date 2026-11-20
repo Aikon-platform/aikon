@@ -29,7 +29,9 @@ const  {
     similarityScoreCutoff,
     propagateRecursionDepth,
     propagateFilterByRegions,
-    allowedPropagateDepthRange
+    allowedPropagateDepthRange,
+    showSameWitness,
+    isCurrentWitness
 } = similarityStore;
 
 
@@ -76,13 +78,15 @@ const categoriesChoices = [
     { value: 5, label: cat.userLabel, prefix: cat.userSvg, prefixType: "svg" },
 ];
 
-const comparedRegionsChoices = derived(comparedRegions, (($comparedRegions) =>
-    Object.entries($comparedRegions).map(([regionId, region]) => ({
-        prefix: `#${region.id}`,  // the number of the region
-        prefixType: "text",
-        value: regionId,
-        label: shorten(region.title.replace(/^[^|]+/, ""))
-    }))));
+const comparedRegionsChoices = derived(comparedRegions, $comparedRegions =>
+    Object.entries($comparedRegions)
+        .filter(([regionId]) => !isCurrentWitness(regionId))
+        .map(([regionId, region]) => ({
+            prefix: `#${region.id}`,
+            prefixType: "text",
+            value: regionId,
+            label: shorten(region.title.replace(/^[^|]+/, ""))
+        })));
 
 /** @type {Promise<Array<number?>>}. will be updated every time $selectedRegions changes */
 const similarityScoreRangePromise = fetchSimilarityScoreRange();
@@ -180,6 +184,11 @@ const setComparedRegions = (e) => {
                             on:updateValues={setExcludedCategories}
                         />
                     </div>
+                </div>
+                <div class="ctrl-input">
+                    <InputToggle toggleLabel={appLang === "en" ? "From same document" : "Dans le même document"}
+                                 start={$showSameWitness} buttonDisplay={true}
+                                 on:updateChecked={e => showSameWitness.set(e.detail)}/>
                 </div>
             </div>
         </div>

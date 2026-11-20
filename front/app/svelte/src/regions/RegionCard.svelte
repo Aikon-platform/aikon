@@ -64,7 +64,7 @@
     <figure class="image card region-image" class:is-96x96={isSquare} tabindex="-1"
             style="{height === 'full' ? 'height: 100%' : `height: ${height}px; min-width: ${height}px`}; {borderColor ? `border: ${borderWidth}px solid ${borderColor};` : ''}"
             on:click={() => selectable ? toggleSelection(currentRegion) : openModal()} on:keyup={null}>
-        <img class="region-img" src={imgSrc} alt="Extracted region"/>
+        <img class="region-img" src={imgSrc} alt="Extracted region" loading="lazy"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{@html isInModal ? currentRegion.label($witnessTitles[currentRegion.witnessId]) : currentRegion.title}</span>
         </div>

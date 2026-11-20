@@ -29,11 +29,9 @@ class ImportContext:
         self.treatment = treatment
         self.user = treatment.requested_by
         self.opts = treatment.api_parameters or {}
-        self.mapping = self.opts.get("mapping") or {
-            "witnesses": {},
-            "digitizations": {},
-            "regions": {},
-        }
+        self.mapping = {"witnesses": {}, "digitizations": {}, "regions": {}} | (
+            self.opts.get("mapping") or {}
+        )
         self.errors = self.opts.get("errors") or []
         self.records = {}  # {source url: local record}
         self.session = requests.Session()
@@ -149,18 +147,17 @@ def import_witness(wit_url, ctx: ImportContext):
         return None, []
 
     src_wid = str(data["id"])
-    if src_wid in ctx.mapping["witnesses"]:
-        return None, []
-
-    extra = {"user": ctx.user, "is_public": False}
-    if data.get("class") == "witness":
-        witness = import_record(wit_url, ctx, extra=extra, data=data)
-    else:
-        # legacy source instance without raw serialization: minimal witness
-        witness = Witness.objects.create(
-            type=MS_ABBR, id_nb=(data.get("title") or "")[:150], **extra
-        )
-    ctx.mapping["witnesses"][src_wid] = witness.id
+    witness = Witness.objects.filter(pk=ctx.mapping["witnesses"].get(src_wid)).first()
+    if not witness:
+        extra = {"user": ctx.user, "is_public": False}
+        if data.get("class") == "witness":
+            witness = import_record(wit_url, ctx, extra=extra, data=data)
+        else:
+            # legacy source instance without raw serialization: minimal witness
+            witness = Witness.objects.create(
+                type=MS_ABBR, id_nb=(data.get("title") or "")[:150], **extra
+            )
+        ctx.mapping["witnesses"][src_wid] = witness.id
 
     digits = []
     for src_did, digit_data in (data.get("digitizations") or {}).items():
@@ -168,12 +165,18 @@ def import_witness(wit_url, ctx: ImportContext):
             digit_data = {"manifest": digit_data}
         if not (manifest_url := digit_data.get("manifest")):
             continue
-        digit = Digitization(
-            witness=witness, digit_type=MAN_ABBR, manifest=manifest_url
-        )
-        digit._skip_post_save = True  # conversion is chained explicitly by start_import
-        digit.save()
-        ctx.mapping["digitizations"][str(src_did)] = digit.id
+        digit = Digitization.objects.filter(
+            pk=ctx.mapping["digitizations"].get(str(src_did)), witness=witness
+        ).first()
+        if not digit:
+            digit = Digitization(
+                witness=witness, digit_type=MAN_ABBR, manifest=manifest_url
+            )
+            digit._skip_post_save = (
+                True  # conversion is chained explicitly by start_import
+            )
+            digit.save()
+            ctx.mapping["digitizations"][str(src_did)] = digit.id
         digits.append((digit, manifest_url, digit_data.get("extracted_regions")))
 
     return witness, digits
@@ -283,14 +286,20 @@ def import_similarity_pairs(ctx: ImportContext, similarity_url: str) -> int:
         msg_type="info",
     )
 
+    # pairs are only listed in the UI if a RegionExtraction exists for their digitization
+    digit_ids = {d for p in hashed + manual for d in (p.digit_1, p.digit_2)}
+    for digit_id in digit_ids:
+        get_digit_region_extraction_id(digit_id, create_if_missing=True)
+
     RegionPair.objects.bulk_update_or_create(
         hashed,
         update_fields=["digit_1", "digit_2", "score", "category", "similarity_type"],
         match_fields=["img_1", "img_2", "similarity_hash"],
     )
+
     # NULL hashes are distinct for the unique constraint: ON CONFLICT never
     # matches them, so manual pairs are upserted individually
-    for p in manual:
+    for p in RegionPair.objects.orient(manual):
         RegionPair.objects.get_or_create(
             img_1=p.img_1,
             img_2=p.img_2,
@@ -303,11 +312,6 @@ def import_similarity_pairs(ctx: ImportContext, similarity_url: str) -> int:
                 "similarity_type": p.similarity_type,
             },
         )
-
-    # pairs are only listed in the UI if a RegionExtraction exists for their digitization
-    digit_ids = {d for p in hashed + manual for d in (p.digit_1, p.digit_2)}
-    for digit_id in digit_ids:
-        get_digit_region_extraction_id(digit_id, create_if_missing=True)
 
     log(
         f"[import_similarity_pairs] {len(hashed) + len(manual)} pair(s) imported "

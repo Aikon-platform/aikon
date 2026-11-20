@@ -14,7 +14,7 @@ import pandas as pd
 from django.db.models import Q
 from django.contrib.auth.models import User
 
-from ..models.region_pair import RegionPair
+from ..models.region_pair import RegionPair, parse_img, db_misordered
 from ...webapp.models.region_extraction import RegionExtraction
 from ...config.settings.base import DATABASES, MEDIA_ROOT
 
@@ -27,7 +27,7 @@ TBL_TO_CSV = [
     ("webapp_edition", FOLDER / "data" / "webapp_edition.csv"),
     ("webapp_witness", FOLDER / "data" / "webapp_witness.csv"),
     ("webapp_digitization", FOLDER / "data" / "webapp_digitization.csv"),
-    ("webapp_regions", FOLDER / "data" / "webapp_regions.csv"),
+    ("webapp_regionextraction", FOLDER / "data" / "webapp_regions.csv"),
     ("webapp_regionpair", FOLDER / "data" / "webapp_regionpair.csv"),
 ]
 
@@ -57,13 +57,13 @@ PSQL_BASE = f'PGPASSWORD="{DATABASES["default"]["PASSWORD"]}" \
 # returns the header of sql table `tblname`
 psql_cmd_header = lambda tblname: (
     PSQL_BASE
-    + f'-c "\copy ( SELECT * FROM {tblname} LIMIT 0 ) TO STDOUT WITH (FORMAT CSV, HEADER)"'
+    + rf'-c "\copy ( SELECT * FROM {tblname} LIMIT 0 ) TO STDOUT WITH (FORMAT CSV, HEADER)"'
 )
 
 # populates sql table `tblname` with data from `csvfile`
 psql_cmd_copy = lambda tblname, csvfile: (
     PSQL_BASE
-    + f"-c \"\copy {tblname} FROM '{csvfile}' WITH (FORMAT CSV, HEADER MATCH)\""
+    + f"-c \"\\copy {tblname} FROM '{csvfile}' WITH (FORMAT CSV, HEADER MATCH)\""
 )
 
 
@@ -91,7 +91,7 @@ def create_user() -> int:
 
 
 def fix_id_autoincrement(tbl_list: list[str]) -> None:
-    """
+    r"""
     force update the autoincrements on all ID columns in tbl_list tables.
 
     NOTE this is very convoluted BUT:
@@ -128,6 +128,17 @@ def get_csvfile_from_tblname(
     )
 
 
+def orient_pairs(df: pd.DataFrame) -> pd.DataFrame:
+    """digitization ids taken from the image names, sides swapped to follow the pair_ordering constraint"""
+    for i in (1, 2):
+        df[f"digit_{i}"] = df[f"img_{i}"].map(lambda img: parse_img(img).digit)
+    swap = db_misordered(list(zip(df.img_1, df.img_2)))
+    for col in ("img", "regions_id", "digit"):
+        sides = [f"{col}_1", f"{col}_2"]
+        df.loc[swap, sides] = df.loc[swap, sides[::-1]].values
+    return df
+
+
 # load sql exports as dataframes, clean them and write them. returns a copy of `tbl_to_csv` with file paths updates to point to the cleaned files.
 def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
     # TBL_TO_CSV with only entries that are in tbl_list
@@ -158,7 +169,16 @@ def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
     }
     # table name mapped to column name mapped to type to retype to
     retype = {
-        "webapp_regionpair": {"category": "int"},
+        "webapp_regionpair": {
+            col: "int"
+            for col in (
+                "category",
+                "regions_id_1",
+                "regions_id_2",
+                "digit_1",
+                "digit_2",
+            )
+        },
         "webapp_digitization": {"witness_id": "int"},
         "webapp_witness": {
             "user_id": "int",
@@ -170,6 +190,8 @@ def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
     for tblname, csvfile in tbl_to_csv_local:
         # clean the csv (mainly perform type conversions and empty unnecessary foreign keys)
         df = pd.read_csv(csvfile)
+        if tblname == "webapp_regionpair":
+            df = orient_pairs(df)
         if tblname in empty:
             df[empty[tblname]] = np.nan
         if tblname in default:
@@ -191,10 +213,7 @@ def clean_data(tbl_list: list[str], id_user=int) -> list[tuple[str, Path]]:
         )  # convert to str + strip the trailing newline
         db_header = db_header.split(",")
 
-        # reorder columns in `df` to match `db_header`
-        assert len(df.columns) == len(
-            db_header
-        ), f"faulty columns: {set(db_header).difference(df.columns)}"
+        # align `df` on `db_header`: columns removed since the export are dropped, new ones are left empty
         df = df.reindex(columns=db_header)
 
         # write to file and build tbl_to_csv_local
@@ -338,7 +357,8 @@ def generate_score_file() -> tuple[Path, tuple[int, int], int]:
     folder_out = (
         Path(MEDIA_ROOT) / "similarity" / f"{regions_uid_1}-{regions_uid_2}"
     )  # pyright: ignore
-    fp_out = folder_out / "test_similarity_results.json"
+    # file stem = similarity hash (8 characters)
+    fp_out = folder_out / "test0000.json"
     folder_out.mkdir(exist_ok=True)
     with open(fp_out, mode="w") as fh:
         json.dump(similarity_json_local, fh)

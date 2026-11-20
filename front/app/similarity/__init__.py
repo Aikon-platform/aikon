@@ -28,6 +28,7 @@ class SimilarityType(IntEnum):
     AUTO = 1
     MANUAL = 2
     PROPAGATED = 3
+    REMAPPED = 4
 
 
 class SimilarityCategory(IntEnum):
@@ -60,4 +61,5 @@ SIM_DEFAULTS = {
     "segswap_n": 10,
     "transpositions": ["none"],
     "source_type": SourceType.REGIONS,
+    "force": False,
 }
