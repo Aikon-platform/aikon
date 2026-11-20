@@ -213,7 +213,7 @@ class RegionPair(models.Model):
         indexes = [
             models.Index(fields=["digit_1", "digit_2"]),
             models.Index(fields=["digit_1", "digit_2", "score"]),
-            models.Index(fields=["img_1", "img_2"]),
+            # models.Index(fields=["img_1", "img_2"]), # redundant because unique constraint on ["img_1", "img_2", "similarity_hash"]
             models.Index(fields=["img_1"]),
             models.Index(fields=["img_2"]),
             models.Index(fields=["category"]),
