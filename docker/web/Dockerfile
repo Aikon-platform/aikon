@@ -1,5 +1,5 @@
 # 1st build: compile svelte files
-FROM node:23 AS svelte_build
+FROM node:26 AS svelte_build
 
 WORKDIR /app
 COPY app .

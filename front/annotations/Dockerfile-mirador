@@ -1,5 +1,5 @@
 # syntax=docker/dockerfile:1
-FROM node:23.11
+FROM node:26
 
 # mirador port
 ARG PORT
