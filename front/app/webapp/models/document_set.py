@@ -1,4 +1,5 @@
 from functools import lru_cache, cached_property
+import re
 
 from django.contrib.auth.models import User
 from django.contrib.postgres.fields import ArrayField
@@ -242,3 +243,27 @@ class DocumentSet(AbstractSearchableModel):
         except Exception as e:
             log(f"[to_json] Error", e)
             return None
+
+    def duplicate(self) -> "DocumentSet":
+        """
+        duplicate the current docset and return the duplicated docset.
+        https://docs.djangoproject.com/en/6.1/topics/db/queries/#copying-model-instances
+        """
+
+        def update_title(title: str) -> str:
+            # "my title" => "my title (copy #1)"
+            # "my title (copy #1)" => "my title (copy $2)"
+            title = title or ""  # safeguard
+            if title_match := re.match(r"^(.*)\(copy #(\d+)\)$", title):
+                title_base, copy_id = title_match.groups()
+                title = f"{title_base} (copy #{int(copy_id)+1})"
+            else:
+                title = f"{title} (copy #1)"
+            return title.strip()
+
+        ds = self
+        ds.pk = None
+        ds.title = update_title(ds.title)
+        ds._state.adding = True
+        ds.save()
+        return ds
