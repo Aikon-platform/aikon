@@ -24,6 +24,9 @@
     }
 
     /**
+     *  TODO: add notifications (error/success) + load/unload from selection buttons broken
+     */
+    /**
      * @param {int} dsId - the docset's ID
      */
     async function duplicateDocSet(dsId) {
@@ -33,11 +36,10 @@
             headers: { "Content-Type": "application/json", "X-CSRFToken": csrfToken },
             body: ""
         })
-        // TODO error message
         if (!r.ok) {
             console.error(r);
         } else {
-            // redirect
+            // redirect to reload page
             window.location.href = window.location.href;
         }
     }

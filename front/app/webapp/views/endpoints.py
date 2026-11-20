@@ -213,7 +213,6 @@ def duplicate_document_set(request, dsid: int):
                 "document_set_title": ds.title,
             }
         )
-        # return redirect("webapp:document_set_list")
     except (DocumentSet.DoesNotExist, DocumentSet.MultipleObjectsReturned):
         return JsonResponse(
             {"message": f"No docment set with ID '{dsid}' found"}, status=404
