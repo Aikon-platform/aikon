@@ -29,6 +29,8 @@
         }
         openContents = new Set(openContents);
     }
+
+    console.log(witness);
 </script>
 
 <div class="m-4 py-5 px-4">
@@ -46,6 +48,12 @@
             <div class="cell is-left is-middle">
                 <RegionsBtn/>
             </div>
+
+            <ul class="columns mx-0">
+                {#each witness.iiif as iiifManifest }
+                    <li class="column is-narrow m-0">{@html iiifManifest}</li>
+                {/each}
+            </ul>
 
             {#each Object.entries(witness.metadata_full.wit) as [key, value]}
                 <span class="witness-key">{value.label}</span>
