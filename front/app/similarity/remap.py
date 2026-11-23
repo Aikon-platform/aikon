@@ -8,7 +8,7 @@ from pathlib import Path
 from urllib.parse import urlencode
 
 from django.db import connection, transaction
-from django.db.models import Count
+from django.db.models import Count, Q
 from django.urls import reverse
 from psycopg2.extras import execute_batch
 
@@ -109,7 +109,7 @@ def build_remap(
                 f"Digitization #{d.id}: no region in aiiinotate (or request failed), skipped"
             )
 
-    images = fetch_distinct_images([d.id for d in digits], exclusive=True)
+    images = fetch_distinct_images([d.id for d in digits])
     mapping, sides, stats = {}, {}, Counter()
     for img in sorted(images):
         ref = parse_img(img, no_error=True)
@@ -166,9 +166,9 @@ def load_plan(path: Path) -> tuple[dict, dict, dict]:
 
 
 def hash_counts(digit_ids: list[int]) -> list[dict]:
-    """Number of pairs of each similarity hash between digit_ids, with its parameters, most frequent first"""
+    """Number of pairs of each similarity hash involving digit_ids, with its parameters, most frequent first"""
     counts = (
-        RegionPair.objects.filter(digit_1__in=digit_ids, digit_2__in=digit_ids)
+        RegionPair.objects.filter(Q(digit_1__in=digit_ids) | Q(digit_2__in=digit_ids))
         .values_list("similarity_hash")
         .annotate(n=Count("id"))
         .order_by("-n")
@@ -198,20 +198,17 @@ def expand(r: dict, mapping: dict, sides: dict):
 
 
 def plan_changes(
-    mapping: dict, sides: dict, digit_ids: list[int], log
+    mapping: dict, sides: dict, log
 ) -> tuple[list[dict], list[dict], list[int], list[dict]]:
     """
     (rows to update, rows to insert, ids to delete, deleted pairs with an orphan image)
-    Only pairs with both sides in digit_ids are remapped
+    Every pair containing a remapped image is remapped, whatever the digitization of its other side
     """
     imgs = list({*mapping, *sides})
     rows = (
         {
             r["id"]: r
-            for r in fetch_rows(
-                "(img_1 = ANY(%s) OR img_2 = ANY(%s)) AND digit_1 = ANY(%s) AND digit_2 = ANY(%s)",
-                [imgs, imgs, digit_ids, digit_ids],
-            )
+            for r in fetch_rows("img_1 = ANY(%s) OR img_2 = ANY(%s)", [imgs, imgs])
         }
         if imgs
         else {}
@@ -270,9 +267,7 @@ def apply_remap(
         if not dry_run:
             with connection.cursor() as cur:
                 cur.execute("LOCK TABLE webapp_regionpair IN SHARE ROW EXCLUSIVE MODE")
-        to_update, to_insert, to_delete, orphaned = plan_changes(
-            mapping, sides, digit_ids, log
-        )
+        to_update, to_insert, to_delete, orphaned = plan_changes(mapping, sides, log)
 
         if not dry_run:
             write_changes(to_update, to_delete, batch_size, REMAP_WRITE)
