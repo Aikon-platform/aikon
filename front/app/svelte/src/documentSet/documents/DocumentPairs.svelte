@@ -11,7 +11,7 @@
     import HistogramFilter from "./HistogramFilter.svelte";
     import {typeInfo} from "../../regions/similarity/similarityType.js";
     import {pairCats} from "../documentSetStore.js";
-    import {i18n, initPagination, pageUpdate, shorten, syncStoreWithURL} from "../../utils.js";
+    import {colorDot, i18n, initPagination, pageUpdate, shorten, syncStoreWithURL} from "../../utils.js";
     import {pageSize} from "../../constants.js";
 
     export let documentSetStore;
@@ -47,7 +47,6 @@
     const toggle = (store, v) => setFilter(store, (s => (s.delete(v) || s.add(v), s))(new Set(get(store))));
     const setWits = ids => ids.join() !== [...$wits].join() && setFilter(wits, new Set(ids));
     const count = (ps, keysOf) => ps.reduce((c, p) => (keysOf(p).forEach(k => c[k] = (c[k] ?? 0) + 1), c), {});
-    const dot = color => `<i class="fa-solid fa-circle" style="color: ${color}"></i>`;
     const typeIcon = type => `<span class="icon is-small is-align-self-center" title="${typeInfo[type].title}">${typeInfo[type].svg}</span>`;
     const barTitle = (c, s, type) => i18n("bar", t).replace("{s}", s).replace("{c}", c).replace("{type}", typeInfo[type].title);
 
@@ -85,7 +84,7 @@
 <div class="level-left is-flex is-justify-content-space-between">
     <div class="mr-3" style="width: 30rem">
         <InputDropdown multiple={true} start={[...$wits]} placeholder={i18n("witnesses", t)} lightDisplay={true}
-                       choicesItems={witnesses.map(w => ({value: w.id, label: shorten(w.title), prefix: `${dot(w.color)} #${w.id}`, prefixType: "text"}))}
+                       choicesItems={witnesses.map(w => ({value: w.id, label: shorten(w.title), prefix: `${colorDot(w.color)} #${w.id}`, prefixType: "text"}))}
                        on:updateValues={e => setWits(e.detail)}/>
     </div>
     <div class="is-flex is-align-items-center" style="gap: 2rem;">

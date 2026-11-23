@@ -1,5 +1,6 @@
 import datetime
 import functools
+import hashlib
 import shutil
 
 import magic
@@ -44,6 +45,17 @@ from app.webapp.utils.paths import IMG_PATH
 from app.vectorization.const import SVG_PATH
 from app.webapp.utils.constants import MAX_SIZE, PAGE_LEN
 from app.webapp.utils.logger import log
+
+
+def string_to_color(s: str) -> str:
+    index = int(hashlib.md5(str(s).encode()).hexdigest(), 16) % 1000
+    golden_angle = 137.5
+    saturations = [85, 70, 60]
+    lightnesses = [50, 65, 40]
+    hue = int((index * golden_angle) % 360)
+    saturation = saturations[index % len(saturations)]
+    lightness = lightnesses[(index // len(saturations)) % len(lightnesses)]
+    return f"hsl({hue}, {saturation}%, {lightness}%)"
 
 
 def cls(obj):

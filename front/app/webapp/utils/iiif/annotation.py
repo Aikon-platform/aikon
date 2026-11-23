@@ -1,5 +1,3 @@
-import colorsys
-import hashlib
 import json
 from collections import defaultdict
 import re
@@ -94,15 +92,6 @@ def format_canvas_annotations(
             for annotation_num in range(len(canvas_annotations))
         ],
     }
-
-
-def string_to_color(s: str, saturation=0.9, lightness=0.5) -> str:
-    """Generate a deterministic hex color from a string."""
-    hash_int = int(hashlib.md5(s.encode()).hexdigest(), 16)
-    hue = (hash_int % 360) / 360.0
-
-    r, g, b = colorsys.hls_to_rgb(hue, lightness, saturation)
-    return f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
 
 
 def format_annotation(region_extraction: RegionExtraction, canvas_nb, xywh, tags=None):
