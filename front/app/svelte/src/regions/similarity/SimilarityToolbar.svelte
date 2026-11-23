@@ -11,7 +11,7 @@ import { derived } from "svelte/store";
 import { similarityStore } from "./similarityStore.js";
 import * as cat from "./similarityCategory";
 import { appLang } from "../../constants.js";
-import { shorten } from "../../utils.js";
+import { colorDot, shorten } from "../../utils.js";
 
 import InputSlider from "../../ui/InputSlider.svelte";
 import InputToggle from "../../ui/InputToggle.svelte";
@@ -82,7 +82,7 @@ const comparedRegionsChoices = derived(comparedRegions, $comparedRegions =>
     Object.entries($comparedRegions)
         .filter(([regionId]) => !isCurrentWitness(regionId))
         .map(([regionId, region]) => ({
-            prefix: `#${region.id}`,
+            prefix: `${colorDot(region.color)} #${region.id}`,
             prefixType: "text",
             value: regionId,
             label: shorten(region.title.replace(/^[^|]+/, ""))

@@ -28,6 +28,7 @@ from app.webapp.utils.functions import (
     parse_list,
     safe_bool,
     json_post,
+    string_to_color,
 )
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
@@ -255,6 +256,14 @@ def get_propagated_matches(request, img_id: str = "") -> JsonResponse:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
 
 
+def region_json(region):
+    return {
+        **region.get_json(),
+        "digitization_id": region.digitization_id,
+        "color": string_to_color(f"wit{region.digitization.witness_id}"),
+    }
+
+
 def get_compared_regions(request, wid, rid=None):
     """
     Return the id and metadata of the RegionExtraction that have a RegionPair record
@@ -267,10 +276,7 @@ def get_compared_regions(request, wid, rid=None):
         q_regions = witness.get_region_extractions()
 
     try:
-        current_regions = {
-            q_r.get_ref(): {**q_r.get_json(), "digitization_id": q_r.digitization_id}
-            for q_r in q_regions
-        }
+        current_regions = {q_r.get_ref(): region_json(q_r) for q_r in q_regions}
         q_digit_ids = {q_r.digitization_id for q_r in q_regions}
 
         pairs = RegionPair.objects.filter(
@@ -288,14 +294,11 @@ def get_compared_regions(request, wid, rid=None):
 
         partner_regions = RegionExtraction.objects.filter(
             digitization_id__in=partner_ids
-        )
+        ).select_related("digitization")
 
         compared_regions = dict(
             sorted(
-                {
-                    r.get_ref(): {**r.get_json(), "digitization_id": r.digitization_id}
-                    for r in partner_regions
-                }.items(),
+                {r.get_ref(): region_json(r) for r in partner_regions}.items(),
             )
         )
 
@@ -494,7 +497,7 @@ def add_region_pair(request):
         return JsonResponse(
             {
                 "success": f"Region pair {'created' if created else 'updated'} successfully",
-                "s_regions": s_regions.get_json(),
+                "s_regions": region_json(s_regions),
                 "pair_info": region_pair.get_info(as_json=True),
             }
         )

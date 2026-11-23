@@ -56,6 +56,8 @@ export function extractInt(str) {
 
 export const appendToDom = (node) => document.body.appendChild(node);
 
+export const colorDot = color => `<i class="fa-solid fa-circle" style="color: ${color}"></i>`;
+
 export function shorten(str, maxLen=100) {
     // put '...' in between the 75% and last 25% characters if the string it too long
     const nthChar = Math.floor(maxLen * 0.75);
