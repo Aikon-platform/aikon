@@ -217,3 +217,7 @@ def duplicate_document_set(request, dsid: int):
         return JsonResponse(
             {"message": f"No docment set with ID '{dsid}' found"}, status=404
         )
+    except Exception as e:
+        return JsonResponse(
+            {"message": f"Error duplicating document set #{dsid}: {e}"}, status=500
+        )
