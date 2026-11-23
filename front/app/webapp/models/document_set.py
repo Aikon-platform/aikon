@@ -1,4 +1,5 @@
 from functools import lru_cache, cached_property
+from copy import deepcopy
 import re
 
 from django.contrib.auth.models import User
@@ -71,6 +72,15 @@ class DocumentSet(AbstractSearchableModel):
         verbose_name="JSON selection",
         blank=True,
         null=True,
+    )
+
+    # a documentset is a duplicate of another. see `DocumentSet.duplicate` method
+    duplicate_of = models.ForeignKey(
+        "self",
+        null=True,
+        blank=True,
+        on_delete=models.SET_NULL,
+        related_name="duplicates",
     )
 
     def length(self):
@@ -261,9 +271,12 @@ class DocumentSet(AbstractSearchableModel):
                 title = f"{title} (copy #1)"
             return title.strip()
 
-        ds = self
+        # deepcopy is necessary to avoid mutating `self` when we want to mutate `ds`
+        ds = deepcopy(self)
         ds.pk = None
         ds.title = update_title(ds.title)
+        # reference the source dataset in the duplicate
+        ds.duplicate_of = self
         ds._state.adding = True
         ds.save()
         return ds
