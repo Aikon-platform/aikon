@@ -39,7 +39,7 @@ from app.webapp.models.region_extraction import RegionExtraction, get_witness_id
 from app.webapp.models.witness import Witness
 from app.webapp.utils import tasking
 from app.webapp.utils.iiif import parse_ref
-from app.webapp.utils.functions import delete_path
+from app.webapp.utils.functions import delete_path, safe_float
 from app.webapp.utils.logger import log
 from app.similarity.dedupe import (
     fetch_distinct_images,
@@ -1027,3 +1027,76 @@ def find_annotations(refs: list[ImgRef]) -> list[dict | None] | None:
         )
         for r in refs
     ]
+
+
+def categorize_pairs(
+    categories: dict, similarity_type=SimilarityType.PROPAGATED
+) -> dict:
+    """
+    categories: {(img_1, img_2): category}
+    Override the category and create missing pairs
+    """
+    pairs = {
+        (p.img_1, p.img_2): p
+        for p in RegionPair.objects.orient(
+            [
+                RegionPair.build(
+                    img_1,
+                    img_2,
+                    category=category,
+                    similarity_type=similarity_type,
+                    score=None,
+                    category_x=[],
+                )
+                for (img_1, img_2), category in categories.items()
+            ]
+        )
+    }
+    if not pairs:
+        return {"created": 0, "updated": 0}
+
+    q, by_category = Q(), defaultdict(Q)
+    for (img_1, img_2), p in pairs.items():
+        q |= Q(img_1=img_1, img_2=img_2)
+        by_category[p.category] |= Q(img_1=img_1, img_2=img_2)
+
+    existing = set(RegionPair.objects.filter(q).values_list("img_1", "img_2"))
+    to_create = [p for key, p in pairs.items() if key not in existing]
+    RegionPair.objects.bulk_create(to_create)
+
+    return {
+        "created": len(to_create),
+        "updated": sum(
+            RegionPair.objects.filter(cq).exclude(category=c).update(category=c)
+            for c, cq in by_category.items()
+        ),
+    }
+
+
+def import_pairs(pairs: list[dict]) -> dict:
+    """
+    pair format [{"img_1", "img_2", ?"score", ?"category", ?"similarity_hash"}]
+    - score: updated as from an API score file
+    - category: overrides the category of existing pairs
+    - type: new pairs are set as MANUAL
+    """
+    import_hash = SimilarityParameters.get_or_create_from_params(
+        {"algorithm": "import"}
+    )
+    scored, categories = defaultdict(list), {}
+    for p in pairs:
+        if (score := safe_float(p.get("score"))) is not None:
+            scored[p.get("similarity_hash") or import_hash].append(
+                RegionPair.build(p["img_1"], p["img_2"], score=score)
+            )
+        if p.get("category") is not None:
+            categories[p["img_1"], p["img_2"]] = SimilarityCategory(
+                int(p["category"])
+            ).value
+
+    with transaction.atomic():
+        kept = set().union(*(absorb(pairs, h) for h, pairs in scored.items()))
+        results = categorize_pairs(categories, SimilarityType.MANUAL)
+
+    spread_categories(kept)
+    return {"scored": len(kept), **results}

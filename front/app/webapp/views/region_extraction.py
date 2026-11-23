@@ -212,7 +212,10 @@ def export_region_extraction_img(request, region_extraction_id):
 def canvas_annotations(request, region_extraction_ref, canvas_nb):
     region_extraction_id = region_extraction_ref.split("_")[-1].replace("anno", "")
     region_extraction = get_object_or_404(RegionExtraction, pk=region_extraction_id)
-    return JsonResponse(format_canvas_annotations(region_extraction, canvas_nb))
+    xywh = {tuple(map(int, b.split(","))) for b in request.GET.getlist("xywh")}
+    return JsonResponse(
+        format_canvas_annotations(region_extraction, canvas_nb, xywh or None)
+    )
 
 
 def populate_annotation(request, region_extraction_id):

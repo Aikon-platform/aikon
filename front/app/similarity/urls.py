@@ -89,6 +89,7 @@ urlpatterns = [
     ),
     # path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
     path(f"{APP_NAME}/categorize-batch", categorize_batch, name="categorize-batch"),
+    path(f"{APP_NAME}/similarity/import", import_similarity, name="import-similarity"),
     path(
         f"{APP_NAME}/uncategorize-batch",
         uncategorize_batch,
