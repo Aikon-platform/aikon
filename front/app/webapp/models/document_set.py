@@ -282,7 +282,7 @@ class DocumentSet(AbstractSearchableModel):
         ds.save()
         # reference the source dataset in the duplicate
         ds.duplicate_of = self
-        # update ds.selection
+        # update ds.selection (otherwise, self.selection will document the original dataset, not the duplicate)
         ds.get_selection(reindex=True).get("id")
         ds._state.adding = True
         ds.save()
