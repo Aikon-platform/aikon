@@ -14,7 +14,7 @@ class Command(BaseCommand):
 
     """
     1. Match
-    Each image of a pair whose two sides belong to the document set is compared to the aiiinotate regions of its canvas:
+    Each image of the document set witnesses appearing in a pair (whatever the other side) is compared to the aiiinotate regions of its canvas:
     - same bbox: unchanged
     - IoU >= `--iou` or IoA >= `--ioa`: renamed (one region) or duplicated (split: one pair per region)
     - no linked region: orphan
