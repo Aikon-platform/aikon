@@ -164,8 +164,8 @@ function createTypedSelectionStore(config) {
         }),
 
         toggleSet: (set) => {
-            console.log("toggleSet", set, set.id)
             const currentSelection = get(selection);
+
             if (currentSelection.id === set.id) {
                 unloadSet();
             } else {

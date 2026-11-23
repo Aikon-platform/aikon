@@ -227,6 +227,8 @@ class DocumentSet(AbstractSearchableModel):
                 "selected": self.get_document_metadata(),
             }
             type(self).objects.filter(pk=self.pk).update(selection=json_data)
+            # sync self.selection's state with database contents
+            self.refresh_from_db(fields=["selection"])
         return self.selection
 
     def to_json(self, reindex=True, no_img=False):
@@ -258,6 +260,8 @@ class DocumentSet(AbstractSearchableModel):
         """
         duplicate the current docset and return the duplicated docset.
         https://docs.djangoproject.com/en/6.1/topics/db/queries/#copying-model-instances
+
+        NOTE: this method requires 2 saves in database: ds.id is set at 1st insert time and is needed to sync ds.selection.
         """
 
         def update_title(title: str) -> str:
@@ -275,8 +279,11 @@ class DocumentSet(AbstractSearchableModel):
         ds = deepcopy(self)
         ds.pk = None
         ds.title = update_title(ds.title)
+        ds.save()
         # reference the source dataset in the duplicate
         ds.duplicate_of = self
+        # update ds.selection
+        ds.get_selection(reindex=True).get("id")
         ds._state.adding = True
         ds.save()
         return ds

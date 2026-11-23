@@ -47,7 +47,7 @@
 </script>
 
 <Item {item} {recordsStore}>
-    <div slot="buttons"  style="background-color: red !important;">
+    <div slot="buttons">
         <button class="button" class:is-inverted={setSelected} on:click={() => recordsSelection.toggleSet(item)}>
             {#if appLang === "en"}
                 {setSelected ? "Unload from" : "Load to"} selection
