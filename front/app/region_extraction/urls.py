@@ -18,6 +18,11 @@ urlpatterns = [
         name="notify-regions",
     ),
     path(
+        f"{APP_NAME}/regions/import",
+        import_regions,
+        name="import-regions",
+    ),
+    path(
         f"{APP_NAME}/witness/<int:wit_id>/regions/extract",
         witness_region_extraction,
         name="witness-region-extraction",

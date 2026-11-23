@@ -27,9 +27,12 @@ from app.webapp.utils.functions import (
     safe_int,
     parse_list,
     safe_bool,
+    json_post,
 )
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
+    categorize_pairs,
+    import_pairs,
     send_request,
     check_computed_pairs,
     get_computed_pairs,
@@ -732,55 +735,9 @@ def categorize_batch(request):
     try:
         data = json.loads(request.body)
         category = data.get("category", SimilarityCategory.EXACT_MATCH)
-        results = {"created": 0, "updated": 0}
-
-        pairs = [normalize_pair(p["img_1"], p["img_2"]) for p in data.get("pairs", [])]
-
-        if not pairs:
-            return JsonResponse({"status": "success", "results": results})
-
-        unique_img_pairs = {(img_1, img_2) for img_1, img_2 in pairs}
-
-        q = Q()
-        for img_1, img_2 in unique_img_pairs:
-            q |= Q(img_1=img_1, img_2=img_2)
-
-        existing = set(
-            RegionPair.objects.filter(q).values_list("img_1", "img_2").distinct()
+        results = categorize_pairs(
+            {(p["img_1"], p["img_2"]): category for p in data.get("pairs", [])}
         )
-
-        # Create missing
-        to_create = []
-        created_keys = set()
-        for img_1, img_2 in pairs:
-            key = (img_1, img_2)
-            if key not in existing and key not in created_keys:
-                created_keys.add(key)
-                ref1, ref2 = parse_img(img_1), parse_img(img_2)
-                to_create.append(
-                    RegionPair(
-                        img_1=img_1,
-                        img_2=img_2,
-                        digit_1=ref1.digit,
-                        digit_2=ref2.digit,
-                        category=category,
-                        similarity_type=SimilarityType.PROPAGATED,
-                        score=None,
-                        category_x=[],
-                    )
-                )
-
-        if to_create:
-            RegionPair.objects.bulk_create(to_create)
-            results["created"] = len(to_create)
-
-        if existing:
-            results["updated"] = (
-                RegionPair.objects.filter(q)
-                .exclude(category=category)
-                .update(category=category)
-            )
-
         return JsonResponse({"status": "success", "results": results})
 
     except json.JSONDecodeError:
@@ -788,6 +745,17 @@ def categorize_batch(request):
     except Exception as e:
         log("[categorize_batch] Exception encountered", e)
         return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+@user_passes_test(is_superuser)
+@json_post
+def import_similarity(request, data):
+    """
+    Import pairs with the export_pairs format:
+    {"pairs": [{"img_1", "img_2", ?"score", ?"category", ?"similarity_hash"}]}
+    """
+    return {"status": "success", "results": import_pairs(data.get("pairs", []))}
 
 
 @transaction.atomic
