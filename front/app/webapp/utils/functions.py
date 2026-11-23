@@ -836,7 +836,7 @@ def maybe_dockerize_url(url: str, dev_too=False) -> str:
     otherwise, only dockerize for MODE="local".
     (it is necessary to have 2 configs: some URLs MUST be dockerized in "local" but not in "dev")
     """
-    modes = ("dev", "local") if dev_too else ("local")
+    modes = ("dev", "local") if dev_too else ("local",)
     if MODE in modes:
         # return url.replace(APP_URL, f"http://host.docker.internal:{APP_PORT}")
         return url.replace(APP_URL, APP_URL_FROM_DOCKER)
