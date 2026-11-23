@@ -63,6 +63,7 @@
             </svg>
         </button>
         <button on:click={() => duplicateDocSet(item.id)} class="button">
+            <span class="iconify mr-1" data-icon="mdi:content-copy"></span>
             { appLang==="en" ? "Duplicate" : "Dupliquer" }
         </button>
         <div class="dropdown is-hoverable">
