@@ -969,7 +969,7 @@ def stream_document_set_pairs(request, dsid=None):
         "user_id": request.user.id,
     }
 
-    qs = filter_pairs(digit_ids, unique=True, **params)
+    qs = filter_pairs(digit_ids, **params)
     response = StreamingHttpResponse(
         stream_pairs_ndjson(qs if params["topk"] else qs.order_by(), params["user_id"]),
         content_type="application/x-ndjson",
