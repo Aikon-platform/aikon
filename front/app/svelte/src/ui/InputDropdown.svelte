@@ -369,9 +369,8 @@
     /** CHOICES.JS STYLING */
     /** basic styles */
     :global(.choices__inner),
-    :global(.choiches__list--dropdown),
-    :global(.dropdown-item),
-    :global(.choices__inner) {
+    :global(.choices__list--dropdown),
+    :global(.dropdown-item) {
         background-color: var(--bulma-body-background-color);
         color: var(--bulma-body-background);
         font-size: var(--bulma-body-font-size);
@@ -388,7 +387,7 @@
         padding-bottom: 1px !important;
         min-height: 30px;
         max-height: 45px;
-        overflow: scroll;
+        overflow-y: auto;
         border: var(--default-border);
         border-radius: var(--bulma-burger-border-radius);
     }

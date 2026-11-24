@@ -25,6 +25,8 @@
     const {imageNodes, sortedDocumentNodes, patchPairs} = documentSetStore;
 
     const CATS = [1, 2, 3, 5];
+    /** uncategorized pairs (0) are only listed when comparing exactly 2 witnesses */
+    const UNCAT = 0;
     const t = {
         witnesses: {en: "Witnesses (both images)", fr: "Témoins (deux images)"},
         noPair: {en: "No pair for these filters", fr: "Aucune paire pour ces filtres"},
@@ -59,7 +61,9 @@
     const openModal = (i, right) => [modalIndex, swapped, modalOpen] = [offset + i, right, true];
     const onNavigate = ({detail}) => (swapped = false, pager.handlePageUpdate(Math.floor(detail.index / pageSize) + 1));
 
-    $: inScope = pairs.filter(p => pairCats(p).some(c => CATS.includes(c))
+    $: scopeCats = $wits.size === 2 ? [UNCAT, ...CATS] : CATS;
+    $: if (!scopeCats.includes(UNCAT) && $cats.has(UNCAT)) toggle(cats, UNCAT);
+    $: inScope = pairs.filter(p => pairCats(p).some(c => scopeCats.includes(c))
         && (!$wits.size || ($wits.has(witOfDigit.get(p.digit_1)) && $wits.has(witOfDigit.get(p.digit_2)))));
     $: catCounts = count(inScope, pairCats);
     $: inCat = inScope.filter(p => !$cats.size || pairCats(p).some(c => $cats.has(c)));
@@ -89,7 +93,7 @@
     </div>
     <div class="is-flex is-align-items-center" style="gap: 2rem;">
         <HistogramFilter {bars} selected={$types} toggle={type => toggle(types, type)}/>
-        <CategoryFilter categories={CATS.filter(c => catCounts[c])} counts={catCounts} selected={$cats} toggle={c => toggle(cats, c)}/>
+        <CategoryFilter categories={scopeCats.filter(c => catCounts[c])} counts={catCounts} selected={$cats} toggle={c => toggle(cats, c)}/>
     </div>
 </div>
 

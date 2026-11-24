@@ -120,6 +120,8 @@ function createSimilarityStore() {
     /** @type {writable<boolean>} display matches extracted from the query's witness (only in modal) */
     const showSameWitness = writable(JSON.parse(localStorage.getItem("showSameWitness")) ?? true);
     showSameWitness.subscribe((value) => localStorage.setItem("showSameWitness", JSON.stringify(value)));
+    const modalShowSameWitness = writable(JSON.parse(localStorage.getItem("modalShowSameWitness")) ?? true);
+    modalShowSameWitness.subscribe((value) => localStorage.setItem("modalShowSameWitness", JSON.stringify(value)));
 
     /**
      * On load, fetches all query images and regions that were compared to current regions
@@ -247,14 +249,15 @@ function createSimilarityStore() {
         let cGen = 0, pGen = 0, visible = false;
 
         const baseEndpoint = `${window.location.origin}/${appName}/regions`;
+        const sameWitness = isInModal ? modalShowSameWitness : showSameWitness;
 
-        const sameWitnessFilter = (store) => derived([store, showSameWitness], ([$i, $show]) =>
+        const sameWitnessFilter = (store) => derived([store, sameWitness], ([$i, $show]) =>
             $show ? $i : $i.filter(([, , sImg]) => !isSameWitness(qImg, sImg))
         );
 
         const getDigitIds = () => {
             const regions = Object.values(get(selectedRegions)[currentPageId] || {}).filter(r => !isCurrentWitness(r.ref));
-            if (get(showSameWitness)) {
+            if (get(sameWitness)) {
                 regions.push(...Object.values(get(comparedRegions)).filter(r => isCurrentWitness(r.ref)));
             }
             return [...new Set(regions.map(r => r.digitization_id))];
@@ -319,11 +322,12 @@ function createSimilarityStore() {
             refreshSignal.subscribe(() => visible && fetchRow()),
             propagateParams.subscribe(() => visible && fetchPropagated(getDigitIds())),
             selectedRegions.subscribe(() => visible && fetchRow()),
-            showSameWitness.subscribe(() => visible && !isInModal && fetchRow())
+            sameWitness.subscribe(() => visible && !isInModal && fetchRow())
         ];
 
         return {
             items, loading, propagatedLoading, error, fetchRow,
+            showSameWitness: sameWitness,
             propagated: sameWitnessFilter(propagated),
             setVisible: (v) => { visible = v; if (v) fetchRow(); },
             filtered: sameWitnessFilter(isInModal
