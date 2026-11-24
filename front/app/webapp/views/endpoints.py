@@ -1,5 +1,7 @@
 import json
+
 from django.http import JsonResponse
+from django.shortcuts import redirect
 
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.utils.tasking import create_doc_set
@@ -196,3 +198,26 @@ def save_document_set(request, dsid=None):
                 {"message": f"Error saving score files: {e}"}, status=500
             )
     return JsonResponse({"message": "Invalid request"}, status=400)
+
+
+def duplicate_document_set(request, dsid: int):
+    if request.method != "POST":
+        return JsonResponse({"message": "Invalid method"}, status=405)
+    try:
+        ds = DocumentSet.objects.get(pk=dsid)
+        ds = ds.duplicate()
+        return JsonResponse(
+            {
+                "message": "Document set dupliacted successfully",
+                "document_set_id": ds.id,
+                "document_set_title": ds.title,
+            }
+        )
+    except (DocumentSet.DoesNotExist, DocumentSet.MultipleObjectsReturned):
+        return JsonResponse(
+            {"message": f"No docment set with ID '{dsid}' found"}, status=404
+        )
+    except Exception as e:
+        return JsonResponse(
+            {"message": f"Error duplicating document set #{dsid}: {e}"}, status=500
+        )
