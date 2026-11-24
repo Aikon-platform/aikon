@@ -23,6 +23,16 @@
                     </div>
                 {% endif %}
 
+                {% if form.api_down %}
+                    <div class="notification is-warning is-light py-3 px-4">
+                        {% if APP_LANG == 'en' %}
+                            The API is not responding
+                        {% else %}
+                            L'API est indisponible
+                        {% endif %}
+                    </div>
+                {% endif %}
+
                 <div class="task-param">
                     {% include "includes/form/field_group.html" with included_fields="task_type,document_set,notify_email" %}
                 </div>
@@ -91,7 +101,7 @@
                 {% endif %}
 
                 <p class="has-text-centered pt-3">
-                    <input class="button is-link" type="submit" value="{% if APP_LANG == 'en' %}Submit{% else %}Démarrer{% endif %}">
+                    <input id="submit-treatment" class="button is-link" type="submit" value="{% if APP_LANG == 'en' %}Submit{% else %}Démarrer{% endif %}">
                 </p>
             </form>
         </div>
@@ -105,11 +115,14 @@
 
 {% block extra_js %}
     {% if user.is_superuser %}<script src="{% static 'svelte/remapPreview.js' %}"></script>{% endif %}
+    {{ form.local_tasks|json_script:"local-tasks" }}
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             /* Task type forms */
             const taskTypeSelect = document.getElementById("id_task_type");
             const taskForms = document.querySelectorAll(".task-form");
+            const apiDown = {{ form.api_down|yesno:"true,false" }};
+            const localTasks = JSON.parse(document.getElementById("local-tasks").textContent);
             if (taskTypeSelect) {
                 taskTypeSelect.addEventListener("change", toggleTaskForm);
                 toggleTaskForm();
@@ -117,6 +130,7 @@
 
             function toggleTaskForm() {
                 const selectedTask = taskTypeSelect.value;
+                document.getElementById("submit-treatment").disabled = apiDown && !localTasks.includes(selectedTask);
                 taskForms.forEach(div => {
                     const isSelected = div.id === selectedTask;
                     div.style.display = isSelected ? "block" : "none";

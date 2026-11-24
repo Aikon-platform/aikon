@@ -6,7 +6,7 @@ from app.similarity.forms import SimilarityForm
 from app.region_extraction.forms import RegionExtractionForm
 from app.similarity.remap import plan_path
 from app.vectorization.forms import VectorizationForm
-from app.webapp.forms import SEARCH_MSG
+from app.webapp.forms import SEARCH_MSG, api_down
 from app.webapp.models.treatment import Treatment
 from app.webapp.models.utils.constants import TRMT_TYPE, LOCAL_TASKS, SUPERUSER_TASKS
 
@@ -88,6 +88,8 @@ class TreatmentForm(forms.ModelForm):
                     kwargs.get("files"),
                 )
 
+        self.api_down = api_down()
+        self.local_tasks = LOCAL_TASKS
         self._prefill()
 
     def _prefill(self):
@@ -144,6 +146,9 @@ class TreatmentForm(forms.ModelForm):
 
         if not cleaned_data.get("document_set") and task_type != "import":
             self.add_error("document_set", "A document set is required.")
+
+        if task_type not in LOCAL_TASKS and api_down():
+            self.add_error("task_type", "The API is not responding, try again later.")
 
         doc_set = cleaned_data.get("document_set")
         if task_type == "remap" and doc_set and not plan_path(doc_set.id).exists():
