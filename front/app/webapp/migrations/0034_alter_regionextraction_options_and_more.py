@@ -13,13 +13,6 @@ class Migration(migrations.Migration):
     ]
 
     operations = [
-        migrations.AlterModelOptions(
-            name="regionextraction",
-            options={
-                "verbose_name": "Region extraction",
-                "verbose_name_plural": "Region extractions",
-            },
-        ),
         migrations.AddField(
             model_name="documentset",
             name="duplicate_of",
@@ -29,54 +22,6 @@ class Migration(migrations.Migration):
                 on_delete=django.db.models.deletion.SET_NULL,
                 related_name="duplicates",
                 to="webapp.documentset",
-            ),
-        ),
-        migrations.AlterField(
-            model_name="regionextraction",
-            name="digitization",
-            field=models.ForeignKey(
-                blank=True,
-                null=True,
-                on_delete=django.db.models.deletion.SET_NULL,
-                related_name="region_extractions",
-                to="webapp.digitization",
-                verbose_name="Digitization",
-            ),
-        ),
-        migrations.AlterField(
-            model_name="series",
-            name="shared_with",
-            field=models.ManyToManyField(
-                blank=True,
-                related_name="shared_series",
-                to=settings.AUTH_USER_MODEL,
-                verbose_name="Shared with",
-            ),
-        ),
-        migrations.AlterField(
-            model_name="treatment",
-            name="task_type",
-            field=models.CharField(
-                blank=True,
-                choices=[
-                    ("region_extraction", "Image regions extraction"),
-                    ("similarity", "Compute similarity score"),
-                    ("vectorization", "Vectorization"),
-                    ("import", "Import"),
-                ],
-                max_length=50,
-                null=True,
-                verbose_name="Task type",
-            ),
-        ),
-        migrations.AlterField(
-            model_name="witness",
-            name="shared_with",
-            field=models.ManyToManyField(
-                blank=True,
-                related_name="shared_witnesses",
-                to=settings.AUTH_USER_MODEL,
-                verbose_name="Shared with",
             ),
         ),
     ]
