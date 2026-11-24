@@ -47,6 +47,12 @@
                 <RegionsBtn/>
             </div>
 
+            <ul class="columns mx-0">
+                {#each witness.iiif as iiifManifest }
+                    <li class="column is-narrow m-0">{@html iiifManifest}</li>
+                {/each}
+            </ul>
+
             {#each Object.entries(witness.metadata_full.wit) as [key, value]}
                 <span class="witness-key">{value.label}</span>
                 <span class="witness-value">{value.value}</span>

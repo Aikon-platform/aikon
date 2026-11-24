@@ -257,6 +257,11 @@ urlpatterns += [
         name="change-document-set",
     ),
     path(
+        "document-set/<int:dsid>/duplicate",
+        duplicate_document_set,
+        name="duplicate-document-set",
+    ),
+    path(
         f"document-set/<int:dsid>/info",
         get_document_set_info,
         name="document-set-info",
