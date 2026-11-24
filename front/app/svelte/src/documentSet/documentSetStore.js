@@ -15,41 +15,51 @@ const createWorker = () => new Worker(
 /** categories of a pair, the user match of the current user counting as category 5 */
 export const pairCats = p => p.userMatch ? [p.category, 5] : [p.category];
 
-const pairKey = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
+const NO_RANK = 65535, NO_CAT = 255;
+const rankOf = r => r === NO_RANK ? Infinity : r;
 
-function buildPairs({ id1, id2, score, cat, um, st, w, rank1, rank2, order, start, byImage }, names, imgMap) {
-    const byIdx = Array.from(id1, (a, i) => {
-        const img1 = imgMap.get(names[a]), img2 = imgMap.get(names[id2[i]]);
-        return {
-            id_1: img1.id,
-            id_2: img2.id,
-            digit_1: img1.digit,
-            digit_2: img2.digit,
-            page_1: img1.canvas,
-            page_2: img2.canvas,
-            score: isNaN(score[i]) ? null : score[i],
-            weightedScore: w[i],
-            category: cat[i],
-            userMatch: !!um[i],
-            similarityType: st[i],
-            rank_1: rank1[i],
-            rank_2: rank2[i],
-        };
-    });
-
-    const byDocPair = new Map();
-    for (const p of byIdx) {
-        const key = pairKey(p.digit_1, p.digit_2);
-        (byDocPair.get(key) ?? byDocPair.set(key, []).get(key)).push(p);
-    }
-
-    const byImg = new Map();
-    names.forEach((name, j) => {
-        if (start[j + 1] > start[j]) byImg.set(name, Array.from(byImage.subarray(start[j], start[j + 1]), i => byIdx[i]));
-    });
-
-    return { sorted: Array.from(order, i => byIdx[i]), index: { byImage: byImg, byDocPair } };
+/** pairs kept as the worker's typed columns, pair objects being built on demand by pairAt */
+function pairTable(columns, names, docDigits, imgMap) {
+    return {
+        ...columns,
+        names,
+        n: columns.id1.length,
+        imgs: names.map(name => imgMap.get(name)),
+        nameIdx: new Map(names.map((name, j) => [name, j])),
+        docIdx: new Map(docDigits.map((d, k) => [d, k])),
+        D: docDigits.length,
+        removed: new Uint8Array(names.length),
+    };
 }
+
+function makePair(t, i) {
+    const a = t.imgs[t.id1[i]], b = t.imgs[t.id2[i]];
+    return {
+        id_1: a.id,
+        id_2: b.id,
+        digit_1: a.digit,
+        digit_2: b.digit,
+        page_1: a.canvas,
+        page_2: b.canvas,
+        score: isNaN(t.score[i]) ? null : Math.round(t.score[i] * 1e4) / 1e4,
+        weightedScore: t.w[i],
+        category: t.cat[i] === NO_CAT ? null : t.cat[i],
+        userMatch: !!t.um[i],
+        similarityType: t.st[i],
+        rank_1: rankOf(t.rank1[i]),
+        rank_2: rankOf(t.rank2[i]),
+    };
+}
+
+/** indices of the pairs whose images are both kept by imgOk (Uint8Array by image index), in score order */
+function* orderedPairs(t, imgOk) {
+    for (let k = 0; k < t.n; k++) {
+        const i = t.order[k];
+        if (imgOk[t.id1[i]] && imgOk[t.id2[i]]) yield i;
+    }
+}
+
+const imgMask = (t, digits) => t.imgs.map((img, j) => img && !t.removed[j] && digits.has(img.digit) ? 1 : 0);
 
 export function createDocumentSetStore(documentSetId) {
 
@@ -63,7 +73,7 @@ export function createDocumentSetStore(documentSetId) {
     // const documentSetId = 436; // Jombert complet
     // const documentSetId = 432; // Jombert incomplet
     // documentSetId = 455; // Set benchmark
-    // documentSetId = 468; // Set gros
+    // documentSetId = 627; // Set gros
     // TO DELETE
 
     const error = writable(null);
@@ -83,16 +93,16 @@ export function createDocumentSetStore(documentSetId) {
         $cats.length === 1
     );
 
-    const allPairs = writable([]);
+    /** pairTable of the loaded pairs */
+    const allPairs = writable(null);
+    let table = null;
+    allPairs.subscribe(t => table = t);
+    /** Map<pair index, pair> of the current filteredPairs, so that pairAt returns the same objects */
+    let visible = new Map();
+    const pairAt = i => visible.get(i) ?? makePair(table, i);
 
     // web worker for processing pairs
     let worker;
-
-    const pairIndex = writable({
-        byImage: new Map(),
-        byDocPair: new Map(),
-        byDoc: new Map(),
-    });
 
     /**
      * Image nodes: Map<imgId, imageData>
@@ -167,14 +177,14 @@ export function createDocumentSetStore(documentSetId) {
 
                 const {
                     columns,
+                    docDigits,
                     imageIds,
                     imageNodes: imgMap,
                     categories: cats,
                     stats
                 } = e.data;
-                const { sorted, index: idx } = buildPairs(columns, imageIds, imgMap);
+                const t = pairTable(columns, imageIds, docDigits, imgMap);
 
-                pairIndex.set(idx);
                 pairStats.set(stats.pairStats);
                 applyDefaultThreshold();
                 documentStats.set(stats.documentStats);
@@ -232,21 +242,21 @@ export function createDocumentSetStore(documentSetId) {
 
                 docSetNumber.set({
                     documents: digitIds.length,
-                    pairs: sorted.length,
+                    pairs: t.n,
                     images: imgMap.size,
                     categories: cats
                 });
 
-                allPairs.set(sorted);
+                allPairs.set(t);
                 catOverrides.clear();
                 pairCat.set(findCategory);
 
                 loading.set(false);
-                loadingProgress.set({ loaded: sorted.length, done: true });
+                loadingProgress.set({ loaded: t.n, done: true });
 
                 worker.terminate();
                 worker = null;
-                resolve(sorted.length);
+                resolve(t.n);
             };
 
             worker.onerror = (err) => {
@@ -264,24 +274,26 @@ export function createDocumentSetStore(documentSetId) {
 
     const filteredPairs = derived(
         [allPairs, threshold, topK, mutualTopK, selectedDocuments, scoreFilter],
-        ([$pairs, $threshold, $topK, $mutual, $regions, $scoreFilter]) => {
-            if (!$pairs) return [];
+        ([t, $threshold, $topK, $mutual, $regions, $scoreFilter]) => {
+            visible = new Map();
+            if (!t) return [];
             const result = [];
 
             const $mode = get(scoreMode);
+            const imgOk = imgMask(t, $regions);
 
-            for (let i = 0; i < $pairs.length; i++) {
-                const p = $pairs[i];
+            for (let k = 0; k < t.n; k++) {
+                const i = t.order[k];
 
                 if ($mode === "threshold" && $scoreFilter) {
-                    if (p.weightedScore < $threshold) break;
+                    if (t.w[i] < $threshold) break;
                 }
 
-                if (!$regions.has(p.digit_1) || !$regions.has(p.digit_2)) continue;
+                if (!imgOk[t.id1[i]] || !imgOk[t.id2[i]]) continue;
 
                 if ($mode === "topk" && $topK !== null && $scoreFilter) {
-                    const r1Rank = p.rank_1 ?? Infinity;
-                    const r2Rank = p.rank_2 ?? Infinity;
+                    const r1Rank = rankOf(t.rank1[i]);
+                    const r2Rank = rankOf(t.rank2[i]);
 
                     if ($mutual) {
                         if (r1Rank > $topK || r2Rank > $topK) continue;
@@ -290,6 +302,8 @@ export function createDocumentSetStore(documentSetId) {
                     }
                 }
 
+                const p = makePair(t, i);
+                visible.set(i, p);
                 result.push(p);
             }
 
@@ -488,11 +502,16 @@ export function createDocumentSetStore(documentSetId) {
     });
 
     function getFilteredPairsForDocPair(doc1Id, doc2Id) {
-        const $pairIndex = get(pairIndex);
-        const $visibleIds = get(visiblePairIds);
-        const key = doc1Id < doc2Id ? `${doc1Id}-${doc2Id}` : `${doc2Id}-${doc1Id}`;
-        const pairs = $pairIndex.byDocPair.get(key) || [];
-        return $visibleIds.size > 0 ? pairs.filter(p => $visibleIds.has(p)) : pairs;
+        const t = table;
+        const a = t?.docIdx.get(doc1Id), b = t?.docIdx.get(doc2Id);
+        if (a == null || b == null) return [];
+        const k = Math.min(a, b) * t.D + Math.max(a, b);
+        const pairs = [];
+        for (const i of t.byDocPair.subarray(t.dpStart[k], t.dpStart[k + 1])) {
+            const p = visible.size > 0 ? visible.get(i) : pairAt(i);
+            if (p) pairs.push(p);
+        }
+        return pairs;
     }
 
     function otherSide(pair, anchorDocId, anchorImgId, imgNodes, docNodes) {
@@ -675,7 +694,8 @@ export function createDocumentSetStore(documentSetId) {
 
     const normalizeByImages = writable(true);
 
-    const visiblePairIds = derived(filteredPairs, $pairs => new Set($pairs));
+    /** Map<pair index, pair> of the visible pairs */
+    const visiblePairIds = derived(filteredPairs, () => visible);
 
     const coverageData = derived(filteredPairs, ($pairs) => {
         const map = new Map();
@@ -694,11 +714,21 @@ export function createDocumentSetStore(documentSetId) {
         new Map([...$docs].map(([id, doc]) => [id, Math.max(1, $counts.get(id) ?? 0, doc.images.length)]))
     );
 
-    const findPair = (a, b) => get(pairIndex).byImage.get(a)?.find(p => p.id_1 === b || p.id_2 === b);
+    /** index of the pair (a, b) */
+    const findPair = (a, b) => {
+        const t = table, j = t?.nameIdx.get(a), k = t?.nameIdx.get(b);
+        if (j == null || k == null) return null;
+        for (let s = t.start[j]; s < t.start[j + 1]; s++) {
+            const i = t.byImage[s];
+            if (t.id1[i] === k || t.id2[i] === k) return i;
+        }
+        return null;
+    };
+    const categoryOf = i => i == null || table.cat[i] === NO_CAT ? null : table.cat[i];
     const catKey = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
     /** Map<"id1-id2", category> of categories patched for pairs that are not loaded */
     const catOverrides = new Map();
-    const findCategory = (a, b) => findPair(a, b)?.category ?? catOverrides.get(catKey(a, b)) ?? null;
+    const findCategory = (a, b) => categoryOf(findPair(a, b)) ?? catOverrides.get(catKey(a, b)) ?? null;
     /** (img1, img2) => category; re-set (functions always notify subscribers) on load and by patchPairs */
     const pairCat = writable(findCategory);
 
@@ -709,22 +739,39 @@ export function createDocumentSetStore(documentSetId) {
      */
     const patchPairs = (updates) => {
         for (const { img_1, img_2, category } of updates) {
-            const p = findPair(img_1, img_2);
+            const i = findPair(img_1, img_2);
+            if (i == null) {
+                catOverrides.set(catKey(img_1, img_2), category);
+                continue;
+            }
+            table.cat[i] = category ?? NO_CAT;
+            const p = visible.get(i);
             if (p) p.category = category;
-            else catOverrides.set(catKey(img_1, img_2), category);
         }
         pairCat.set(findCategory);
     };
 
+    /** pairs whose documents are both in digits, in score order */
+    const pairsOfDocuments = digits => table ? Array.from(orderedPairs(table, imgMask(table, digits)), i => pairAt(i)) : [];
+
     const removeImages = (ids) => {
-        const del = new Set(ids);
-        const pairs = get(allPairs).filter(p => !del.has(p.id_1) && !del.has(p.id_2));
-        const kept = new Set();
-        for (const p of pairs) kept.add(p.id_1).add(p.id_2);
+        const t = table;
+        for (const id of ids) {
+            const j = t.nameIdx.get(id);
+            if (j != null) t.removed[j] = 1;
+        }
+        const keptIdx = new Uint8Array(t.names.length);
+        let pairs = 0;
+        for (let i = 0; i < t.n; i++) {
+            if (t.removed[t.id1[i]] || t.removed[t.id2[i]]) continue;
+            keptIdx[t.id1[i]] = keptIdx[t.id2[i]] = 1;
+            pairs++;
+        }
+        const kept = new Set(t.names.filter((_, j) => keptIdx[j]));
         imageNodes.update(m => (m.forEach((_, id) => kept.has(id) || m.delete(id)), m));
         documentNodes.update(m => (m.forEach(d => d.images = d.images.filter(i => kept.has(i.id))), m));
-        docSetNumber.update(n => ({...n, pairs: pairs.length, images: kept.size}));
-        allPairs.set(pairs);
+        docSetNumber.update(n => ({...n, pairs, images: kept.size}));
+        allPairs.set(t);
     };
 
 
@@ -736,10 +783,10 @@ export function createDocumentSetStore(documentSetId) {
         loadingProgress,
 
         allPairs,
+        pairsOfDocuments,
         visiblePairs: filteredPairs,
         visibleDocuments,
         pairCat,
-        pairIndex,
         imageNodes,
         documentNodes,
         witnessNodes,

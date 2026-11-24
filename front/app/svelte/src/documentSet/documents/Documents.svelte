@@ -15,7 +15,7 @@
     import {appName, isSuperuser} from "../../constants.js";
 
     export let documentSetStore;
-    const {documentNodes, imageNodes, visiblePairs, allPairs, selectedDocuments, docSetNumber, removeImages} = documentSetStore;
+    const {documentNodes, imageNodes, visiblePairs, allPairs, pairsOfDocuments, selectedDocuments, docSetNumber, removeImages} = documentSetStore;
 
     const MAX = 5;
     const CATS = [0, 1, 2, 3, 5];
@@ -84,7 +84,7 @@
     $: witId = witnesses.some(w => w.id === witId) ? witId : witnesses[0]?.id;
     $: witId, reset(), selected.set(new Set());
 
-    $: pairs = scoreFilter ? $visiblePairs : $allPairs.filter(p => $selectedDocuments.has(p.digit_1) && $selectedDocuments.has(p.digit_2));
+    $: pairs = scoreFilter ? $visiblePairs : ($allPairs, pairsOfDocuments($selectedDocuments));
     $: availableCats = CATS.filter(c => $docSetNumber.categories[c]);
     $: digits = new Set((digitsOf.get(witId) ?? []).filter(d => $selectedDocuments.has(d)));
 

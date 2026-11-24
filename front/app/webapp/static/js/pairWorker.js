@@ -6,7 +6,8 @@
 const IMG_REGEX = /^(wit\d+_[a-z]{3}(\d+)_(\d+))(?:_([\d,]+))?\.jpg$/;
 // const weights = { 1: 1.0, 2: 0.5, 3: 0.125, 4: -1.0, 5: 0.125 };
 const weights = { 0: 1, 1: 1, 2: 1.5, 3: 1.25, 4: -1.0, 5: 1.25 };
-const COLS = { id1: Uint32Array, id2: Uint32Array, score: Float64Array, cat: Uint8Array, um: Uint8Array, st: Uint8Array };
+const COLS = { id1: Uint32Array, id2: Uint32Array, score: Float32Array, cat: Uint8Array, um: Uint8Array, st: Uint8Array };
+const NO_RANK = 65535;
 const STRIDE = 6;
 const pairKey = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
 
@@ -85,11 +86,12 @@ function processBatch(newNames, flat) {
 function finalize() {
     const { names, imgs, imageMap, categories, n } = state;
     const { id1, id2, score, cat, um, st } = Object.fromEntries(
-        Object.entries(state.cols).map(([k, a]) => [k, a.slice(0, n)])
+        Object.entries(state.cols).map(([k, a]) => [k, a.subarray(0, n)])
     );
+    const m = names.length;
     const weightOf = i => weights[cat[i] || (um[i] && 5)] || 0;
 
-    const w = new Float64Array(n);
+    const w = new Float32Array(n);
     let sum = 0, count = 0, max = 0;
     for (let i = 0; i < n; i++) {
         if (isNaN(score[i])) continue;
@@ -105,27 +107,36 @@ function finalize() {
         else if (isNaN(score[i])) w[i] = meanReal * weightOf(i);
     }
 
-    // byImage as CSR: pairs of image j are byImage[start[j]..start[j + 1]]
-    const byW = (a, b) => w[b] - w[a];
-    const start = new Uint32Array(names.length + 1);
+    // w >= 0, so its float32 bits sort like its value: native sort of (~bits << 32 | i) gives w desc, then index asc
+    const keys = new BigUint64Array(n), kv = new Uint32Array(keys.buffer), bits = new Uint32Array(w.buffer, 0, n);
     for (let i = 0; i < n; i++) {
-        start[id1[i] + 1]++;
-        start[id2[i] + 1]++;
+        kv[2 * i] = i;
+        kv[2 * i + 1] = ~bits[i];
     }
-    for (let j = 0; j < names.length; j++) start[j + 1] += start[j];
-    const byImage = new Uint32Array(2 * n), next = start.slice(0, -1);
-    for (let i = 0; i < n; i++) {
-        byImage[next[id1[i]]++] = i;
-        byImage[next[id2[i]]++] = i;
-    }
+    keys.sort();
+    const order = new Uint32Array(n);
+    for (let i = 0; i < n; i++) order[i] = kv[2 * i];
 
-    const rank1 = new Float32Array(n), rank2 = new Float32Array(n);
-    for (let j = 0; j < names.length; j++) {
-        byImage.subarray(start[j], start[j + 1]).sort(byW).forEach((i, k) => {
-            const rank = cat[i] === 1 ? 1 : imgs[id1[i]].digit === imgs[id2[i]].digit ? Infinity : k + 1;
-            if (id1[i] === j) rank1[i] = rank;
-            else rank2[i] = rank;
-        });
+    const imgDigit = Uint32Array.from({ length: m }, (_, j) => imgs[j]?.digit ?? 0);
+    const dOf = new Map(), docDigits = [];
+    const dIdx = Uint16Array.from(imgDigit, d => dOf.get(d) ?? dOf.set(d, docDigits.push(d) - 1).get(d));
+    const D = docDigits.length;
+    const docPair = i => {
+        const a = dIdx[id1[i]], b = dIdx[id2[i]];
+        return a < b ? a * D + b : b * D + a;
+    };
+
+    // byImage as CSR filled in score order: pairs of image j are byImage[start[j]..start[j + 1]], best first
+    const byImage = csr(m, 2 * n, emit => order.forEach(i => (emit(id1[i], i), emit(id2[i], i))));
+    const byDocPair = csr(D * D, n, emit => { for (let i = 0; i < n; i++) emit(docPair(i), i); });
+
+    const rank1 = new Uint16Array(n), rank2 = new Uint16Array(n);
+    for (let j = 0; j < m; j++) {
+        for (let k = byImage.start[j]; k < byImage.start[j + 1]; k++) {
+            const i = byImage.idx[k];
+            const rank = cat[i] === 1 ? 1 : imgDigit[id1[i]] === imgDigit[id2[i]] ? NO_RANK : Math.min(k - byImage.start[j] + 1, NO_RANK - 1);
+            (id1[i] === j ? rank1 : rank2)[i] = rank;
+        }
     }
 
     // ranking of the pair relative to the document pair (digit_1, digit_2)
@@ -143,25 +154,37 @@ function finalize() {
     //     }
     // }
 
-    const order = new Uint32Array(n).map((_, i) => i).sort(byW);
-    const digits = i => [imgs[id1[i]].digit, imgs[id2[i]].digit];
-    const columns = { id1, id2, score, cat, um, st, w, rank1, rank2, order, start, byImage };
+    const columns = {
+        id1, id2, score, cat, um, st, w, rank1, rank2, order, imgDigit,
+        start: byImage.start, byImage: byImage.idx, dpStart: byDocPair.start, byDocPair: byDocPair.idx,
+    };
 
     self.postMessage({
         type: 'complete',
         columns,
+        docDigits,
         imageIds: names,
         imageNodes: imageMap,
         categories,
         stats: {
             pairStats: { count: n, scoreRange: range(n ? [w[order[n - 1]], w[order[0]]] : []) },
-            documentStats: groupStats(n, w, digits),
-            imageStats: groupStats(n, w, i => [names[id1[i]], names[id2[i]]]),
-            docPairStats: groupStats(n, w, i => [pairKey(...digits(i))]),
+            documentStats: groupStats(D, d => docDigits[d], emit => { for (let i = 0; i < n; i++) emit(dIdx[id1[i]], w[i]), emit(dIdx[id2[i]], w[i]); }),
+            imageStats: groupStats(m, j => names[j], emit => { for (let i = 0; i < n; i++) emit(id1[i], w[i]), emit(id2[i], w[i]); }),
+            docPairStats: groupStats(D * D, k => pairKey(docDigits[k / D | 0], docDigits[k % D]), emit => { for (let i = 0; i < n; i++) emit(docPair(i), w[i]); }),
         },
     }, Object.values(columns).map(a => a.buffer));
 
     state = null;
+}
+
+/** compressed sparse rows: each(emit) is run twice and calls emit(k, i) per item; items of key k are idx[start[k]..start[k + 1]], in emission order */
+function csr(size, total, each) {
+    const start = new Uint32Array(size + 1);
+    each(k => start[k + 1]++);
+    for (let k = 0; k < size; k++) start[k + 1] += start[k];
+    const idx = new Uint32Array(total), next = start.slice(0, -1);
+    each((k, i) => idx[next[k]++] = i);
+    return { start, idx };
 }
 
 function getOrAddImage(imgKey) {
@@ -194,24 +217,22 @@ function pushToMap(map, key, value) {
     arr.push(value);
 }
 
-function groupStats(n, w, keysOf) {
-    const scoreCount = new Map();
-    for (let i = 0; i < n; i++) {
-        for (const key of keysOf(i)) {
-            const entry = scoreCount.get(key) ?? scoreCount.set(key, { score: 0, count: 0 }).get(key);
-            entry.score += w[i];
-            entry.count++;
-        }
-    }
+/** scoreCount entries in order of first appearance, as emitted by each(emit) with emit(key, weight) */
+function groupStats(size, label, each) {
+    const score = new Float64Array(size), count = new Uint32Array(size), seen = [];
+    each((k, v) => {
+        count[k]++ || seen.push(k);
+        score[k] += v;
+    });
+    const scoreCount = new Map(seen.map(k => [label(k), { score: score[k], count: count[k] }]));
     const entries = [...scoreCount.values()];
-    const stats = {
+    return {
         count: scoreCount.size,
         scoreCount,
         scoreRange: range(entries.map(e => e.score)),
         countRange: range(entries.map(e => e.count)),
     };
     // computeDensity(stats);
-    return stats;
 }
 
 function range(values) {
