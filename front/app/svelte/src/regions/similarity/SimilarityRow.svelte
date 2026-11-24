@@ -16,8 +16,8 @@
     export let isInModal = false;
 
     const row = similarityStore.createRowStore(qImg, isInModal);
-    const { loading, propagatedLoading, error, propagated, filtered, fetchRow } = row;
-    const { selectedRegions, currentPageId, showSameWitness } = similarityStore;
+    const { loading, propagatedLoading, error, propagated, filtered, fetchRow, showSameWitness } = row;
+    const { selectedRegions, currentPageId } = similarityStore;
 
     const qImgItem = RegionItem.fromImg(qImg);
     const manifest = getContext("manifest");
