@@ -1,6 +1,7 @@
 import os
 import re
 import zlib
+from contextlib import closing
 
 import numpy as np
 
@@ -909,10 +910,11 @@ def normalize_pair(img_1: str, img_2: str):
 
 def stream_pairs_ndjson(qs: QuerySet, user_id: int | None, batch_size=10_000):
     """Gzipped NDJSON, one line per batch: [new image names, flat (img_idx_1, img_idx_2, score, category, is_user_match, similarity_type) tuples]"""
-    with transaction.atomic():
-        rows = qs.values_list(
+    with transaction.atomic(), closing(
+        qs.values_list(
             "img_1", "img_2", "score", CATEGORY, "category_x", "similarity_type"
         ).iterator(chunk_size=batch_size)
+    ) as rows:
         ids, gz = {}, zlib.compressobj(1, wbits=31)
         while batch := list(islice(rows, batch_size)):
             n = len(ids)
