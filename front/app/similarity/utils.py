@@ -12,7 +12,7 @@ from itertools import combinations_with_replacement, islice
 
 from pathlib import Path
 from django.db import transaction
-from django.db.models import Q, F, QuerySet, Value, Case, When
+from django.db.models import Q, F, QuerySet, Value
 from django.db.models.functions import Coalesce
 
 from app.similarity.const import SCORES_PATH
@@ -46,7 +46,6 @@ from app.similarity.dedupe import (
     fetch_distinct_images,
     close,
     parse_bbox,
-    TYPE_PRIORITY,
     inherit_categories,
 )
 from app.webapp.utils.iiif.annotation import (
@@ -852,10 +851,6 @@ def update_category_x(region_pair: RegionPair, user_id: int):
 
 
 CATEGORY = Coalesce("category", Value(0))
-TYPE_RANK = Case(
-    *(When(similarity_type=t, then=Value(p)) for t, p in TYPE_PRIORITY.items()),
-    default=Value(99),
-)
 
 
 def filter_pairs(
@@ -867,9 +862,7 @@ def filter_pairs(
     exclude_self=False,
     categories=None,
     user_id=None,
-    unique=False,
 ) -> QuerySet:
-    """unique: one row per pair of images whatever its hash (all its rows share the same categories)"""
     if exclusive:
         query = Q(digit_1__in=digit_ids) & Q(digit_2__in=digit_ids)
     else:
@@ -890,15 +883,6 @@ def filter_pairs(
         if user_id and SimilarityCategory.USER_MATCH in categories:
             cat_query |= Q(category_x__contains=[user_id])
         qs = qs.alias(cat=CATEGORY).filter(cat_query)
-
-    if unique:
-        qs = RegionPair.objects.filter(
-            id__in=qs.order_by(
-                "img_1", "img_2", TYPE_RANK, F("score").desc(nulls_last=True)
-            )
-            .distinct("img_1", "img_2")
-            .values("id")
-        )
 
     qs = qs.order_by(F("score").desc(nulls_first=True))
     return qs[:topk] if topk else qs

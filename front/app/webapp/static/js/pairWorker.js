@@ -8,6 +8,8 @@ const IMG_REGEX = /^(wit\d+_[a-z]{3}(\d+)_(\d+))(?:_([\d,]+))?\.jpg$/;
 const weights = { 0: 1, 1: 1, 2: 1.5, 3: 1.25, 4: -1.0, 5: 1.25 };
 const COLS = { id1: Uint32Array, id2: Uint32Array, score: Float32Array, cat: Uint8Array, um: Uint8Array, st: Uint8Array };
 const NO_RANK = 65535;
+// similarity_type => priority when several rows describe the same pair of images (manual, auto, propagated, remapped)
+const TYPE_RANK = { 2: 0, 1: 1, 3: 2, 4: 3 };
 const STRIDE = 6;
 const pairKey = (a, b) => a < b ? `${a}-${b}` : `${b}-${a}`;
 
@@ -83,7 +85,52 @@ function processBatch(newNames, flat) {
     self.postMessage({ type: 'progress', count: state.n });
 }
 
+/** keeps one row per pair of images (rows of a pair differ by their similarity hash): the best by similarity type, then by score */
+function dedupe() {
+    const { cols, n, names, categories } = state;
+    const { id1, id2, score, cat, um, st } = cols;
+    const rankOf = i => TYPE_RANK[st[i]] ?? 99;
+    const better = (i, j) => {
+        const r = rankOf(i) - rankOf(j);
+        return r ? r < 0 : isNaN(score[j]) ? !isNaN(score[i]) : score[i] > score[j];
+    };
+
+    const m = names.length, byImg1 = csr(m, n, emit => { for (let i = 0; i < n; i++) emit(id1[i], i); });
+    const keep = new Uint8Array(n).fill(1), seenFor = new Int32Array(m).fill(-1), bestFor = new Uint32Array(m);
+    let dups = 0;
+    for (let a = 0; a < m; a++) {
+        for (let k = byImg1.start[a]; k < byImg1.start[a + 1]; k++) {
+            const i = byImg1.idx[k], b = id2[i];
+            if (seenFor[b] !== a) {
+                seenFor[b] = a;
+                bestFor[b] = i;
+                continue;
+            }
+            if (better(i, bestFor[b])) {
+                keep[bestFor[b]] = 0;
+                bestFor[b] = i;
+            } else keep[i] = 0;
+            dups++;
+        }
+    }
+    if (!dups) return;
+
+    const all = Object.values(cols);
+    let kept = 0;
+    for (let i = 0; i < n; i++) {
+        if (keep[i]) {
+            for (const col of all) col[kept] = col[i];
+            kept++;
+            continue;
+        }
+        if (!--categories[cat[i]]) delete categories[cat[i]];
+        if (um[i] && !--categories[5]) delete categories[5];
+    }
+    state.n = kept;
+}
+
 function finalize() {
+    dedupe();
     const { names, imgs, imageMap, categories, n } = state;
     const { id1, id2, score, cat, um, st } = Object.fromEntries(
         Object.entries(state.cols).map(([k, a]) => [k, a.subarray(0, n)])
