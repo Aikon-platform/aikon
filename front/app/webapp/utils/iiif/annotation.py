@@ -1,6 +1,5 @@
-import colorsys
-import hashlib
 import json
+from collections import defaultdict
 import re
 from datetime import datetime
 from pathlib import Path
@@ -59,10 +58,26 @@ def to_annotation_url(id_short_manifest: str, id_short_annotation: str) -> str:
     return f"{AIIINOTATE_BASE_URL}/data/{IIIF_PRESENTATION_VERSION}/{id_short_manifest}/annotation/{id_short_annotation}"
 
 
-def format_canvas_annotations(region_extraction: RegionExtraction, canvas_nb):
+def format_canvas_annotations(
+    region_extraction: RegionExtraction, canvas_nb, xywh: set[tuple] | None = None
+):
+    """if xywh: format only these bboxes, excluding the ones already indexed in aiiinotate"""
     canvas_annotations = get_annotations_per_canvas(
         region_extraction, specific_canvas=str(canvas_nb)
     )
+    if xywh is not None:
+        annos = get_canvas_annotations(region_extraction.digitization_id, canvas_nb)
+        indexed = {
+            tuple(get_coord_from_annotation(anno))
+            for anno in filter_annotations_by_tag(
+                annos or [], region_extraction.get_ref()
+            )
+        }
+        canvas_annotations = [
+            c
+            for c in canvas_annotations
+            if annos is not None and c in xywh and c not in indexed
+        ]
     if len(canvas_annotations) == 0:
         return {"@type": "sc:AnnotationList", "resources": []}
 
@@ -77,15 +92,6 @@ def format_canvas_annotations(region_extraction: RegionExtraction, canvas_nb):
             for annotation_num in range(len(canvas_annotations))
         ],
     }
-
-
-def string_to_color(s: str, saturation=0.9, lightness=0.5) -> str:
-    """Generate a deterministic hex color from a string."""
-    hash_int = int(hashlib.md5(s.encode()).hexdigest(), 16)
-    hue = (hash_int % 360) / 360.0
-
-    r, g, b = colorsys.hls_to_rgb(hue, lightness, saturation)
-    return f"#{int(r * 255):02x}{int(g * 255):02x}{int(b * 255):02x}"
 
 
 def format_annotation(region_extraction: RegionExtraction, canvas_nb, xywh, tags=None):
@@ -244,7 +250,6 @@ def iter_canvas_anno_file(region_extraction: RegionExtraction):
         digit_ref = data[0]["doc_uid"] if data else ""
 
         for idx, annotation in enumerate(data):
-            canvas_nb = idx + 1
             src = annotation["source"]
 
             img_name = None
@@ -259,6 +264,9 @@ def iter_canvas_anno_file(region_extraction: RegionExtraction):
                     img_name = candidate
                     break
 
+            canvas_nb = (
+                int(img_name.split("_")[-1].split(".")[0]) if img_name else idx + 1
+            )
             coords = [
                 (
                     int(c["absolute"]["x1"]),
@@ -910,7 +918,9 @@ def index_region_extraction(region_extraction: RegionExtraction):
     return True
 
 
-def index_annotations_on_canvas(regions: RegionExtraction, canvas_nb):
+def index_annotations_on_canvas(
+    regions: RegionExtraction, canvas_nb, xywh: set[tuple] | None = None
+):
     # this url (view canvas_annotations()) is calling format_canvas_annotations(),
     # thus returning formatted annotations for each canvas
 
@@ -919,7 +929,10 @@ def index_annotations_on_canvas(regions: RegionExtraction, canvas_nb):
         f"{AIIINOTATE_BASE_URL}/annotations/{IIIF_PRESENTATION_VERSION}/createMany",
         json={
             "uri": maybe_dockerize_url(
-                f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json",
+                update_params(
+                    f"{APP_URL}/{APP_NAME}/iiif/{regions.get_ref()}/list/anno-{canvas_nb}.json",
+                    {"xywh": [",".join(map(str, box)) for box in xywh or []]},
+                ),
                 dev_too=True,
             )
         },
@@ -1068,6 +1081,46 @@ def process_region_extraction(
         return False
 
     return True
+
+
+def extend_region_extraction(content: List[Dict], digit: Digitization, model="import"):
+    """
+    add new regions to the RegionExtraction of `digit` for `model`
+    index only bboxes missing from aiiinotate
+    """
+    region_extraction, _ = RegionExtraction.objects.get_or_create(
+        digitization=digit, model=model
+    )
+    data, anno_format = get_file_region_extraction(region_extraction)
+    if anno_format == "txt":
+        raise ValueError(f"Cannot merge into TXT file of {region_extraction.get_ref()}")
+
+    box = lambda crop: tuple(
+        int(crop["absolute"][k]) for k in ("x1", "y1", "width", "height")
+    )
+    pages = {page["source"]: page for page in data or []}
+    imported = defaultdict(set)
+    for page in content:
+        merged = pages.setdefault(page["source"], {**page, "crops": []})
+        merged["crops"] = list(
+            {box(c): c for c in merged["crops"] + page["crops"]}.values()
+        )
+        imported[page["source"]] |= {box(c) for c in page["crops"]}
+
+    with open(REGIONS_PATH / f"{region_extraction.get_ref()}.json", "w") as f:
+        json.dump(list(pages.values()), f)
+
+    if not index_manifest(region_extraction.get_manifest_url()):
+        raise ValueError(f"Could not index manifest of digitization #{digit.id}")
+
+    for (canvas_nb, _, _), page in zip(
+        iter_canvas_anno_file(region_extraction), pages.values()
+    ):
+        if boxes := imported.get(page["source"]):
+            index_annotations_on_canvas(region_extraction, canvas_nb, boxes)
+
+    Witness.objects.get(pk=digit.witness_id).set_json_region_extractions()
+    return region_extraction.get_ref()
 
 
 # ********************************************

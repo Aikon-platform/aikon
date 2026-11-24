@@ -21,10 +21,22 @@ from django.db.models import Q
 from django.urls import reverse
 from django.test import TestCase, Client
 
-from ..utils import score_file_to_db
-from ..models.region_pair import RegionPair
-from ...webapp.utils.functions import sort_key
-from .helpers import (
+from app.similarity import SimilarityType, SIM_DEFAULTS
+from app.similarity.utils import (
+    score_file_to_db,
+    pairs_to_score,
+    delete_absent_pairs,
+    rescore_to_db,
+    absorb,
+    new_pair,
+    get_existing_pairs,
+    similarity_hash,
+)
+from app.similarity.models.region_pair import parse_img, RegionPair, db_misordered
+from app.similarity.dedupe import SIDED
+from app.similarity.remap import expand
+from app.webapp.utils.functions import sort_key
+from app.similarity.tests.helpers import (
     clean_data,
     psql_cmd_copy,
     run_subprocess,
@@ -41,7 +53,7 @@ class RegionPairTestCase(TestCase):
 
         tbl_list = [
             "webapp_digitization",
-            "webapp_regions",
+            "webapp_regionextraction",
             "webapp_regionpair",
             "webapp_witness",
         ]
@@ -285,7 +297,6 @@ class RegionPairTestCase(TestCase):
             regions_id_1=rid_1,
             regions_id_2=rid_2,
             score=None,
-            is_manual=False,
             similarity_type=3,  # it's a propagation
             category_x=[],
             category=1,
@@ -320,8 +331,6 @@ class RegionPairTestCase(TestCase):
         # function concentrating a single query and all its tests
         def do_query(
             img_tuple: tuple[str, str],  # with extension !
-            wid: int,
-            rid: int,
             operation: Literal["create", "update"],
         ) -> None:
             # example payload : {'q_img': 'wit3_pdf8_01_122,286,220,1128', 's_img': 'wit3_pdf8_01_1363,299,202,1111', 'similarity_type': 2}
@@ -331,32 +340,24 @@ class RegionPairTestCase(TestCase):
                 "similarity_type": 2,
             }
             request_kwargs = {
-                "path": reverse(
-                    "similarity:add-region-pair", kwargs={"wid": wid, "rid": rid}
-                ),
+                "path": reverse("similarity:add-region-pair"),
                 "content_type": "application/json",
                 "data": payload,
             }
             rp_post_update = self.assert_modifs_one(
                 "post", operation, request_kwargs, img_tuple  # pyright: ignore
             )
-            self.assertEqual(rp_post_update.is_manual, True)  # pyright: ignore
             self.assertEqual(rp_post_update.similarity_type, 2)  # pyright: ignore
             return
 
         # test 1: update an existing row (we run 2 tests, one where img_tuple is swapped and one where it isn't)
         rp = self.get_random_row()
-        for img_tuple, rid in [
-            ((rp.img_1, rp.img_2), rp.regions_id_1),
-            ((rp.img_2, rp.img_1), rp.regions_id_2),
-        ]:
-            wid = int(re.search(r"^wit(\d+)", img_tuple[0])[1])  # pyright: ignore
-            do_query(img_tuple, wid, rid, "update")
+        for img_tuple in [(rp.img_1, rp.img_2), (rp.img_2, rp.img_1)]:
+            do_query(img_tuple, "update")
 
         # test 2: create a new row
-        (img_1, rid_1, wid_1), (img_2, _, _) = self.get_new_regionpair()
-        img_tuple = (img_1, img_2)
-        do_query(img_tuple, wid_1, rid_1, "create")  # pyright: ignore
+        (img_1, _, _), (img_2, _, _) = self.get_new_regionpair()
+        do_query((img_1, img_2), "create")
         self.assert_extensions()
 
         return
@@ -366,23 +367,18 @@ class RegionPairTestCase(TestCase):
         test similarity.views.no_match
         """
         rp = self.get_random_row()
-        img_1 = rp.img_1
-        wid_1 = int(re.search(r"^wit(\d+)", img_1)[1])  # pyright: ignore
-        rid_1 = rp.regions_id_1
-        rid_2 = rp.regions_id_2
+        img_1, digit_2 = rp.img_1, rp.digit_2
 
         # the rows that will be affected by the update
-        filter_affected = (
-            Q(img_1=img_1) & Q(regions_id_2=rid_2)
-        ) | (  # pyright: ignore
-            Q(img_2=img_1) & Q(regions_id_1=rid_2)
+        filter_affected = Q(img_1=img_1, digit_2=digit_2) | Q(
+            img_2=img_1, digit_1=digit_2
         )
 
         n_rows_affected = RegionPair.objects.filter(filter_affected).count()
 
-        payload = {"q_img": img_1, "s_regions": rid_2}
+        payload = {"q_img": img_1, "s_digit_id": digit_2}
         request_kwargs = {
-            "path": reverse("similarity:no-match", kwargs={"wid": wid_1, "rid": rid_1}),
+            "path": reverse("similarity:no-match"),
             "content_type": "application/json",
             "data": payload,
         }
@@ -395,6 +391,248 @@ class RegionPairTestCase(TestCase):
             n_rows_affected,
         )
         return
+
+    def remapped_row(self, **fields) -> RegionPair:
+        rp = self.get_random_row()
+        RegionPair.objects.filter(pk=rp.pk).update(
+            **{
+                "similarity_type": SimilarityType.REMAPPED,
+                "similarity_hash": "test0000",
+                **fields,
+            }
+        )
+        return RegionPair.objects.get(pk=rp.pk)
+
+    @staticmethod
+    def wits(rp: RegionPair) -> tuple[str, str]:
+        return str(parse_img(rp.img_1).wit), str(parse_img(rp.img_2).wit)
+
+    def test_pairs_to_score(self):
+        """REMAPPED pairs of the hash are sent; in force mode, only categorized ones"""
+        rp = self.remapped_row(category=None, category_x=[])
+        wits = set(self.wits(rp))
+        sent = [rp.img_1, rp.img_2]
+
+        self.assertIn(sent, pairs_to_score(wits, "test0000"))
+        self.assertNotIn(sent, pairs_to_score(wits, "test0000", force=True))
+        self.assertNotIn(sent, pairs_to_score(wits, "other000"))
+
+        RegionPair.objects.filter(pk=rp.pk).update(category=1)
+        self.assertIn(sent, pairs_to_score(wits, "test0000", force=True))
+
+        RegionPair.objects.filter(pk=rp.pk).update(category=None, similarity_hash=None)
+        self.assertIn(sent, pairs_to_score(wits, "test0000"))
+        self.assertNotIn(sent, pairs_to_score(wits, "test0000", force=True))
+
+    def test_remap_expand(self):
+        """a renamed image of IoU <= EQUIV_IOU makes its pair REMAPPED without hash, a closer one keeps type and hash"""
+        rp = self.get_random_row()
+        row = {
+            "img_1": rp.img_1,
+            "img_2": rp.img_2,
+            "similarity_type": SimilarityType.AUTO,
+            "similarity_hash": "test0000",
+            **{f"{k}_{i}": None for k in SIDED for i in (1, 2)},
+        }
+        side = {"digit": rp.digit_1, "anno": None, "regions_id": None}
+        for iou, expected in (
+            (0.6, (SimilarityType.REMAPPED, None)),
+            (0.9, (SimilarityType.AUTO, "test0000")),
+        ):
+            (r,) = expand(row, {rp.img_1: {"new.jpg": iou}}, {"new.jpg": side})
+            self.assertEqual((r["similarity_type"], r["similarity_hash"]), expected)
+
+    def test_pairs_to_score_unhashed(self):
+        """categorized pairs without score are sent; categorized pairs without hash only in force mode; uncategorized AUTO never"""
+        rp = self.remapped_row(
+            similarity_type=SimilarityType.MANUAL,
+            similarity_hash=None,
+            score=None,
+            category=None,
+            category_x=[1],
+        )
+        wits = set(self.wits(rp))
+        sent = [rp.img_1, rp.img_2]
+        self.assertIn(sent, pairs_to_score(wits, "test0000"))
+
+        RegionPair.objects.filter(pk=rp.pk).update(
+            similarity_type=SimilarityType.AUTO, score=0.5
+        )
+        self.assertNotIn(sent, pairs_to_score(wits, "test0000"))
+        self.assertIn(sent, pairs_to_score(wits, "test0000", force=True))
+
+        RegionPair.objects.filter(pk=rp.pk).update(category_x=[])
+        self.assertNotIn(sent, pairs_to_score(wits, "test0000", force=True))
+
+    def test_get_existing_pairs(self):
+        """a document pair is computed as soon as region pairs of the hash exist between its witnesses, even without score file"""
+        rp = self.get_random_row()
+        wits = set(self.wits(rp))
+        doc_pair = RegionPair.order_pair(self.wits(rp), as_string=True)
+        params = {**SIM_DEFAULTS, "feat_net": "test_feat_net"}
+
+        self.assertNotIn(doc_pair, get_existing_pairs(wits, params))
+        RegionPair.objects.filter(pk=rp.pk).update(
+            similarity_hash=similarity_hash(params)
+        )
+        self.assertIn(doc_pair, get_existing_pairs(wits, params))
+
+    def test_rescore_to_db(self):
+        """rescored pairs become AUTO with their categories untouched, uncategorized ones scoring <= 0 are deleted, categorized ones get 0"""
+        categorized = self.remapped_row(category=2, category_x=[1])
+        uncategorized = self.remapped_row(category=None, category_x=[])
+        if categorized.pk == uncategorized.pk:
+            return
+
+        rescore_to_db(
+            [
+                (-1.0, categorized.img_1, categorized.img_2),
+                (-1.0, uncategorized.img_1, uncategorized.img_2),
+            ],
+            "test0000",
+        )
+        rp = RegionPair.objects.get(pk=categorized.pk)
+        self.assertEqual(
+            (rp.score, rp.similarity_type, rp.category, rp.category_x),
+            (0.0, SimilarityType.AUTO, 2, [1]),
+        )
+        self.assertFalse(RegionPair.objects.filter(pk=uncategorized.pk).exists())
+
+        uncategorized = self.remapped_row(category=None, category_x=[])
+        rescore_to_db([(12.5, uncategorized.img_1, uncategorized.img_2)], "test0000")
+        rp = RegionPair.objects.get(pk=uncategorized.pk)
+        self.assertEqual((rp.score, rp.similarity_type), (12.5, SimilarityType.AUTO))
+
+    def test_rescore_adopts_unhashed(self):
+        """pairs without hash are sent, then given the hash, or merged into the row of the hash"""
+        lone = self.remapped_row(similarity_hash=None, category=3, category_x=[])
+        sent = [lone.img_1, lone.img_2]
+        self.assertIn(
+            sent,
+            pairs_to_score(set(self.wits(lone)), "test0000", force=True),
+        )
+
+        rescore_to_db([(7.0, *sent)], "test0000")
+        rp = RegionPair.objects.get(pk=lone.pk)
+        self.assertEqual(
+            (rp.score, rp.similarity_type, rp.similarity_hash, rp.category),
+            (7.0, SimilarityType.AUTO, "test0000", 3),
+        )
+
+        twin = RegionPair.objects.create(
+            img_1=rp.img_1,
+            img_2=rp.img_2,
+            digit_1=rp.digit_1,
+            digit_2=rp.digit_2,
+            similarity_type=SimilarityType.REMAPPED,
+            category_x=[5],
+        )
+        rescore_to_db([(9.0, *sent)], "test0000")
+        self.assertFalse(RegionPair.objects.filter(pk=twin.pk).exists())
+        rp = RegionPair.objects.get(pk=lone.pk)
+        self.assertEqual((rp.score, rp.category, rp.category_x), (9.0, 3, [5]))
+
+        manual = RegionPair.objects.create(
+            img_1=rp.img_1,
+            img_2=rp.img_2,
+            digit_1=rp.digit_1,
+            digit_2=rp.digit_2,
+            similarity_type=SimilarityType.MANUAL,
+            category=1,
+            category_x=[6],
+        )
+        rescore_to_db([(4.0, *sent)], "test0000")
+        self.assertFalse(RegionPair.objects.filter(pk=manual.pk).exists())
+        rp = RegionPair.objects.get(pk=lone.pk)
+        self.assertEqual(
+            (rp.score, rp.similarity_type, rp.category, rp.category_x),
+            (4.0, SimilarityType.MANUAL, 1, [5, 6]),
+        )
+
+    def test_absorb_creates(self):
+        """pairs of a score file without row are created, those of rows without hash are absorbed"""
+        rp = self.remapped_row(
+            similarity_type=SimilarityType.AUTO,
+            similarity_hash=None,
+            category=None,
+            category_x=[],
+        )
+        kept = absorb([new_pair(rp.img_1, rp.img_2, 2.0)], "test1111")
+        self.assertEqual(kept, {(rp.img_1, rp.img_2)})
+        rp = RegionPair.objects.get(pk=rp.pk)
+        self.assertEqual((rp.score, rp.similarity_hash), (2.0, "test1111"))
+
+        absorb([new_pair(rp.img_1, rp.img_2, 3.0)], "test2222")
+        self.assertEqual(
+            RegionPair.objects.filter(img_1=rp.img_1, img_2=rp.img_2)
+            .exclude(pk=rp.pk)
+            .get()
+            .similarity_hash,
+            "test2222",
+        )
+
+    def test_spread_categories(self):
+        """once scored, the category of a pair is applied to its rows of other hashes"""
+        rp = self.remapped_row(category=2, category_x=[1])
+        other = RegionPair.objects.create(
+            img_1=rp.img_1,
+            img_2=rp.img_2,
+            digit_1=rp.digit_1,
+            digit_2=rp.digit_2,
+            similarity_type=SimilarityType.AUTO,
+            similarity_hash="other000",
+            score=1.0,
+        )
+        rescore_to_db([(5.0, rp.img_1, rp.img_2)], "test0000")
+        other = RegionPair.objects.get(pk=other.pk)
+        self.assertEqual((other.category, other.category_x), (2, [1]))
+
+    def test_delete_absent_pairs(self):
+        """only uncategorized AUTO / REMAPPED / PROPAGATED pairs of the hash or without hash absent from the new score file are deleted (force mode)"""
+        auto = self.remapped_row(similarity_hash=None, category=None, category_x=[])
+        RegionPair.objects.filter(pk=auto.pk).update(
+            similarity_type=SimilarityType.AUTO
+        )
+        wits = self.wits(auto)
+        same_pair = RegionPair.objects.filter(
+            digit_1=auto.digit_1, digit_2=auto.digit_2
+        ).exclude(pk=auto.pk)
+        kept = same_pair.first()
+        manual = same_pair.exclude(pk=getattr(kept, "pk", None)).first()
+        if manual:
+            RegionPair.objects.filter(pk=manual.pk).update(
+                similarity_type=SimilarityType.MANUAL,
+                similarity_hash="test0000",
+                category=None,
+                category_x=[],
+            )
+        if kept:
+            RegionPair.objects.filter(pk=kept.pk).update(
+                similarity_hash="test0000", category=None, category_x=[]
+            )
+
+        delete_absent_pairs(
+            *wits, "test0000", {(kept.img_1, kept.img_2)} if kept else set()
+        )
+
+        self.assertFalse(RegionPair.objects.filter(pk=auto.pk).exists())
+        if kept:
+            self.assertTrue(RegionPair.objects.filter(pk=kept.pk).exists())
+        if manual:
+            self.assertTrue(RegionPair.objects.filter(pk=manual.pk).exists())
+
+    def test_norm_bbox(self):
+        """front names use the same canonical bbox as region_key() in the API"""
+        self.assertEqual(
+            parse_img("wit1_man2_0003_-3,12.6,100.9,-0.5.jpg").bbox, "0,12,100,0"
+        )
+        self.assertEqual(
+            RegionPair.order_pair(
+                ("wit1_man2_0003_-3,12.6,100,5", "wit1_man2_0004_1,2,3,4"),
+                normalize=True,
+            ),
+            ("wit1_man2_0003_0,12,100,5.jpg", "wit1_man2_0004_1,2,3,4.jpg"),
+        )
 
     def test_score_file_to_db(self):
         """
@@ -412,17 +650,13 @@ class RegionPairTestCase(TestCase):
                 rowcount_post_update - rowcount_pre_update, nb_pairs_written
             )
 
-            # 2: assert sort_key has worked
+            # 2: assert pairs are stored in the order of the pair_ordering constraint
             pairs_written = RegionPair.objects.values_list("img_1", "img_2").filter(
                 (Q(regions_id_1=rid_1) & Q(regions_id_2=rid_2))  # pyright: ignore
                 | (Q(regions_id_1=rid_2) & Q(regions_id_2=rid_1))
             )
-            self.assertTrue(
-                all(
-                    list(img_tuple) == sorted(img_tuple, key=sort_key)
-                    for img_tuple in pairs_written
-                )
-            )
+            self.assertTrue(pairs_written.exists())
+            self.assertFalse(any(db_misordered(list(pairs_written))))
             self.assert_extensions()
 
         # cleanup: delete test files

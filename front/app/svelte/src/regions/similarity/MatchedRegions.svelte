@@ -85,7 +85,7 @@
     {#if !isInModal}
         <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
             <svelte:fragment let:item={currentItem} let:anchored>
-                <RegionTabs item={currentItem} comparison={anchored ? null : comparison}/>
+                <RegionTabs item={currentItem} comparison={anchored ? null : comparison} activeTab="similarity"/>
             </svelte:fragment>
         </RegionModal>
     {/if}

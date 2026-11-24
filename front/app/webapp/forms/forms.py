@@ -1,3 +1,4 @@
+import time
 import requests
 from dataclasses import dataclass
 from typing import Type
@@ -28,12 +29,25 @@ class SubForm(forms.Form):
         }
 
 
+API_RETRY_DELAY = 30
+api_failed_at = 0.0
+
+
+def api_down():
+    return time.time() - api_failed_at < API_RETRY_DELAY
+
+
 def get_available_models(task_name):
+    global api_failed_at
     try:
-        response = requests.get(f"{API_URL}/{task_name}/models", timeout=5)
+        if api_down():
+            raise ConnectionError(f"{API_URL} is not responding")
+        response = requests.get(f"{API_URL}/{task_name}/models", timeout=(3, 5))
         response.raise_for_status()
         models = response.json()
     except Exception as e:
+        if isinstance(e, (requests.ConnectionError, requests.Timeout)):
+            api_failed_at = time.time()
         fetch_error = (
             f"Unable to fetch available models: {e}"
             if APP_LANG == "en"

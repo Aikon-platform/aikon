@@ -1,5 +1,4 @@
 import gzip
-import importlib
 import json
 import uuid
 import requests
@@ -23,7 +22,12 @@ from app.config.settings import (
 
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.searchable_models import AbstractSearchableModel, json_encode
-from app.webapp.models.utils.constants import TRMT_STATUS, NO_USER, TASK_TYPE
+from app.webapp.models.utils.constants import (
+    TRMT_STATUS,
+    NO_USER,
+    TASK_TYPE,
+    LOCAL_TASKS,
+)
 from app.webapp.models.utils.functions import get_fieldname
 from app.webapp.tasks import launch_task
 
@@ -155,6 +159,7 @@ class Treatment(AbstractSearchableModel):
         tabs = {
             "region_extraction": "page",
             "similarity": "similarity",
+            "remap": "similarity",
             "vectorization": "vectorization",
         }
 
@@ -240,7 +245,7 @@ class Treatment(AbstractSearchableModel):
 
     def start_task(self, witnesses):
         """Start the task"""
-        if self.task_type not in ADDITIONAL_MODULES + ["import"]:
+        if self.task_type not in ADDITIONAL_MODULES + LOCAL_TASKS:
             log(f"[start_task] Uninstalled module: {self.task_type}")
             return
 
@@ -329,7 +334,7 @@ class Treatment(AbstractSearchableModel):
                 exception=e,
                 completed=completed,
             )
-        finally:
+        else:
             if completed:
                 self.on_task_success(
                     {

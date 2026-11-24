@@ -5,6 +5,7 @@
     import InputToggle from "../../ui/InputToggle.svelte";
     import RegionCard from "../RegionCard.svelte";
     import OverlayView from "./OverlayView.svelte";
+    import PageView from "./PageView.svelte";
     import PairCategoryToolbar from "../similarity/PairCategoryToolbar.svelte";
 
     export let qImg;
@@ -13,7 +14,8 @@
     const t = {
         query: {en: "Query image", fr: "Image requête"},
         target: {en: "Target image", fr: "Image cible"},
-        overlay: {en: "Overlay view", fr: "Vue superposée"}
+        overlay: {en: "Overlay view", fr: "Vue superposée"},
+        toPageView: {en: "Full page view", fr: "Afficher la page entière"}
     }
 
     $: queryItem = RegionItem.fromImg(qImg);
@@ -23,6 +25,7 @@
         .catch(() => []);
 
     let overlay = false;
+    let fullPage = false;
 </script>
 
 <div class="modal-similarity">
@@ -33,11 +36,19 @@
             <div class="side-by-side columns">
                 <div class="column is-flex is-flex-direction-column is-justify-content-center is-align-items-center">
                     <h3 class="title is-5">{i18n("query", t)}</h3>
-                    <RegionCard item={queryItem} height="full" isInModal={true} downloadable={false}/>
+                    {#if fullPage}
+                        <PageView item={queryItem} showNav={false}/>
+                    {:else}
+                        <RegionCard item={queryItem} height="full" isInModal={true} downloadable={false}/>
+                    {/if}
                 </div>
                 <div class="column is-flex is-flex-direction-column is-justify-content-center is-align-items-center">
                     <h3 class="title is-5">{i18n("target", t)}</h3>
-                    <RegionCard item={similarItem} height="full" isInModal={true} downloadable={false}/>
+                    {#if fullPage}
+                        <PageView item={similarItem} showNav={false}/>
+                    {:else}
+                        <RegionCard item={similarItem} height="full" isInModal={true} downloadable={false}/>
+                    {/if}
                 </div>
             </div>
         {/if}
@@ -45,6 +56,9 @@
     <div class="is-flex is-align-items-center is-justify-content-center is-gap-2 m-auto">
         <InputToggle start={false} buttonDisplay={true} on:updateChecked={() => overlay = !overlay}
                      toggleLabel={i18n("overlay", t)}/>
+        {#if !overlay}
+            <InputToggle toggleLabel={i18n("toPageView", t)} start={fullPage} on:updateChecked={e => fullPage = e.detail}/>
+        {/if}
         {#await pairInfo then [, , , , , category, users, similarityType, similarityHash]}
             <PairCategoryToolbar {qImg} {sImg} {category} users={users ?? []} {similarityType} {similarityHash}/>
         {/await}
@@ -66,7 +80,7 @@
     .modal-similarity-images > :global(*) {
         height: 100%;
     }
-    .modal-similarity-images :global(img) {
+    .modal-similarity-images :global(img:not(.modal-context-full-page)) {
         object-fit: contain;
         max-height: 100%;
         max-width: 100%;

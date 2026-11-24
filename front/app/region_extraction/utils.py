@@ -91,9 +91,6 @@ def process_results(data, completed=True):
             response = requests.get(result_url, stream=True)
             response.raise_for_status()
             json_content = response.json()
-            import json
-
-            log(json.dumps(json_content, indent=2))
         except Exception as e:
             log(f"Could not retrieve annotation from {result_url}", e)
             continue

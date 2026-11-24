@@ -89,6 +89,7 @@ urlpatterns = [
     ),
     # path(f"{APP_NAME}/exact-match", exact_match, name="exact-match"),
     path(f"{APP_NAME}/categorize-batch", categorize_batch, name="categorize-batch"),
+    path(f"{APP_NAME}/similarity/import", import_similarity, name="import-similarity"),
     path(
         f"{APP_NAME}/uncategorize-batch",
         uncategorize_batch,
@@ -128,6 +129,11 @@ urlpatterns = [
         name="witness-regions-pairs",
     ),
     path(
+        f"{APP_NAME}/document-set/<int:dsid>/reset-categories",
+        reset_document_set_categories,
+        name="reset-document-set-categories",
+    ),
+    path(
         f"document-set/<int:dsid>/pairs/stream",
         stream_document_set_pairs,
         name="stream-document-set-pairs",
@@ -143,4 +149,9 @@ urlpatterns = [
         name="merge-preview",
     ),
     path(f"{APP_NAME}/similarity/merge-regions", merge_regions, name="merge-regions"),
+    path(
+        f"{APP_NAME}/document-set/<int:dsid>/remap-preview",
+        remap_preview,
+        name="remap-preview",
+    ),
 ]

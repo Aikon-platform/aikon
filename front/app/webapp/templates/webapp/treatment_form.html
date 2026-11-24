@@ -1,6 +1,6 @@
 {% extends "base.html" %}
 
-{% load i18n shared_tags %}
+{% load i18n shared_tags static %}
 
 {% block title %}
     {{ view_title }}
@@ -20,6 +20,16 @@
                 {% if form.non_field_errors %}
                     <div class="notification is-danger is-light py-3 px-4">
                         {{ form.non_field_errors }}
+                    </div>
+                {% endif %}
+
+                {% if form.api_down %}
+                    <div class="notification is-warning is-light py-3 px-4">
+                        {% if APP_LANG == 'en' %}
+                            The API is not responding
+                        {% else %}
+                            L'API est indisponible
+                        {% endif %}
                     </div>
                 {% endif %}
 
@@ -51,6 +61,9 @@
                             {% endwith %}
                         </div>
                     {% endfor %}
+                    <div class="mt-5">
+                        {% include "includes/form/field_group.html" with included_fields="similarity_force" %}
+                    </div>
                 </div>
 
                 <div id="region_extraction" class="task-form is-contrasted p-4 my-4 box">
@@ -78,8 +91,17 @@
                     {% include "includes/form/field_group.html" with included_fields="import" %}
                 </div>
 
+                {% if user.is_superuser %}
+                <div id="remap" class="task-form is-contrasted p-4 my-4 box" style="display: none;">
+                    <h2 class="title is-spaced">
+                        {% if APP_LANG == 'en' %}Remap preview{% else %}Aperçu de la réassignation{% endif %}
+                    </h2>
+                    <div id="remap-preview"></div>
+                </div>
+                {% endif %}
+
                 <p class="has-text-centered pt-3">
-                    <input class="button is-link" type="submit" value="{% if APP_LANG == 'en' %}Submit{% else %}Démarrer{% endif %}">
+                    <input id="submit-treatment" class="button is-link" type="submit" value="{% if APP_LANG == 'en' %}Submit{% else %}Démarrer{% endif %}">
                 </p>
             </form>
         </div>
@@ -87,12 +109,20 @@
 
 {% endblock %}
 
+{% block extrahead %}
+    {% if user.is_superuser %}<link rel="stylesheet" href="{% static 'svelte/remapPreview.css' %}">{% endif %}
+{% endblock %}
+
 {% block extra_js %}
+    {% if user.is_superuser %}<script src="{% static 'svelte/remapPreview.js' %}"></script>{% endif %}
+    {{ form.local_tasks|json_script:"local-tasks" }}
     <script>
         document.addEventListener("DOMContentLoaded", function () {
             /* Task type forms */
             const taskTypeSelect = document.getElementById("id_task_type");
             const taskForms = document.querySelectorAll(".task-form");
+            const apiDown = {{ form.api_down|yesno:"true,false" }};
+            const localTasks = JSON.parse(document.getElementById("local-tasks").textContent);
             if (taskTypeSelect) {
                 taskTypeSelect.addEventListener("change", toggleTaskForm);
                 toggleTaskForm();
@@ -100,6 +130,7 @@
 
             function toggleTaskForm() {
                 const selectedTask = taskTypeSelect.value;
+                document.getElementById("submit-treatment").disabled = apiDown && !localTasks.includes(selectedTask);
                 taskForms.forEach(div => {
                     const isSelected = div.id === selectedTask;
                     div.style.display = isSelected ? "block" : "none";
@@ -153,13 +184,6 @@
                 el.querySelectorAll("input, select, textarea").forEach(input => {
                     input.disabled = !isVisible;
                 });
-            }
-
-            const docSetField = document.getElementById("id_document_set")?.closest(".field");
-            if (docSetField) {
-                const isImport = selectedTask === "import";
-                docSetField.style.display = isImport ? "none" : "";
-                disabled_hidden(docSetField, !isImport);
             }
         });
     </script>

@@ -1,3 +1,5 @@
+from collections import defaultdict
+
 from django.contrib.auth.decorators import user_passes_test
 from django.http import JsonResponse
 
@@ -10,7 +12,14 @@ from app.webapp.utils.tasking import (
 )
 from app.webapp.views import is_superuser, check_ref
 
-from app.region_extraction.utils import region_extraction_request
+from app.region_extraction.utils import (
+    region_extraction_request,
+    check_region_extraction_json_file,
+)
+from app.webapp.models.digitization import Digitization
+from app.webapp.utils.functions import json_post
+from app.webapp.utils.iiif import parse_ref
+from app.webapp.utils.iiif.annotation import extend_region_extraction
 
 
 @user_passes_test(is_superuser)
@@ -84,3 +93,34 @@ def receive_region_extraction_notification(request):
     """
     response, status_code = receive_notification(request)
     return JsonResponse(response, status=status_code, safe=False)
+
+
+@csrf_exempt
+@user_passes_test(is_superuser)
+@json_post
+def import_regions(request, data):
+    """
+    Add regions to the existing ones
+    {"model": "import", "regions": [{"doc_uid": digit_ref, "source": "img.jpg", "crops": [{"source": "img.jpg", "absolute": {"x1", "y1", "width", "height"}}]}]}
+    """
+    regions = data.get("regions", [])
+    if not check_region_extraction_json_file(regions) or not all(
+        "doc_uid" in page for page in regions
+    ):
+        raise ValueError("Invalid regions format")
+
+    by_digit = defaultdict(list)
+    for page in regions:
+        by_digit[page["doc_uid"]].append(page)
+
+    refs = []
+    for doc_uid, pages in by_digit.items():
+        ref = parse_ref(doc_uid)
+        if not ref or not (
+            digit := Digitization.objects.filter(pk=ref["digit"][1]).first()
+        ):
+            raise ValueError(f"Unknown digitization {doc_uid}")
+        refs.append(
+            extend_region_extraction(pages, digit, data.get("model") or "import")
+        )
+    return {"status": "success", "region_extractions": refs}

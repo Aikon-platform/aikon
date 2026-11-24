@@ -30,6 +30,14 @@ const configs = {
         assetFileNames: "documentSet.[ext]",
         inlineDynamicImports: true
     },
+    remapPreview: {
+        input: path.resolve(__dirname, "src/remap/remap-preview.js"),
+        outDir: "../webapp/static/svelte",
+        format: "iife",
+        entryFileNames: "remapPreview.js",
+        assetFileNames: "remapPreview.[ext]",
+        inlineDynamicImports: true
+    },
     region: {
         input: path.resolve(__dirname, "src/regions/region.js"),
         outDir: "../webapp/static/svelte/regionView",

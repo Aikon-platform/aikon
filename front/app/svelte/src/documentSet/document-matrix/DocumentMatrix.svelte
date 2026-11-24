@@ -11,7 +11,7 @@
     export let clusterStore;
 
     const {
-        visibleDocuments, pairIndex, filteredDocPairStats, filteredDocStats,
+        visibleDocuments, getFilteredPairsForDocPair, filteredDocPairStats, filteredDocStats,
         imageCountMap, visiblePairIds, coverageData, buildMatchesForAnchor, hideEmpty, pairCat
     } = documentSetStore;
 
@@ -45,18 +45,10 @@
     $: documents = $visibleDocuments;
     $: if (selectedCell && [selectedCell.doc1, selectedCell.doc2].some(d => !documents.some(v => v.id === d.id))) selectedCell = null;
 
-    $: pairsForSelection = selectedCell ? getPairsForCell(selectedCell, $visiblePairIds) : [];
+    $: pairsForSelection = selectedCell ? ($visiblePairIds, getFilteredPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)) : [];
     $: matchesData = selectedCell
         ? buildMatchesForAnchor(selectedCell.doc1, [selectedCell.doc2], null, false, true)
         : { matches: [], columns: [] };
-
-    function getPairsForCell(cell, visibleIds) {
-        const {doc1, doc2} = cell;
-        const pairKey = doc1.id < doc2.id ? `${doc1.id}-${doc2.id}` : `${doc2.id}-${doc1.id}`;
-        let pairs = $pairIndex.byDocPair.get(pairKey) || [];
-        if (visibleIds.size > 0) pairs = pairs.filter(p => visibleIds.has(p));
-        return pairs;
-    }
 
     function handleCellSelect(e) {
         selectedCell = e.detail;

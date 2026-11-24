@@ -13,7 +13,12 @@ from django.db import transaction, connection
 from django.contrib.auth.decorators import user_passes_test
 from django.views.decorators.http import require_POST
 
-from app.similarity.models.region_pair import RegionPair, parse_img, add_jpg
+from app.similarity.models.region_pair import (
+    RegionPair,
+    parse_img,
+    add_jpg,
+    RegionPairTuple,
+)
 from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils.functions import (
@@ -22,9 +27,13 @@ from app.webapp.utils.functions import (
     safe_int,
     parse_list,
     safe_bool,
+    json_post,
+    string_to_color,
 )
 from app.webapp.utils.logger import log
 from app.similarity.utils import (
+    categorize_pairs,
+    import_pairs,
     send_request,
     check_computed_pairs,
     get_computed_pairs,
@@ -61,6 +70,12 @@ from app.similarity.dedupe import (
     DUPLICATE_IOU,
     parse_bbox,
     close,
+)
+from app.similarity.remap import (
+    plan_path,
+    remap_document_set,
+    remap_links,
+    running_similarity,
 )
 from app.webapp.utils.iiif.annotation import (
     get_regions_id_from_annotation,
@@ -200,13 +215,35 @@ def get_propagated_matches(request, img_id: str = "") -> JsonResponse:
         if not propagated_imgs:
             return JsonResponse([], safe=False)
 
-        q_ref = parse_img(add_jpg(img_id))
+        q_digit = parse_img(add_jpg(img_id)).digit
+        rows = pairs_with(img_id).filter(
+            Q(img_1__in=propagated_imgs) | Q(img_2__in=propagated_imgs)
+        )
+        existing = {
+            p.s_img: p
+            for p in get_best_pairs(
+                img_id,
+                rows.values_list(*PAIR_FIELDS, named=True),
+                user_id=request.user.id,
+            )
+        }
+
         result = []
         for p_img in propagated_imgs:
             try:
-                p_ref = parse_img(p_img)
                 result.append(
-                    [None, img_id, p_img, q_ref.digit, p_ref.digit, None, [], 3, None]
+                    existing.get(p_img)
+                    or RegionPairTuple(
+                        None,
+                        img_id,
+                        p_img,
+                        q_digit,
+                        parse_img(p_img).digit,
+                        None,
+                        [],
+                        SimilarityType.PROPAGATED,
+                        None,
+                    )
                 )
             except ValueError:
                 continue
@@ -217,6 +254,14 @@ def get_propagated_matches(request, img_id: str = "") -> JsonResponse:
         return JsonResponse({"error": "Invalid JSON data"}, status=400)
     except Exception as e:
         return JsonResponse({"error": f"An error occurred: {e}"}, status=500)
+
+
+def region_json(region):
+    return {
+        **region.get_json(),
+        "digitization_id": region.digitization_id,
+        "color": string_to_color(f"wit{region.digitization.witness_id}"),
+    }
 
 
 def get_compared_regions(request, wid, rid=None):
@@ -231,10 +276,7 @@ def get_compared_regions(request, wid, rid=None):
         q_regions = witness.get_region_extractions()
 
     try:
-        current_regions = {
-            q_r.get_ref(): {**q_r.get_json(), "digitization_id": q_r.digitization_id}
-            for q_r in q_regions
-        }
+        current_regions = {q_r.get_ref(): region_json(q_r) for q_r in q_regions}
         q_digit_ids = {q_r.digitization_id for q_r in q_regions}
 
         pairs = RegionPair.objects.filter(
@@ -252,14 +294,11 @@ def get_compared_regions(request, wid, rid=None):
 
         partner_regions = RegionExtraction.objects.filter(
             digitization_id__in=partner_ids
-        )
+        ).select_related("digitization")
 
         compared_regions = dict(
             sorted(
-                {
-                    r.get_ref(): {**r.get_json(), "digitization_id": r.digitization_id}
-                    for r in partner_regions
-                }.items(),
+                {r.get_ref(): region_json(r) for r in partner_regions}.items(),
             )
         )
 
@@ -417,22 +456,21 @@ def add_region_pair(request):
         if not (validate_img_ref(q_img) and validate_img_ref(s_img)):
             raise ValidationError("Invalid image string format")
 
+        q_img, s_img = add_jpg(q_img), add_jpg(s_img)
         img_1, img_2 = RegionPair.order_pair((q_img, s_img))
-        img_1, img_2 = add_jpg(img_1), add_jpg(img_2)
         ref1, ref2 = parse_img(img_1), parse_img(img_2)
 
-        try:
-            region_pair = RegionPair.objects.get(img_1=img_1, img_2=img_2)
-            created = False
-            region_pair.similarity_type = SimilarityType.MANUAL
+        pairs = list(RegionPair.objects.filter(img_1=img_1, img_2=img_2))
+        for rp in pairs:
+            rp.similarity_type = SimilarityType.MANUAL
+            rp.score = rp.score or None
+            update_category_x(rp, request.user.id).save(validate=True)
 
-            if region_pair.score == 0 or region_pair.score == 0.0:
-                region_pair.score = None
-
-            region_pair = update_category_x(region_pair, request.user.id)
-            region_pair.save(validate=True)
-        except RegionPair.DoesNotExist:
-            region_pair = RegionPair.objects.create(
+        created = not pairs
+        region_pair = (
+            pairs[0]
+            if pairs
+            else RegionPair.objects.create(
                 img_1=img_1,
                 img_2=img_2,
                 digit_1=ref1.digit,
@@ -441,26 +479,25 @@ def add_region_pair(request):
                 similarity_type=SimilarityType.MANUAL,
                 category_x=[request.user.id],
             )
-            created = True
+        )
+        is_q1 = q_img == img_1
 
         # TODO get rid of this s_regions when we get rid of relying on regions to filter similarities in svelte
         # TODO in order to filter by digitization (and remove corresponding code in addMatch())
         if region_pair.regions_id_1 and region_pair.regions_id_2:
             s_regions = get_object_or_404(
                 RegionExtraction,
-                id=region_pair.regions_id_2
-                if q_img == img_1
-                else region_pair.regions_id_1,
+                id=region_pair.regions_id_2 if is_q1 else region_pair.regions_id_1,
             )
         else:
             s_regions = RegionExtraction.objects.filter(
-                digitization__id=ref2.digit if q_img == img_1 else ref1.digit
+                digitization__id=ref2.digit if is_q1 else ref1.digit
             ).first()
 
         return JsonResponse(
             {
                 "success": f"Region pair {'created' if created else 'updated'} successfully",
-                "s_regions": s_regions.get_json(),
+                "s_regions": region_json(s_regions),
                 "pair_info": region_pair.get_info(as_json=True),
             }
         )
@@ -505,12 +542,15 @@ def delete_matches(request):
 
     try:
         data = json.loads(request.body)
-        q_img = add_jpg(data.get("q_img", ""))
-        parse_img(q_img)
+        imgs = [add_jpg(img) for img in data.get("q_imgs") or [data.get("q_img", "")]]
+        for img in imgs:
+            parse_img(img)
     except (json.JSONDecodeError, ValueError) as e:
-        return JsonResponse({"error": f"Could not parse q_img: {e}"}, status=400)
+        return JsonResponse({"error": f"Could not parse images: {e}"}, status=400)
 
-    deleted, _ = RegionPair.objects.filter(Q(img_1=q_img) | Q(img_2=q_img)).delete()
+    deleted, _ = RegionPair.objects.filter(
+        Q(img_1__in=imgs) | Q(img_2__in=imgs)
+    ).delete()
     return JsonResponse(
         {"success": f"Successfully deleted {deleted} pairs"}, status=200
     )
@@ -565,6 +605,7 @@ def get_query_images(request, wid, rid=None):
 
 
 # todo use @json_post decorator
+@transaction.atomic
 def add_user_to_pair(request):
     """
     Toggle the current user in the category_x list of all region pairs
@@ -590,6 +631,9 @@ def add_user_to_pair(request):
             rp = RegionPair.objects.create(
                 **query,
                 category_x=[user_id],
+                similarity_type=int(
+                    data.get("similarity_type") or SimilarityType.MANUAL
+                ),
                 digit_1=ref1.digit,
                 digit_2=ref2.digit,
             )
@@ -694,55 +738,9 @@ def categorize_batch(request):
     try:
         data = json.loads(request.body)
         category = data.get("category", SimilarityCategory.EXACT_MATCH)
-        results = {"created": 0, "updated": 0}
-
-        pairs = [normalize_pair(p["img_1"], p["img_2"]) for p in data.get("pairs", [])]
-
-        if not pairs:
-            return JsonResponse({"status": "success", "results": results})
-
-        unique_img_pairs = {(img_1, img_2) for img_1, img_2 in pairs}
-
-        q = Q()
-        for img_1, img_2 in unique_img_pairs:
-            q |= Q(img_1=img_1, img_2=img_2)
-
-        existing = set(
-            RegionPair.objects.filter(q).values_list("img_1", "img_2").distinct()
+        results = categorize_pairs(
+            {(p["img_1"], p["img_2"]): category for p in data.get("pairs", [])}
         )
-
-        # Create missing
-        to_create = []
-        created_keys = set()
-        for img_1, img_2 in pairs:
-            key = (img_1, img_2)
-            if key not in existing and key not in created_keys:
-                created_keys.add(key)
-                ref1, ref2 = parse_img(img_1), parse_img(img_2)
-                to_create.append(
-                    RegionPair(
-                        img_1=img_1,
-                        img_2=img_2,
-                        digit_1=ref1.digit,
-                        digit_2=ref2.digit,
-                        category=category,
-                        similarity_type=SimilarityType.PROPAGATED,
-                        score=None,
-                        category_x=[],
-                    )
-                )
-
-        if to_create:
-            RegionPair.objects.bulk_create(to_create)
-            results["created"] = len(to_create)
-
-        if existing:
-            results["updated"] = (
-                RegionPair.objects.filter(q)
-                .exclude(category=category)
-                .update(category=category)
-            )
-
         return JsonResponse({"status": "success", "results": results})
 
     except json.JSONDecodeError:
@@ -750,6 +748,17 @@ def categorize_batch(request):
     except Exception as e:
         log("[categorize_batch] Exception encountered", e)
         return JsonResponse({"error": str(e)}, status=500)
+
+
+@csrf_exempt
+@user_passes_test(is_superuser)
+@json_post
+def import_similarity(request, data):
+    """
+    Import pairs with the export_pairs format:
+    {"pairs": [{"img_1", "img_2", ?"score", ?"category", ?"similarity_hash"}]}
+    """
+    return {"status": "success", "results": import_pairs(data.get("pairs", []))}
 
 
 @transaction.atomic
@@ -838,6 +847,16 @@ def reset_regions_similarity(request, rid=None):
 
         return JsonResponse({"error": f"No region id provided"}, status=400)
     return JsonResponse({"error": f"Invalid request method"}, status=400)
+
+
+@require_POST
+@user_passes_test(is_superuser)
+def reset_document_set_categories(request, dsid):
+    ids = get_object_or_404(DocumentSet, id=dsid).get_digit_ids()
+    reset = RegionPair.objects.filter(
+        digit_1__in=ids, digit_2__in=ids, category__isnull=False
+    ).update(category=None)
+    return JsonResponse({"reset": reset})
 
 
 # NOTE unused => delete ?
@@ -1083,6 +1102,29 @@ def get_pair(request):
     except ValueError as e:
         return JsonResponse({"error": f"Invalid image: {e}"}, status=400)
 
-    rows = pairs_with(q_img).filter(Q(img_1=s_img) | Q(img_2=s_img)).values_list(*PAIR_FIELDS, named=True)
+    rows = (
+        pairs_with(q_img)
+        .filter(Q(img_1=s_img) | Q(img_2=s_img))
+        .values_list(*PAIR_FIELDS, named=True)
+    )
     pairs = get_best_pairs(q_img, rows, user_id=request.user.id)
     return JsonResponse(pairs[0] if pairs else [], safe=False)
+
+
+@user_passes_test(is_superuser)
+def remap_preview(request, dsid):
+    """Dry run of the remap of a document set: its plan is saved to be applied by the remap treatment"""
+    doc_set = get_object_or_404(DocumentSet, pk=dsid)
+    if running_similarity(doc_set):
+        return JsonResponse(
+            {"error": "A similarity treatment is running on these documents"},
+            status=409,
+        )
+    plan = plan_path(dsid)
+    plan.unlink(missing_ok=True)
+    try:
+        summary = remap_document_set(doc_set, plan)
+    except Exception as e:
+        log(f"[remap_preview] Dry run failed for document set #{dsid}", e)
+        return JsonResponse({"error": f"Dry run failed: {e}"}, status=500)
+    return JsonResponse({**summary, "links": remap_links(dsid, summary["hashes"])})

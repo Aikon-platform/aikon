@@ -5,6 +5,7 @@ from django.shortcuts import redirect
 
 from app.webapp.models.document_set import DocumentSet
 from app.webapp.utils.tasking import create_doc_set
+from app.webapp.utils.functions import string_to_color
 from app.webapp.tasks import generate_all_json, regenerate_witness_json
 from webapp.utils.logger import log
 
@@ -52,18 +53,6 @@ def get_document_set_info(request, dsid=None):
             if target["max_date"] is None or max_date > target["max_date"]:
                 target["max_date"] = max_date
 
-    def string_to_color(s: str) -> str:
-        import hashlib
-
-        index = int(hashlib.md5(str(s).encode()).hexdigest(), 16) % 1000
-        golden_angle = 137.5
-        saturations = [85, 70, 60]
-        lightnesses = [50, 65, 40]
-        hue = int((index * golden_angle) % 360)
-        saturation = saturations[index % len(saturations)]
-        lightness = lightnesses[(index // len(saturations)) % len(lightnesses)]
-        return f"hsl({hue}, {saturation}%, {lightness}%)"
-
     for witness in witnesses:
         digits = witness.get_digits()
         series = witness.series
@@ -71,11 +60,12 @@ def get_document_set_info(request, dsid=None):
         min_date, max_date = witness.get_dates()
         digit_ids = [d.id for d in digits]
         series_id = series.id if series is not None else None
+        wit_color = string_to_color(f"wit{witness.id}")
 
         result["Witness"][witness.id] = {
             # **(witness.json or {}),
             "id": witness.id,
-            "color": string_to_color(f"wit{witness.id}"),
+            "color": wit_color,
             "title": wit_title,
             "min_date": min_date,
             "max_date": max_date,
@@ -87,7 +77,7 @@ def get_document_set_info(request, dsid=None):
             metadata = digit.json or {}
             result["Digitization"][digit.id] = {
                 "id": digit.id,
-                "color": string_to_color(f"digit{digit.id}"),
+                "color": wit_color,
                 "title": f"{wit_title} ({digit.get_digit_type()} #{digit.id})",
                 "witness_id": witness.id,
                 "series_id": series_id,
