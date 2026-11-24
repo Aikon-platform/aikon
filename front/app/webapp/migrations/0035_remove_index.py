@@ -7,7 +7,7 @@ class Migration(migrations.Migration):
     atomic = False
 
     dependencies = [
-        ("webapp", "0033_region"),
+        ("webapp", "0034_alter_regionextraction_options_and_more"),
     ]
 
     operations = [
