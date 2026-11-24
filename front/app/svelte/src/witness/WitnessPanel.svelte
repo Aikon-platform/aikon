@@ -29,8 +29,6 @@
         }
         openContents = new Set(openContents);
     }
-
-    console.log(witness);
 </script>
 
 <div class="m-4 py-5 px-4">
