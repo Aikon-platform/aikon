@@ -30,8 +30,12 @@ UV_INSTALL = {
 }
 
 
-def sh(cmd: list|str, cwd: Path = None, shell = False, capture_output = False, text = False) -> subprocess.CompletedProcess:
-    return subprocess.run(cmd, cwd=cwd, check=True, capture_output=capture_output, shell=shell, text=text)
+def sh(
+    cmd: list | str, cwd: Path = None, shell=False, capture_output=False, text=False
+) -> subprocess.CompletedProcess:
+    return subprocess.run(
+        cmd, cwd=cwd, check=True, capture_output=capture_output, shell=shell, text=text
+    )
 
 
 def which(name: str) -> str:
@@ -48,17 +52,35 @@ def which(name: str) -> str:
 def check_docker() -> None:
     which("docker")
     if subprocess.run(["docker", "compose", "version"], capture_output=True).returncode:
-        sys.exit("docker compose v2 is required (https://docs.docker.com/compose/install/)")
+        sys.exit(
+            "docker compose v2 is required (https://docs.docker.com/compose/install/)"
+        )
     if subprocess.run(["docker", "info"], capture_output=True).returncode:
-        sys.exit("docker daemon not reachable — start it (Docker Desktop, `colima start`, `orbstack`, ...) and retry")
+        sys.exit(
+            "docker daemon not reachable — start it (Docker Desktop, `colima start`, `orbstack`, ...) and retry"
+        )
 
 
 def db_password_ok(v: dict) -> bool:
     return not subprocess.run(
-        ["docker", "compose", "exec", "-T",
-         "-e", f"PGPASSWORD={v['POSTGRES_PASSWORD']}", "db",
-         "psql", "-U", v["POSTGRES_USER"], "-d", v["POSTGRES_DB"], "-c", "\\q"],
-        cwd=DOCKER_DIR, capture_output=True,
+        [
+            "docker",
+            "compose",
+            "exec",
+            "-T",
+            "-e",
+            f"PGPASSWORD={v['POSTGRES_PASSWORD']}",
+            "db",
+            "psql",
+            "-U",
+            v["POSTGRES_USER"],
+            "-d",
+            v["POSTGRES_DB"],
+            "-c",
+            "\\q",
+        ],
+        cwd=DOCKER_DIR,
+        capture_output=True,
     ).returncode
 
 
@@ -86,6 +108,7 @@ def setup_dev(v: dict) -> None:
     ensure_db_credentials(v)
     sh([uv, "run", "manage.py", "migrate"], cwd=FRONT_APP)
     sh([uv, "run", "manage.py", "create_superuser_check"], cwd=FRONT_APP)
+    sh(["pre-commit", "install"])
     print("\n✅ dev setup complete. Start everything with:  python run.py")
 
 
@@ -112,8 +135,11 @@ def setup_api(mode: str, use_defaults: bool) -> None:
         mode,
         "--root-env",
         str(ROOT / ".env"),
+        "--bundled",
+        "aikon",
     ] + (["--defaults"] if use_defaults else [])
     sh(cmd, cwd=ROOT / "api")
+
 
 def detect_firewall() -> None:
     """
@@ -137,15 +163,21 @@ def detect_firewall() -> None:
     if shutil.which("ufw") and "Status: active" in _sh("sudo ufw status").stdout:
         msg("ufw")
     # 2. fedora
-    elif shutil.which("firewall-cmd") and "running" in _sh("firewall-cmd --state").stdout:
+    elif (
+        shutil.which("firewall-cmd") and "running" in _sh("firewall-cmd --state").stdout
+    ):
         msg("firewalld")
 
 
 if __name__ == "__main__":
     parser = argparse.ArgumentParser(description=__doc__)
     parser.add_argument("--mode", choices=generate_env.MODES)
-    parser.add_argument("--defaults", action="store_true", help="never prompt, use defaults")
-    parser.add_argument("--no-api", action="store_true", help="install/build only the front")
+    parser.add_argument(
+        "--defaults", action="store_true", help="never prompt, use defaults"
+    )
+    parser.add_argument(
+        "--no-api", action="store_true", help="install/build only the front"
+    )
     args = parser.parse_args()
 
     check_docker()

@@ -67,6 +67,9 @@ cover/
 front/sas/
 front/app/webapp/static/svelte/
 
+# docker stuff
+docker/web/nginx_*.conf
+
 # Translations
 *.mo
 *.pot

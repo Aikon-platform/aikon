@@ -310,7 +310,7 @@ def oriented(r: dict) -> dict:
     return swap(r) if norm_ref(r["img_2"]) < norm_ref(r["img_1"]) else r
 
 
-def db_oriented(rows: list[dict], batch_size: int = BATCH_SIZE) -> list[dict]:
+def db_oriented(rows: list[dict]) -> list[dict]:
     """Sides in Postgres collation order, required by the pair_ordering constraint"""
     return [
         swap(r) if s else r

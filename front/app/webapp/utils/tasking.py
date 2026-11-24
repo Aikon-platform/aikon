@@ -11,7 +11,7 @@ from app.webapp.models.document_set import DocumentSet
 from app.webapp.models.region_extraction import RegionExtraction
 from app.webapp.models.witness import Witness
 from app.webapp.utils.logger import log
-from app.webapp.utils.functions import ensure_legacy_regions
+from app.webapp.utils.functions import ensure_legacy_regions, maybe_dockerize_url
 
 
 def get_user(user: User = None) -> User:
@@ -234,12 +234,26 @@ def prepare_request(records, treatment_id, prepare_document, task_name, paramete
     Returns:
         dict: Prepared request data or message.
     """
+    # dockerize IIIF maaifst URL for a single document
+    def dockerize_one(d: dict) -> dict:
+        if isinstance(d, dict) and d.get("src"):
+            # d["src"] is a link to a IIIF manifest that will be fetched by the API
+            # => must be accessible to other containers => dockerize it
+            d["src"] = maybe_dockerize_url(d["src"])
+        return d
+
     try:
         log(f"[prepare_request] Start preparing request for Treatment #{treatment_id}")
 
         documents = []
         for record in records:
-            documents.extend(prepare_document(record, **parameters))
+            document = prepare_document(record, **parameters)
+            # we're expecting `dict | list[dict]`, where `src` points to a IIIF manifest
+            if isinstance(document, list):
+                document = [dockerize_one(d) for d in document]
+            else:
+                document = dockerize_one(document)
+            documents.extend(document)
 
         if documents:
             uids = [str(d.get("uid", "UID")) for d in documents]

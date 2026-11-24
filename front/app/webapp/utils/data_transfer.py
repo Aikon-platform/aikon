@@ -7,6 +7,7 @@ from django.db import models
 
 from app.config.settings import APP_URL, APP_NAME
 
+
 def witness_extras(witness) -> dict:
     """Operational data needed to import a witness, alongside its raw metadata"""
     return {

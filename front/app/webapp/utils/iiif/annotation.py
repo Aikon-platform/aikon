@@ -983,6 +983,7 @@ def index_manifest(manifest_url, reindex=False):
             return True
 
     try:
+        manifest_url = maybe_dockerize_url(manifest_url)
         manifest = requests.get(manifest_url)
         manifest_content = manifest.json()
     except Exception as e:
