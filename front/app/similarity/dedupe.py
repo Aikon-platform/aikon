@@ -447,12 +447,19 @@ def inherit_categories(digit_ids: list[int] | None, dry_run: bool, log) -> dict:
 
     with connection.cursor() as cur:
         cur.execute(
-            f"{cte} SELECT count(*) FROM annotated WHERE n_categories > 1", params
+            f"""{cte} SELECT a.img_1, a.img_2, array_agg((n.id, n.similarity_hash, n.category)::text ORDER BY n.category, n.id)
+            FROM annotated a JOIN webapp_regionpair n ON n.img_1 = a.img_1 AND n.img_2 = a.img_2
+            WHERE a.n_categories > 1 GROUP BY 1, 2 ORDER BY 1, 2""",
+            params,
         )
-        conflicts = cur.fetchone()[0]
+        conflicting = cur.fetchall()
+        conflicts = len(conflicting)
         log(
             f"{conflicts} pairs with conflicting categories across hashes (left unchanged)"
+            + (" (id, hash, category):" if conflicts else "")
         )
+        for img_1, img_2, rows in conflicting:
+            log(f"  {img_1} | {img_2}: {' '.join(rows)}")
 
         if dry_run:
             cur.execute(
