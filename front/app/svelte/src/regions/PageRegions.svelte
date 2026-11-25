@@ -27,7 +27,7 @@
         {#if Object.values($pageRegions).length > 0}
             {#each Object.entries($pageRegions) as [canvasNb, items]}
                 <Row>
-                    <svelte:fragment slot="row-header">
+                    {#snippet rowHeader()}
                         <img src="{refToIIIF(toImgName(canvasNb), 'full', '250,')}" alt="Canvas {canvasNb}" class="mb-3 card">
                         <div class="is-center mb-1">
                             <a class="tag px-2 py-1 is-rounded is-hoverable" href="{manifestToMirador($selectedManifest, canvasNb-1)}" target="_blank">
@@ -35,10 +35,10 @@
                                 Page {canvasNb}
                             </a>
                         </div>
-                    </svelte:fragment>
-                    <svelte:fragment slot="row-body">
+                    {/snippet}
+                    {#snippet rowBody()}
                         <Regions items={Object.values(items)}/>
-                    </svelte:fragment>
+                    {/snippet}
                 </Row>
             {/each}
         {:else}
@@ -48,7 +48,10 @@
         {/if}
     {:catch error}
         <tr class="faded is-center">
-            {appLang === "en" ? `Error when retrieving paginated regions: ${error}` : `Erreur de récupération des pages : ${error}`}
+            <td>{appLang === "en"
+                ? `Error when retrieving paginated regions: ${error}`
+                : `Erreur de récupération des pages : ${error}`
+            }</td>
         </tr>
     {/await}
 </Table>
