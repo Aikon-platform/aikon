@@ -32,7 +32,7 @@
     }
 </script>
 
-<div class="item" transition:fade={{ duration: 500 }}>
+<div class="item" transition:fade|global={{ duration: 500 }}>
     <div class="card mb-5">
         <div class="card-content">
             <div class="media">

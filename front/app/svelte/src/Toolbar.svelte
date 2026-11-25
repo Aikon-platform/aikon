@@ -33,7 +33,7 @@
         </div>
         {#if expandable}
             {#if toolbarExpanded}
-                <div transition:slide={{axis: "y"}} class="ctrl-extra">
+                <div transition:slide|global={{axis: "y"}} class="ctrl-extra">
                     <slot name="toolbar-hidden"/>
                 </div>
             {/if}

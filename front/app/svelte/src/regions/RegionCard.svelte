@@ -60,7 +60,7 @@
     };
 </script>
 
-<div class="region is-center {selectable && $isSelected(item) ? 'checked' : ''}" style="{height === 'full' ? 'height: 100%' : ''}"> <!-- transition:fade={{ duration: 10 }} -->
+<div class="region is-center {selectable && $isSelected(item) ? 'checked' : ''}" style="{height === 'full' ? 'height: 100%' : ''}">
     <figure class="image card region-image" class:is-96x96={isSquare} tabindex="-1"
             style="{height === 'full' ? 'height: 100%' : `height: ${height}px; min-width: ${height}px`}; {borderColor ? `border: ${borderWidth}px solid ${borderColor};` : ''}"
             on:click={() => selectable ? toggleSelection(currentRegion) : openModal()} on:keyup={null}>

@@ -4,7 +4,7 @@
 </script>
 
 {#if $loading}
-    <div class="bkg-shade" transition:fade="{{ duration: 150 }}">
+    <div class="bkg-shade" transition:fade|global="{{ duration: 150 }}">
         <div class="loader"/>
     </div>
 {/if}
