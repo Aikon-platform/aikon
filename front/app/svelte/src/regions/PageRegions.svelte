@@ -21,7 +21,7 @@
 <Table>
     {#await $fetchPages}
         <tr class="faded is-center">
-            {appLang === "en" ? "Retrieving paginated regions..." : "Récupération des pages..."}
+            <td>{appLang === "en" ? "Retrieving paginated regions..." : "Récupération des pages..."}</td>
         </tr>
     {:then _}
         {#if Object.values($pageRegions).length > 0}

@@ -1,15 +1,12 @@
+
 <script>
-    import { createEventDispatcher } from "svelte";
-
-    const dispatcher = createEventDispatcher();
-
-    export let svg
+    let { svg, onelementSelect } = $props();
 
     function handleElementClick(event) {
         if (event.target !== event.currentTarget) {
-            dispatcher("elementSelect", event.target);
+            onelementSelect?.(event.target);
         }
     }
 </script>
 
-<div bind:innerHTML={svg} on:click={handleElementClick} />
+<div onclick={handleElementClick}>{@html svg}</div>

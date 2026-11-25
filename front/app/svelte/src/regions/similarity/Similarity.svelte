@@ -28,7 +28,7 @@
     {#if $loading}
         <Table>
             <tr class="faded is-center">
-                {appLang === "en" ? "Retrieving similarities..." : "Récupération des similarités..."}
+                <td>{appLang === "en" ? "Retrieving similarities..." : "Récupération des similarités..."}</td>
             </tr>
         </Table>
     {:else if $errorMsg}

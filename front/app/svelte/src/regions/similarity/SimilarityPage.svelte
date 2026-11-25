@@ -16,9 +16,10 @@
     <Table>
         {#await $setPageQImgs}
             <tr class="faded is-center">
-                {appLang === "en"
+                <td>{appLang === "en"
                     ? "Retrieving similarity page..."
-                    : "Récupération la page de similarité..."}
+                    : "Récupération la page de similarité..."
+                }</td>
             </tr>
         {:then _}
             {#each $pageQImgs as qImg (qImg.id)}
