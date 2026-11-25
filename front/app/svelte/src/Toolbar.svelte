@@ -1,11 +1,10 @@
+<!-- @migration-task Error while migrating Svelte code: This migration would change the name of a slot (toolbar-visible to toolbar_visible) making the component unusable -->
 <script>
     import {slide} from "svelte/transition";
     import TooltipGeneric from "./ui/TooltipGeneric.svelte";
     import {appLang} from "./constants.js";
 
-    export let expandable = true;
-
-    let toolbarExpanded = false;
+    let { expandable = true, toolbarExpanded = false, toolbarHidden, toolbarVisible } = $props();
 
     const toolbarText = {
         true: {
@@ -27,14 +26,14 @@
         <div class="ctrl-base">
             <div class="ctrl-block-wrapper">
                 <div class="ctrl-block">
-                    <slot name="toolbar-visible"/>
+                    {@render toolbarVisible()}
                 </div>
             </div>
         </div>
         {#if expandable}
             {#if toolbarExpanded}
                 <div transition:slide|global={{axis: "y"}} class="ctrl-extra">
-                    <slot name="toolbar-hidden"/>
+                    {@render toolbarHidden()}
                 </div>
             {/if}
             <div class="ctrl-toggle">
