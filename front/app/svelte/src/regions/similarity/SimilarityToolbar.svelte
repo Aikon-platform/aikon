@@ -92,7 +92,7 @@ const comparedRegionsChoices = derived(comparedRegions, $comparedRegions =>
 const similarityScoreRangePromise = fetchSimilarityScoreRange();
 
 /** @type {number?} ensures that $similarityScoreCutoff matches a value in similarityScoreRangePromise. updated by fetchSimilarityScoreRange */
-let defaultSimilarityScoreCutoff = $similarityScoreCutoff || undefined
+let defaultSimilarityScoreCutoff = $state($similarityScoreCutoff || undefined)
 
 /** @returns {Promise<Array<number?>>} */
 async function fetchSimilarityScoreRange() {
@@ -137,36 +137,42 @@ const setComparedRegions = (e) => {
 <svelte:window/>
 
 <Toolbar>
-    <div slot="toolbar-visible" class="ctrl-block-inputs">
-        <div class="ctrl-input">
-            {#if Object.keys($comparedRegionsChoices).length}
-                <InputDropdown choicesItems={$comparedRegionsChoices}
-                    multiple={true}
-                    placeholder="..."
-                    start={Object.keys($selectedRegions[currentPageId] || {})}
-                    lightDisplay={true}
-                    title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
-                    selectAll={true}
-                    on:updateValues={setComparedRegions}
-                />
-            {/if}
-        </div>
-        <div class="ctrl-input">
-            {#await similarityScoreRangePromise then similarityScoreRange}
-                {#if similarityScoreRange.length}
-                    <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
-                        minVal={similarityScoreRange[0]}
-                        maxVal={similarityScoreRange[1]}
-                        start={defaultSimilarityScoreCutoff || similarityScoreRange[0]}
-                        roundTo={3}
-                        on:updateSlider={setSimilarityScoreCutoff}
+    <!-- @migration-task: migrate this slot by hand, `toolbar-visible` is an invalid identifier -->
+    <!-- <div slot="toolbar-visible" class="ctrl-block-inputs"> -->
+    {#snippet toolbarVisible()}
+        <div class="ctrl-block-inputs">
+            <div class="ctrl-input">
+                {#if Object.keys($comparedRegionsChoices).length}
+                    <InputDropdown choicesItems={$comparedRegionsChoices}
+                        multiple={true}
+                        placeholder="..."
+                        start={Object.keys($selectedRegions[currentPageId] || {})}
+                        lightDisplay={true}
+                        title={appLang==="fr" ? "Régions sélectionnées" : "Selected regions"}
+                        selectAll={true}
+                        on:updateValues={setComparedRegions}
                     />
                 {/if}
-            {/await}
+            </div>
+            <div class="ctrl-input">
+                {#await similarityScoreRangePromise then similarityScoreRange}
+                    {#if similarityScoreRange.length}
+                        <InputSlider title={ appLang==="fr" ? "Score minimal" : "Minimal score" }
+                            minVal={similarityScoreRange[0]}
+                            maxVal={similarityScoreRange[1]}
+                            start={defaultSimilarityScoreCutoff || similarityScoreRange[0]}
+                            roundTo={3}
+                            on:updateSlider={setSimilarityScoreCutoff}
+                        />
+                    {/if}
+                {/await}
+            </div>
         </div>
-    </div>
+    {/snippet}
 
-    <svelte:fragment slot="toolbar-hidden">
+    <!-- @migration-task: migrate this slot by hand, `toolbar-hidden` is an invalid identifier -->
+    <!-- <svelte:fragment slot="toolbar-hidden"> -->
+    {#snippet toolbarHidden()}
         <div class="ctrl-block-wrapper">
             <div class="ctrl-block">
                 <div class="ctrl-block-title">
@@ -221,7 +227,7 @@ const setComparedRegions = (e) => {
                 </div>
             </div>
         </div>
-    </svelte:fragment>
+    {/snippet}
 </Toolbar>
 
 <style>
@@ -255,7 +261,7 @@ const setComparedRegions = (e) => {
     width: 100%;
     margin: 5px 0;
 }
-.ctrl-block-inputs:has(> :last-child:nth-child(1)) {
+.ctrl-block-inputs:has(:global(> :last-child:nth-child(1))) {
     /** rule for .ctrl-block-inputs that contain only 1 child */
     align-items: flex-start;
 }
