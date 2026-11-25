@@ -1,28 +1,29 @@
+<!-- @migration-task Error while migrating Svelte code: This migration would change the name of a slot (row-header to row_header) making the component unusable -->
 <script>
     import {getColNb} from "./utils.js";
 
-    export let useGrid = true;
-    let innerWidth = 0;
-    $: colNb = getColNb(innerWidth);
+    let { useGrid = true, rowHeader, rowBody } = $props();
+    let innerWidth = $state(0);
+    let colNb = $derived(getColNb(innerWidth));
 </script>
 
-<svelte:window bind:innerWidth/>
+<svelte:window bind:innerWidth={innerWidth} />
 
 <tr>
     <th class="is-3 center-flex is-narrow" style="width: 15vw">
         <div class="content-wrapper py-5">
-            <slot name="row-header"/>
+            {@render rowHeader()}
         </div>
     </th>
     <td class="p-5 is-fullwidth">
         {#if useGrid}
             <div class="fixed-grid has-{colNb}-cols">
                 <div class="grid is-gap-2">
-                    <slot name="row-body"/>
+                    {@render rowBody()}
                 </div>
             </div>
         {:else}
-            <slot name="row-body"/>
+            {@render rowBody()}
         {/if}
     </td>
 </tr>

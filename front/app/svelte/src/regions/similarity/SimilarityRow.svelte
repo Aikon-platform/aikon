@@ -12,8 +12,14 @@
     import RegionModal from "../modal/RegionModal.svelte";
     import RegionTabs from "../modal/RegionTabs.svelte";
 
-    export let qImg;
-    export let isInModal = false;
+    /**
+     * @typedef {Object} Props
+     * @property {any} qImg
+     * @property {boolean} [isInModal]
+     */
+
+    /** @type {Props} */
+    let { qImg, isInModal = false } = $props();
 
     const row = similarityStore.createRowStore(qImg, isInModal);
     const { loading, propagatedLoading, error, propagated, filtered, fetchRow, showSameWitness } = row;
@@ -52,14 +58,14 @@
         },
     };
 
-    let sImg = "";
-    $: sLen = Object.keys($selectedRegions[currentPageId] || {}).length;
+    let sImg = $state("");
+    let sLen = $derived(Object.keys($selectedRegions[currentPageId] || {}).length);
 
     // Lazy loading
-    let hasBeenVisible = isInModal;
-    let rowEl;
+    let hasBeenVisible = $state(isInModal);
+    let rowEl = $state();
 
-    $: noRegionsSelected = !isInModal && sLen === 0;
+    let noRegionsSelected = $derived(!isInModal && sLen === 0);
     onMount(() => {
         if (!isInModal) {
             const observer = new IntersectionObserver(([entry]) => {
@@ -117,8 +123,8 @@
         }
     }
 
-    let modalOpen = false;
-    let modalIndex = 0;
+    let modalOpen = $state(false);
+    let modalIndex = $state(0);
     const handleOpenModal = (e) => {
         modalIndex = e.detail.index ?? 0;
         modalOpen = true;
@@ -141,11 +147,12 @@
 </script>
 
 <Row useGrid={false}>
-    <svelte:fragment slot="row-header">
+    <!-- @migration-task: migrate this slot by hand, `row-header` is an invalid identifier -->
+    {#snippet rowHeader()}
         <div bind:this={rowEl} class="is-flex is-flex-direction-column is-align-items-center">
             {#if manifest}
                 <a class="tag px-2 py-1 mb-2 is-rounded is-hoverable" href="{manifestToMirador(manifest, qImgItem.canvasNb)}" target="_blank">
-                    <i class="fa-solid fa-pen-to-square"/>
+                    <i class="fa-solid fa-pen-to-square"></i>
                     Page {qImgItem.canvasNb}
                 </a>
             {:else}
@@ -156,7 +163,7 @@
             <div class="new-similarity control pt-2">
                 <div class="tags has-addons" style="flex-wrap: nowrap">
                     <input bind:value={sImg} class="input is-small tag" type="text" placeholder="{i18n('newMatch', t)}"/>
-                    <button class="button is-small tag is-link is-center" on:click={addMatch}>
+                    <button class="button is-small tag is-link is-center" onclick={addMatch}>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                             <path fill="currentColor" d="M256 80c0-17.7-14.3-32-32-32s-32 14.3-32 32l0 144L48 224c-17.7 0-32 14.3-32 32s14.3 32 32 32l144 0 0 144c0 17.7 14.3 32 32 32s32-14.3 32-32l0-144 144 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-144 0 0-144z"/>
                         </svg>
@@ -164,7 +171,7 @@
                 </div>
 
                 {#if sLen === 1 && !isInModal}
-                    <button id="no-match" class="button is-small tag is-danger is-center m-0" on:click={noMatch} title="{i18n('noMatch', t)}">
+                    <button id="no-match" class="button is-small tag is-danger is-center m-0" onclick={noMatch} title="{i18n('noMatch', t)}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                             <path fill="currentColor" d="M376.6 84.5c11.3-13.6 9.5-33.8-4.1-45.1s-33.8-9.5-45.1 4.1L192 206 56.6 43.5C45.3 29.9 25.1 28.1 11.5 39.4S-3.9 70.9 7.4 84.5L150.3 256 7.4 427.5c-11.3 13.6-9.5 33.8 4.1 45.1s33.8 9.5 45.1-4.1L192 306 327.4 468.5c11.3 13.6 31.5 15.4 45.1 4.1s15.4-31.5 4.1-45.1L233.7 256 376.6 84.5z"/>
                         </svg>
@@ -172,7 +179,7 @@
                 {/if}
 
                 {#if isInModal}
-                    <button class="button is-small tag is-danger is-center m-0 has-text-light" on:click={deletePairWith} title="{i18n('deletePairs', t)}">
+                    <button class="button is-small tag is-danger is-center m-0 has-text-light" onclick={deletePairWith} title="{i18n('deletePairs', t)}">
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                             <path fill="currentColor" d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"/>
                         </svg>
@@ -184,23 +191,25 @@
             <InputToggle toggleLabel={i18n("showSameWitness", t)} start={$showSameWitness}
                          on:updateChecked={e => showSameWitness.set(e.detail)}/>
         {/if}
-    </svelte:fragment>
+    {/snippet}
 
-    <svelte:fragment slot="row-body">
+    <!-- @migration-task: migrate this slot by hand, `row-body` is an invalid identifier -->
+    {#snippet rowBody()}
         {#if hasBeenVisible}
             <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} downloadable={false}/>
             <div class="block propagated-regions my-4">
                 <MatchedRegions items={$propagated} loading={$propagatedLoading} error={null} isPropagated={true} {qImg} {isInModal} downloadable={false}/>
             </div>
         {/if}
-    </svelte:fragment>
+     {/snippet}
 </Row>
 
 {#if !isInModal}
     <RegionModal items={[qImgItem]} bind:currentIndex={modalIndex} bind:open={modalOpen}>
-        <svelte:fragment let:item={currentItem}>
+        {#snippet children({ item: currentItem })}
+
             <RegionTabs item={currentItem}/>
-        </svelte:fragment>
+        {/snippet}
     </RegionModal>
 {/if}
 
