@@ -1,4 +1,6 @@
 <script>
+    import { preventDefault } from 'svelte/legacy';
+
     import Table from "../../Table.svelte";
     import Row from "../../Row.svelte";
     import Toolbar from "../../Toolbar.svelte";
@@ -9,9 +11,8 @@
     import { clusterSelection } from "../../selection/selectionStore.js";
     import Regions from "../../regions/Regions.svelte";
 
-    export let documentSetStore;
     const { imageNodes, selectedCategories } = documentSetStore;
-    export let clusterStore;
+    let { documentSetStore, clusterStore } = $props();
     const {
         clusterNb,
         paginatedClusters,
@@ -59,19 +60,21 @@
 
     const { validate, validated, ...globalActions } = actionLabels;
 
-    $: clusterItems = new Map(
+    let clusterItems = $derived(new Map(
         $paginatedClusters.map(cl => [
             cl.id,
             cl.members.map(imgId => ({...$imageNodes.get(imgId), clusterId: cl.id}))
         ])
-    );
+    ));
 
-    $: onlyOneSelectedCategory = $selectedCategories.length === 1;
-    $: onlyExactMatches = $selectedCategories.length === 1 && $selectedCategories[0] === 1;
+    let onlyOneSelectedCategory = $derived($selectedCategories.length === 1);
+    let onlyExactMatches = $derived($selectedCategories.length === 1 && $selectedCategories[0] === 1);
 </script>
 
 <Toolbar expandable={false}>
-    <div slot="toolbar-visible">
+    <!-- @migration-task: migrate this slot by hand, `toolbar-visible` is an invalid identifier -->
+    <!-- <div slot="toolbar-visible"> -->
+    {#snippet toolbarVisible()}
         <div class="columns is-vcentered is-mobile py-4">
             <div class="field has-addons">
                 <p class="control">
@@ -80,14 +83,14 @@
                      </button>
                 </p>
                 <p class="control">
-                    <button class="button py-3" on:click|preventDefault={onlyExactMatches ? newCluster : categorizeSelection(1)}
+                    <button class="button py-3" onclick={preventDefault(onlyExactMatches ? newCluster : categorizeSelection(1))}
                             title={onlyExactMatches ? actionLabels.create.title : categoryInfo[1].action}>
                         {@html categoryInfo[1].svg}
                     </button>
                 </p>
                 {#each [2, 3] as cat}
                     <p class="control">
-                        <button class="button py-3" on:click|preventDefault={() => categorizeSelection(cat)}
+                        <button class="button py-3" onclick={preventDefault(() => categorizeSelection(cat))}
                                 title={categoryInfo[cat].action}>
                             {@html categoryInfo[cat].svg}
                         </button>
@@ -97,7 +100,7 @@
                     <!-- Skip "remove" action if more than one category is selected -->
                     <!-- Because it makes no sense to uncategorize pairs that have different or no category -->
                     <p class="control">
-                        <button class="button py-3" on:click|preventDefault={removeFromClusters}
+                        <button class="button py-3" onclick={preventDefault(removeFromClusters)}
                                 title={actionLabels.remove.title}>
                             {@html categoryInfo[0].svg}
                         </button>
@@ -105,7 +108,7 @@
                 {/if}
             </div>
         </div>
-    </div>
+    {/snippet}
 </Toolbar>
 
 <Pagination store={clusterStore} nbOfItems={$clusterNb} {pageLength}/>
@@ -115,12 +118,13 @@
 <Table>
     {#each $paginatedClusters as cl (cl.id)}
         <Row>
-            <svelte:fragment slot="row-header">
-                <div class="cluster-info is-center is-fullwidth">
+            <!-- @migration-task: migrate this slot by hand, `row-header` is an invalid identifier -->
+            {#snippet rowHeader()}
+                                <div class="cluster-info is-center is-fullwidth">
                     <span class="cluster-size">{cl.size} images</span>
                     <hr>
                     {#if !cl.fullyConnected}
-                        <button class="button is-small is-warning" title={validate.desc} on:click={() => validate.fct(cl)}>
+                        <button class="button is-small is-warning" title={validate.desc} onclick={() => validate.fct(cl)}>
                             {validate.title}
                         </button>
                     {:else}
@@ -129,10 +133,11 @@
                         </span>
                     {/if}
                 </div>
-            </svelte:fragment>
-            <svelte:fragment slot="row-body">
+            {/snippet}
+            <!-- @migration-task: migrate this slot by hand, `row-body` is an invalid identifier -->
+            {#snippet rowBody()}
                 <Regions items={clusterItems.get(cl.id)} copyable={true} selectionStore={clusterSelection}/>
-            </svelte:fragment>
+            {/snippet}
         </Row>
     {/each}
 </Table>
