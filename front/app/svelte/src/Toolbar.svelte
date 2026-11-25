@@ -1,5 +1,7 @@
 <!-- @migration-task Error while migrating Svelte code: This migration would change the name of a slot (toolbar-visible to toolbar_visible) making the component unusable -->
 <script>
+    import { preventDefault } from 'svelte/legacy';
+
     import {slide} from "svelte/transition";
     import TooltipGeneric from "./ui/TooltipGeneric.svelte";
     import {appLang} from "./constants.js";
@@ -37,7 +39,7 @@
                 </div>
             {/if}
             <div class="ctrl-toggle">
-                <button on:click|preventDefault={toggleToolbarExpanded} class="button is-link">
+                <button onclick={preventDefault(toggleToolbarExpanded)} class="button is-link">
                     <svg style={`transform: rotate(${toolbarExpanded ? "180" : "0"}deg)`} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                         <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
                               stroke-width="1.5" d="M12 3v18m0 0l8.5-8.5M12 21l-8.5-8.5"></path>
