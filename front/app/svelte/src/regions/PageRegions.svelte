@@ -9,7 +9,7 @@
     import Row from "../Row.svelte";
     import Regions from "./Regions.svelte";
 
-    export let witnessStore;
+    let { witnessStore } = $props();
     const { selectedManifest, imgPrefix, nbOfPages, leadingZeros } = witnessStore;
 
     const zeros = (n, l) => n.toString().padStart(l, "0");
