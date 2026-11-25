@@ -72,7 +72,7 @@
 </script>
 
 <Toolbar expandable={false}>
-    <!-- @migration-task: migrate this slot by hand, `toolbar-visible` is an invalid identifier -->
+    <!-- @migration-task-ok: migrate this slot by hand, `toolbar-visible` is an invalid identifier -->
     <!-- <div slot="toolbar-visible"> -->
     {#snippet toolbarVisible()}
         <div class="columns is-vcentered is-mobile py-4">
@@ -118,7 +118,7 @@
 <Table>
     {#each $paginatedClusters as cl (cl.id)}
         <Row>
-            <!-- @migration-task: migrate this slot by hand, `row-header` is an invalid identifier -->
+            <!-- @migration-task-ok: migrate this slot by hand, `row-header` is an invalid identifier -->
             {#snippet rowHeader()}
                                 <div class="cluster-info is-center is-fullwidth">
                     <span class="cluster-size">{cl.size} images</span>
@@ -134,7 +134,7 @@
                     {/if}
                 </div>
             {/snippet}
-            <!-- @migration-task: migrate this slot by hand, `row-body` is an invalid identifier -->
+            <!-- @migration-task-ok: migrate this slot by hand, `row-body` is an invalid identifier -->
             {#snippet rowBody()}
                 <Regions items={clusterItems.get(cl.id)} copyable={true} selectionStore={clusterSelection}/>
             {/snippet}

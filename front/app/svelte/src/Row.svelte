@@ -1,4 +1,4 @@
-<!-- @migration-task Error while migrating Svelte code: This migration would change the name of a slot (row-header to row_header) making the component unusable -->
+<!-- @migration-task-ok Error while migrating Svelte code: This migration would change the name of a slot (row-header to row_header) making the component unusable -->
 <script>
     import {getColNb} from "./utils.js";
 

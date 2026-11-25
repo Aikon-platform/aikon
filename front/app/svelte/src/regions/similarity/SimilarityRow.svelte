@@ -147,7 +147,7 @@
 </script>
 
 <Row useGrid={false}>
-    <!-- @migration-task: migrate this slot by hand, `row-header` is an invalid identifier -->
+    <!-- @migration-task-ok: migrate this slot by hand, `row-header` is an invalid identifier -->
     {#snippet rowHeader()}
         <div bind:this={rowEl} class="is-flex is-flex-direction-column is-align-items-center">
             {#if manifest}
@@ -193,7 +193,7 @@
         {/if}
     {/snippet}
 
-    <!-- @migration-task: migrate this slot by hand, `row-body` is an invalid identifier -->
+    <!-- @migration-task-ok: migrate this slot by hand, `row-body` is an invalid identifier -->
     {#snippet rowBody()}
         {#if hasBeenVisible}
             <MatchedRegions items={$filtered} loading={$loading} error={$error} {qImg} {isInModal} {noRegionsSelected} downloadable={false}/>

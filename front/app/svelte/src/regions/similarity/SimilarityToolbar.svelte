@@ -137,7 +137,7 @@ const setComparedRegions = (e) => {
 <svelte:window/>
 
 <Toolbar>
-    <!-- @migration-task: migrate this slot by hand, `toolbar-visible` is an invalid identifier -->
+    <!-- @migration-task-ok: migrate this slot by hand, `toolbar-visible` is an invalid identifier -->
     <!-- <div slot="toolbar-visible" class="ctrl-block-inputs"> -->
     {#snippet toolbarVisible()}
         <div class="ctrl-block-inputs">
@@ -170,7 +170,7 @@ const setComparedRegions = (e) => {
         </div>
     {/snippet}
 
-    <!-- @migration-task: migrate this slot by hand, `toolbar-hidden` is an invalid identifier -->
+    <!-- @migration-task-ok: migrate this slot by hand, `toolbar-hidden` is an invalid identifier -->
     <!-- <svelte:fragment slot="toolbar-hidden"> -->
     {#snippet toolbarHidden()}
         <div class="ctrl-block-wrapper">

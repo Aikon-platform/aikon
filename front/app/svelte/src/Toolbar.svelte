@@ -1,4 +1,4 @@
-<!-- @migration-task Error while migrating Svelte code: This migration would change the name of a slot (toolbar-visible to toolbar_visible) making the component unusable -->
+<!-- @migration-task-ok Error while migrating Svelte code: This migration would change the name of a slot (toolbar-visible to toolbar_visible) making the component unusable -->
 <script>
     import { preventDefault } from 'svelte/legacy';
 
