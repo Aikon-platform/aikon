@@ -1,4 +1,6 @@
 <script>
+    import { run, stopPropagation } from 'svelte/legacy';
+
     import { createEventDispatcher } from "svelte";
     import { RegionItem } from "./types.js";
     import { regionsStore } from "./regionsStore.js";
@@ -7,41 +9,53 @@
     import {i18n, loadWitnessTitle, witnessTitles} from "../utils.js";
     const { clipBoard } = regionsStore;
 
-    export let selectionStore;
-    if (!selectionStore) {
-        selectionStore = regionsSelection;
-    }
-    export let toggleSelection = selectionStore.toggle;
-    const { isSelected } = selectionStore;
-
     /** @typedef {import("./types.js").RegionItemType} RegionItemType */
 
-    /** @type {RegionItemType} */
-    export let item;
-    /** @type {number|null} */
-    export let index = null;
-    /** @type {string|null} */
-    export let borderColor = null;
-    /** @type {int|null} */
-    export let borderWidth = 5;
-    /** @type {boolean} */
-    export let copyable = false;
-    /** @type {boolean} */
-    export let isInModal = false;
-    /** @type {boolean} */
-    export let selectable = !isInModal;
-    /** @type {boolean} */
-    export let isSquare = false;
-    /** @type {number|"full"} */
-    export let height = isSquare ? 96 : 140;
-    if ( height === "full" ) { isSquare = false }
-    export let url = null;
-    export let downloadable = isInModal;
+    /**
+     * @typedef {Object} Props
+     * @property {any} selectionStore
+     * @property {any} [toggleSelection]
+     * @property {RegionItemType} item
+     * @property {number|null} [index]
+     * @property {string|null} [borderColor]
+     * @property {int|null} [borderWidth]
+     * @property {boolean} [copyable]
+     * @property {boolean} [isInModal]
+     * @property {boolean} [selectable]
+     * @property {boolean} [isSquare]
+     * @property {number|"full"} [height]
+     * @property {any} [url]
+     * @property {any} [downloadable]
+     * @property {import('svelte').Snippet} [actions]
+     */
 
-    $: currentRegion = new RegionItem(item);
-    $: isCopied = currentRegion.copyId === $clipBoard;
-    $: imgSrc = url ?? currentRegion.url(null, height === "full" ? "full" : isSquare ? `${height},` : `,${height}`);
-    $: isInModal && loadWitnessTitle(currentRegion.witnessId);
+    /** @type {Props} */
+    let {
+        selectionStore = $bindable(regionsSelection),
+        toggleSelection = (...args) => selectionStore.toggle(...args),
+        item,
+        index = null,
+        borderColor = null,
+        borderWidth = 5,
+        copyable = false,
+        isInModal = false,
+        selectable = !isInModal,
+        isSquare = $bindable(false),
+        height = isSquare ? 96 : 140,
+        url = null,
+        downloadable = isInModal,
+        actions
+    } = $props();
+
+    if ( height === "full" ) { isSquare = false }
+    const { isSelected } = selectionStore;
+
+    let currentRegion = $derived(new RegionItem(item));
+    let isCopied = $derived(currentRegion.copyId === $clipBoard);
+    let imgSrc = $derived(url ?? currentRegion.url(null, height === "full" ? "full" : isSquare ? `${height},` : `,${height}`));
+    run(() => {
+        isInModal && loadWitnessTitle(currentRegion.witnessId);
+    });
 
     const dispatch = createEventDispatcher();
     const openModal = () => isInModal ? null : dispatch("openModal", { index });
@@ -63,7 +77,7 @@
 <div class="region is-center {selectable && $isSelected(item) ? 'checked' : ''}" style="{height === 'full' ? 'height: 100%' : ''}">
     <figure class="image card region-image" class:is-96x96={isSquare} tabindex="-1"
             style="{height === 'full' ? 'height: 100%' : `height: ${height}px; min-width: ${height}px`}; {borderColor ? `border: ${borderWidth}px solid ${borderColor};` : ''}"
-            on:click={() => selectable ? toggleSelection(currentRegion) : openModal()} on:keyup={null}>
+            onclick={() => selectable ? toggleSelection(currentRegion) : openModal()} onkeyup={null}>
         <img class="region-img" src={imgSrc} alt="Extracted region" loading="lazy"/>
         <div class="overlay is-center">
             <span class="overlay-desc">{@html isInModal ? currentRegion.label($witnessTitles[currentRegion.witnessId]) : currentRegion.title}</span>
@@ -72,7 +86,7 @@
 
     <div class="region-btn ml-1">
         {#if copyable}
-        <button class="button tag" on:click|stopPropagation={() => regionsStore.copyRef(currentRegion.copyId)}>
+        <button class="button tag" onclick={stopPropagation(() => regionsStore.copyRef(currentRegion.copyId))}>
             <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512">
                 {#if isCopied}
                     <path d="M208 0H332.1c12.7 0 24.9 5.1 33.9 14.1l67.9 67.9c9 9 14.1 21.2 14.1 33.9V336c0 26.5-21.5 48-48 48H208c-26.5 0-48-21.5-48-48V48c0-26.5 21.5-48 48-48zM48 128h80v64H64V448H256V416h64v48c0 26.5-21.5 48-48 48H48c-26.5 0-48-21.5-48-48V176c0-26.5 21.5-48 48-48z"/>
@@ -89,11 +103,11 @@
             <ModalOpener on:open={openModal}/>
         {/if}
         {#if downloadable}
-            <button class="button tag mb-1 p-0 p-2 has-text-link" on:click|stopPropagation={download} title={i18n("downloadImg", t)}>
-                <i class="fa-solid fa-download"/>
+            <button class="button tag mb-1 p-0 p-2 has-text-link" onclick={stopPropagation(download)} title={i18n("downloadImg", t)}>
+                <i class="fa-solid fa-download"></i>
             </button>
         {/if}
-        <slot name="actions"/>
+        {@render actions?.()}
     </div>
 </div>
 

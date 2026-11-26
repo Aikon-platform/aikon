@@ -3,11 +3,28 @@
     import Loading from "./Loading.svelte";
     import { activeLayout } from "./ui/tabStore.js";
 
-    export let sidebarWidth = "25";
     export const layoutHeight = "90vh";
-    export let tabList = {};
-    export let defaultTab = Object.keys(tabList)[0] ?? "all";
-    export let topOffsetElement = null;
+    /**
+     * @typedef {Object} Props
+     * @property {string} [sidebarWidth]
+     * @property {any} [tabList]
+     * @property {any} [defaultTab]
+     * @property {any} [topOffsetElement]
+     * @property {import('svelte').Snippet} [sidebar]
+     * @property {import('svelte').Snippet} [tabs]
+     * @property {import('svelte').Snippet} [content]
+     */
+
+    /** @type {Props} */
+    let {
+        sidebarWidth = "25",
+        tabList = {},
+        defaultTab = Object.keys(tabList).at(0) ?? "all",
+        topOffsetElement = null,
+        sidebar,
+        tabs,
+        content
+    } = $props();
 
     function updateTopOffset(element = null) {
         if (!element) {
@@ -27,19 +44,19 @@
 
 <div class="layout" style="min-height: {layoutHeight};">
     <aside class="sidebar" style="width: {sidebarWidth}%; min-height: {layoutHeight};">
-        <slot name="sidebar"/>
+        {@render sidebar?.()}
     </aside>
 
     <main class="main-content" style="width: {100-sidebarWidth}%; min-height: {layoutHeight};">
         <nav id="tabs" class="tabs-bar">
-            {#if $$slots.tabs}
-                <slot name="tabs"/>
+            {#if tabs}
+                {@render tabs?.()}
             {:else if Object.keys(tabList).length}
                 <div class="tabs">
                     <ul>
                         {#each Object.entries(tabList) as [tabRef, tabTitle]}
                             <li class:is-active={$activeLayout === tabRef}>
-                                <a on:click={() => activeLayout.change(tabRef)} href="{null}">{tabTitle}</a>
+                                <a onclick={() => activeLayout.change(tabRef)} href="{null}">{tabTitle}</a>
                             </li>
                         {/each}
                     </ul>
@@ -48,7 +65,7 @@
         </nav>
 
         <div class="content-area pl-5">
-            <slot name="content"/>
+            {@render content?.()}
         </div>
     </main>
 </div>
