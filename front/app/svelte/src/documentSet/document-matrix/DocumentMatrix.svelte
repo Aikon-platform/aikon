@@ -1,4 +1,6 @@
 <script>
+    import { run } from 'svelte/legacy';
+
     import {i18n} from "../../utils.js";
     import DownloadPng from "../../ui/DownloadPng.svelte";
     import SplitLayout from "../../ui/SplitLayout.svelte";
@@ -7,8 +9,7 @@
     import PairDetailModal from "./PairDetailModal.svelte";
     import Matches from "../Matches.svelte";
 
-    export let documentSetStore;
-    export let clusterStore;
+    let { documentSetStore, clusterStore } = $props();
 
     const {
         visibleDocuments, getFilteredPairsForDocPair, filteredDocPairStats, filteredDocStats,
@@ -34,21 +35,23 @@
         viewMode: {en: "Matrix display mode", fr: "Mode d'affichage de la matrice"},
     };
 
-    let selectedCell = null;
+    let selectedCell = $state(null);
     let sortOrder = "name";
-    let scatterMode = "image";
-    let navState = null;
-    let modalActive = false;
-    let scatterData = null;
-    let viewMode = "matches";
+    let scatterMode = $state("image");
+    let navState = $state(null);
+    let modalActive = $state(false);
+    let scatterData = $state(null);
+    let viewMode = $state("matches");
 
-    $: documents = $visibleDocuments;
-    $: if (selectedCell && [selectedCell.doc1, selectedCell.doc2].some(d => !documents.some(v => v.id === d.id))) selectedCell = null;
+    let documents = $derived($visibleDocuments);
+    run(() => {
+        if (selectedCell && [selectedCell.doc1, selectedCell.doc2].some(d => !documents.some(v => v.id === d.id))) selectedCell = null;
+    });
 
-    $: pairsForSelection = selectedCell ? ($visiblePairIds, getFilteredPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)) : [];
-    $: matchesData = selectedCell
+    let pairsForSelection = $derived(selectedCell ? ($visiblePairIds, getFilteredPairsForDocPair(selectedCell.doc1.id, selectedCell.doc2.id)) : []);
+    let matchesData = $derived(selectedCell
         ? buildMatchesForAnchor(selectedCell.doc1, [selectedCell.doc2], null, false, true)
-        : { matches: [], columns: [] };
+        : { matches: [], columns: [] });
 
     function handleCellSelect(e) {
         selectedCell = e.detail;
@@ -70,72 +73,90 @@
 </script>
 
 <SplitLayout>
-    <div slot="left-title" class="is-flex is-justify-content-space-between">
-        <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
-        <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
-            <DownloadPng targetId="matrix-viz" filename="document-matrix" svgExport={true}/>
-            <div class="select is-small" title={i18n("viewMode", t)}>
-                <select bind:value={viewMode}>
-                    {#each Object.keys(viewModes) as m}
-                        <option value={m}>{i18n(m, viewModes)}</option>
-                    {/each}
-                </select>
+    <!-- @migration-task-ok: migrate this slot by hand, `left-title` is an invalid identifier -->
+    {#snippet leftTitle()}
+        <div class="is-flex is-justify-content-space-between">
+            <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
+            <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+                <DownloadPng targetId="matrix-viz" filename="document-matrix" svgExport={true}/>
+                <div class="select is-small" title={i18n("viewMode", t)}>
+                    <select bind:value={viewMode}>
+                        {#each Object.keys(viewModes) as m}
+                            <option value={m}>{i18n(m, viewModes)}</option>
+                        {/each}
+                    </select>
+                </div>
             </div>
         </div>
-    </div>
-    <div slot="left-scroll" id="matrix-viz">
-        <DocumentSetMatrix
-            {documents} {sortOrder}
-            scoreData={$filteredDocPairStats.scoreCount}
-            docStats={$filteredDocStats.scoreCount}
-            imageCountMap={$imageCountMap}
-            mode={viewMode}
-            on:cellselect={handleCellSelect}
-            {coverageData}
-        />
-    </div>
+    {/snippet}
+    <!-- @migration-task-ok: migrate this slot by hand, `left-scroll` is an invalid identifier -->
+    {#snippet leftScroll()}
+        <div id="matrix-viz">
+            <DocumentSetMatrix
+                {documents} {sortOrder}
+                scoreData={$filteredDocPairStats.scoreCount}
+                docStats={$filteredDocStats.scoreCount}
+                imageCountMap={$imageCountMap}
+                mode={viewMode}
+                on:cellselect={handleCellSelect}
+                {coverageData}
+            />
+        </div>
+    {/snippet}
 
-    <div slot="bottom-left-title" class="is-flex is-justify-content-space-between">
-        {#if matchesData.matches.length}
-            <h4 class="title is-6 mb-0">
-                {i18n("matches", t)} ({matchesData.matches.length})
-            </h4>
-        {/if}
-    </div>
-    <div slot="bottom-left-scroll">
-        <Matches matches={matchesData.matches} columns={matchesData.columns} hideEmpty={$hideEmpty} pairCat={$pairCat} {clusterStore}/>
-    </div>
-
-    <div slot="right-title" class="is-flex is-justify-content-space-between">
-        <h4 class="title is-6 mb-0">{i18n("pageByPage", t)}</h4>
-        <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
-            {#if selectedCell}
-                <DownloadPng targetId="scatter-viz" filename="document-comparison" svgExport={true}/>
-                <div class="control">
-                    <div class="select is-small">
-                        <select bind:value={scatterMode}>
-                            <option value="page">{i18n("byPage", t)}</option>
-                            <option value="image">{i18n("byImage", t)}</option>
-                        </select>
-                    </div>
-                </div>
+    <!-- @migration-task-ok: migrate this slot by hand, `bottom-left-title` is an invalid identifier -->
+    {#snippet bottomLeftTitle()}
+        <div slot="bottom-left-title" class="is-flex is-justify-content-space-between">
+            {#if matchesData.matches.length}
+                <h4 class="title is-6 mb-0">
+                    {i18n("matches", t)} ({matchesData.matches.length})
+                </h4>
             {/if}
         </div>
-    </div>
-    <div slot="right-scroll" id="scatter-viz">
-        {#if selectedCell}
-            <DocumentPairMatrix
-                doc1={selectedCell.doc1}
-                doc2={selectedCell.doc2}
-                pairs={pairsForSelection}
-                mode={scatterMode}
-                hideEmpty={$hideEmpty}
-                on:cellclick={handleScatterClick}
-            />
-        {:else}
-            <p class="has-text-grey is-size-7">{i18n("selectCell", t)}</p>
-        {/if}
-    </div>
+    {/snippet}
+    <!-- @migration-task-ok: migrate this slot by hand, `bottom-left-scroll` is an invalid identifier -->
+    {#snippet bottonLeftScroll()}
+        <div>
+            <Matches matches={matchesData.matches} columns={matchesData.columns} hideEmpty={$hideEmpty} pairCat={$pairCat} {clusterStore}/>
+        </div>
+    {/snippet}
+
+    <!-- @migration-task-ok: migrate this slot by hand, `right-title` is an invalid identifier -->
+    {#snippet rightTitle()}
+        <div class="is-flex is-justify-content-space-between">
+            <h4 class="title is-6 mb-0">{i18n("pageByPage", t)}</h4>
+            <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+                {#if selectedCell}
+                    <DownloadPng targetId="scatter-viz" filename="document-comparison" svgExport={true}/>
+                    <div class="control">
+                        <div class="select is-small">
+                            <select bind:value={scatterMode}>
+                                <option value="page">{i18n("byPage", t)}</option>
+                                <option value="image">{i18n("byImage", t)}</option>
+                            </select>
+                        </div>
+                    </div>
+                {/if}
+            </div>
+        </div>
+    {/snippet}
+    <!-- @migration-task-ok: migrate this slot by hand, `right-scroll` is an invalid identifier -->
+    {#snippet rightScroll()}
+        <div id="scatter-viz">
+            {#if selectedCell}
+                <DocumentPairMatrix
+                    doc1={selectedCell.doc1}
+                    doc2={selectedCell.doc2}
+                    pairs={pairsForSelection}
+                    mode={scatterMode}
+                    hideEmpty={$hideEmpty}
+                    on:cellclick={handleScatterClick}
+                />
+            {:else}
+                <p class="has-text-grey is-size-7">{i18n("selectCell", t)}</p>
+            {/if}
+        </div>
+    {/snippet}
 </SplitLayout>
 
 <PairDetailModal {documentSetStore}
