@@ -1,4 +1,6 @@
 <script>
+    import { run } from 'svelte/legacy';
+
     import { i18n } from "../../utils.js";
     import { parseImgRef } from "../../regions/types.js";
     import SplitLayout from "../../ui/SplitLayout.svelte";
@@ -12,8 +14,7 @@
     import Matches from "../Matches.svelte";
     import DownloadPng from "../../ui/DownloadPng.svelte";
 
-    export let documentSetStore;
-    export let clusterStore;
+    let { documentSetStore, clusterStore } = $props();
 
     const {
         visiblePairs, visibleDocuments, documentNodes, imageNodes, hideEmpty,
@@ -59,22 +60,24 @@
         "docMatrix":     { left: "documentStemma", right: "matrix", bottomRight: "pair",           bottomLeft: "matches" },
         "spatialFrieze": { left: "imageStemma",    right: "frieze", bottomRight: "documentStemma", bottomLeft: "matches" },
     };
-    $: layout = layouts[$selectedViz] ?? layouts[""];
+    let layout = $derived(layouts[$selectedViz] ?? layouts[""]);
 
-    let scatterMode = "image";
-    let friezeMode = "image";
-    let viewMode = "matches";
-    let modalActive = false;
-    let navState = null;
-    let scatterData = null;
-    let matrixScope = "full";
+    let scatterMode = $state("image");
+    let friezeMode = $state("image");
+    let viewMode = $state("matches");
+    let modalActive = $state(false);
+    let navState = $state(null);
+    let scatterData = $state(null);
+    let matrixScope = $state("full");
 
-    $: documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
-    $: pairMatrixData = $selectedCell ? {
+    run(() => {
+        documentSetStore.updateSelectedNodes($selectedNodes.map(n => n.id));
+    });
+    let pairMatrixData = $derived($selectedCell ? {
         doc1: $selectedCell.doc1,
         doc2: $selectedCell.doc2,
         pairs: getFilteredPairsForDocPair($selectedCell.doc1.id, $selectedCell.doc2.id)
-    } : null;
+    } : null);
 
     function handleScatterClick(e) {
         navState = { idx1: e.detail.idx1, idx2: e.detail.idx2 };
@@ -84,189 +87,215 @@
     function handleModalNavigate(e) { navState = { ...e.detail }; }
     function handleModalClose() { modalActive = false; }
 
-    $: fullDocuments = $visibleDocuments;
-    $: fullScoreData = $filteredDocPairStats?.scoreCount || new Map();
-    $: fullDocStats = $filteredDocStats?.scoreCount || new Map();
-    $: friezeDocuments = (() => {
+    let fullDocuments = $derived($visibleDocuments);
+    let fullScoreData = $derived($filteredDocPairStats?.scoreCount || new Map());
+    let fullDocStats = $derived($filteredDocStats?.scoreCount || new Map());
+    let friezeDocuments = $derived((() => {
         if (matrixScope === "full") return fullDocuments;
         const anchorDoc = $documentNodes.get($selectedFriezeImage?.baseDocId);
         const base = anchorDoc ? [...$selectedNodes, anchorDoc] : $selectedNodes;
         return base.filter(d => $selectedDocuments.has(d.id));
-    })();
-    $: needsSelection = $selectedViz && !$selectedNodes.length && matrixScope !== "full";
-    $: if (matrixScope) selectedCluster.set(null);
+    })());
+    let needsSelection = $derived($selectedViz && !$selectedNodes.length && matrixScope !== "full");
+    run(() => {
+        if (matrixScope) selectedCluster.set(null);
+    });
 </script>
 
 <SplitLayout>
-    <div id="stemma-header" slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
-        {#if layout.left === "documentStemma"}
-            <h4 class="title is-6 mb-0 mr-3 panel-title">{i18n("title", t)}</h4>
-            <div class="is-flex is-align-items-center">
-                <DownloadPng targetId="doc-stemma" filename="document-stemma" svgExport={true}/>
-                <span class="tag is-small ml-3">{i18n("hint", t)}</span>
-            </div>
-        {:else if layout.left === "imageStemma" && $selectedFriezeImage}
-            {@const baseDoc = $selectedNodes.find(d => d.id === $selectedFriezeImage.baseDocId)}
-            {@const title = $nodeTitles[$selectedFriezeImage.baseDocId] || baseDoc?.title}
-            {@const imgData = parseImgRef($selectedFriezeImage.imageId)}
-            <h4 class="title is-6 mb-0 px-2 panel-title">
-                Page {imgData?.canvasNb || 0}
-                <span class="color-dot" style="background: {baseDoc?.color}"/>
-                {title ?? "Unknown"}
-            </h4>
-            <div class="is-flex is-align-items-center">
-                <DownloadPng targetId="img-stemma" filename="image-stemma" svgExport={true}/>
-                <span class="tag is-small ml-3">{i18n("hint", t)}</span>
-            </div>
-        {/if}
-    </div>
-
-    <div slot="left-scroll">
-        {#if layout.left === "documentStemma"}
-            <DocumentStemmaPanel
-                {stemmaStore}
-                documents={$filteredDocuments}
-                selectedNodes={$selectedNodes}
-                nodeTitles={$nodeTitles}/>
-        {:else if layout.left === "imageStemma"}
-            <ImageStemma
-                {stemmaStore} {visiblePairs} {imageNodes}
-                documents={friezeDocuments}
-                startImageId={$selectedFriezeImage?.imageId ?? null}
-                baseDocId={$selectedFriezeImage?.baseDocId ?? null}
-                on:anchorselect={e => selectedFriezeImage.set(e.detail)}
-            />
-        {/if}
-    </div>
-
-    <div slot="bottom-left-title" class="is-flex is-justify-content-space-between">
-        {#if layout.bottomLeft === "matches" && $matches.matches.length}
-            <h4 class="title is-6 mb-0">
-                {i18n("matches", t)} ({$matches.matches.length})
-            </h4>
-        {/if}
-    </div>
-    <div slot="bottom-left-scroll">
-        {#if layout.bottomLeft === "matches"}
-            <Matches matches={$matches.matches} columns={$matches.columns} isInStemma={$selectedViz === "spatialFrieze"}
-                     pairCat={$pairCat} {clusterStore} on:anchorselect={e => selectedFriezeImage.set(e.detail)}/>
-        {/if}
-    </div>
-
-    <div slot="right-title" class="is-flex is-align-items-center" style="gap: 0.5rem;">
-        <div class="select is-small">
-            <select bind:value={$selectedViz}>
-                <option value="">{i18n("selectViz", t)}</option>
-                {#each vizOptions as opt}
-                    <option value={opt.id}>{i18n(opt.id, t)}</option>
-                {/each}
-            </select>
+    <!-- @migration-task-ok: migrate this slot by hand, `left-title` is an invalid identifier -->
+    {#snippet leftTitle()}
+        <div id="stemma-header" class="is-flex is-justify-content-space-between is-align-items-center">
+            {#if layout.left === "documentStemma"}
+                <h4 class="title is-6 mb-0 mr-3 panel-title">{i18n("title", t)}</h4>
+                <div class="is-flex is-align-items-center">
+                    <DownloadPng targetId="doc-stemma" filename="document-stemma" svgExport={true}/>
+                    <span class="tag is-small ml-3">{i18n("hint", t)}</span>
+                </div>
+            {:else if layout.left === "imageStemma" && $selectedFriezeImage}
+                {@const baseDoc = $selectedNodes.find(d => d.id === $selectedFriezeImage.baseDocId)}
+                {@const title = $nodeTitles[$selectedFriezeImage.baseDocId] || baseDoc?.title}
+                {@const imgData = parseImgRef($selectedFriezeImage.imageId)}
+                <h4 class="title is-6 mb-0 px-2 panel-title">
+                    Page {imgData?.canvasNb || 0}
+                    <span class="color-dot" style="background: {baseDoc?.color}"></span>
+                    {title ?? "Unknown"}
+                </h4>
+                <div class="is-flex is-align-items-center">
+                    <DownloadPng targetId="img-stemma" filename="image-stemma" svgExport={true}/>
+                    <span class="tag is-small ml-3">{i18n("hint", t)}</span>
+                </div>
+            {/if}
         </div>
-        {#if $selectedViz}
-            <DownloadPng targetId={$selectedViz === "spatialFrieze" ? "spatial-frieze" : "doc-set-matrix"} filename={$selectedViz} svgExport={true}/>
+    {/snippet}
+
+    <!-- @migration-task-ok: migrate this slot by hand, `left-scroll` is an invalid identifier -->
+    {#snippet leftScroll()}
+        <div>
+            {#if layout.left === "documentStemma"}
+                <DocumentStemmaPanel
+                    {stemmaStore}
+                    documents={$filteredDocuments}
+                    selectedNodes={$selectedNodes}
+                    nodeTitles={$nodeTitles}/>
+            {:else if layout.left === "imageStemma"}
+                <ImageStemma
+                    {stemmaStore} {visiblePairs} {imageNodes}
+                    documents={friezeDocuments}
+                    startImageId={$selectedFriezeImage?.imageId ?? null}
+                    baseDocId={$selectedFriezeImage?.baseDocId ?? null}
+                    on:anchorselect={e => selectedFriezeImage.set(e.detail)}
+                />
+            {/if}
+        </div>
+    {/snippet}
+
+    <!-- @migration-task-ok: migrate this slot by hand, `bottom-left-title` is an invalid identifier -->
+    {#snippet bottomLeftTitle()}
+        <div class="is-flex is-justify-content-space-between">
+            {#if layout.bottomLeft === "matches" && $matches.matches.length}
+                <h4 class="title is-6 mb-0">
+                    {i18n("matches", t)} ({$matches.matches.length})
+                </h4>
+            {/if}
+        </div>
+    {/snippet}
+
+    <!-- @migration-task-ok: migrate this slot by hand, `bottom-left-scroll` is an invalid identifier -->
+    {#snippet bottomLeftScroll()}
+        <div>
+            {#if layout.bottomLeft === "matches"}
+                <Matches matches={$matches.matches} columns={$matches.columns} isInStemma={$selectedViz === "spatialFrieze"}
+                         pairCat={$pairCat} {clusterStore} on:anchorselect={e => selectedFriezeImage.set(e.detail)}/>
+            {/if}
+        </div>
+    {/snippet}
+
+    <!-- @migration-task-ok: migrate this slot by hand, `right-title` is an invalid identifier -->
+    {#snippet rightTitle()}
+        <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
             <div class="select is-small">
-                <select bind:value={matrixScope}>
-                    <option value="selected">{i18n("selectedDocs", t)}</option>
-                    <option value="full">{i18n("fullDocSet", t)}</option>
-                </select>
-            </div>
-        {/if}
-        {#if $selectedViz === "docMatrix"}
-<!--            <label title={i18n("normalization", t)} class="checkbox is-size-7 is-flex is-align-items-center">-->
-<!--                <input type="checkbox" bind:checked={$normalizeByImages}>-->
-<!--                <span class="pl-1">{i18n("normalize", t)}</span>-->
-<!--            </label>-->
-            <div class="select is-small" title={i18n("viewMode", t)}>
-                <select bind:value={viewMode}>
-                    {#each Object.keys(viewModes) as m}
-                        <option value={m}>{i18n(m, viewModes)}</option>
+                <select bind:value={$selectedViz}>
+                    <option value="">{i18n("selectViz", t)}</option>
+                    {#each vizOptions as opt}
+                        <option value={opt.id}>{i18n(opt.id, t)}</option>
                     {/each}
                 </select>
             </div>
-        {:else if $selectedViz === "spatialFrieze"}
-            <div class="select is-small">
-                <select bind:value={friezeMode}>
-                    <option value="page">{i18n("byPage", t)}</option>
-                    <option value="image">{i18n("byImage", t)}</option>
-                </select>
-            </div>
-        {/if}
-    </div>
+            {#if $selectedViz}
+                <DownloadPng targetId={$selectedViz === "spatialFrieze" ? "spatial-frieze" : "doc-set-matrix"} filename={$selectedViz} svgExport={true}/>
+                <div class="select is-small">
+                    <select bind:value={matrixScope}>
+                        <option value="selected">{i18n("selectedDocs", t)}</option>
+                        <option value="full">{i18n("fullDocSet", t)}</option>
+                    </select>
+                </div>
+            {/if}
+            {#if $selectedViz === "docMatrix"}
+    <!--            <label title={i18n("normalization", t)} class="checkbox is-size-7 is-flex is-align-items-center">-->
+    <!--                <input type="checkbox" bind:checked={$normalizeByImages}>-->
+    <!--                <span class="pl-1">{i18n("normalize", t)}</span>-->
+    <!--            </label>-->
+                <div class="select is-small" title={i18n("viewMode", t)}>
+                    <select bind:value={viewMode}>
+                        {#each Object.keys(viewModes) as m}
+                            <option value={m}>{i18n(m, viewModes)}</option>
+                        {/each}
+                    </select>
+                </div>
+            {:else if $selectedViz === "spatialFrieze"}
+                <div class="select is-small">
+                    <select bind:value={friezeMode}>
+                        <option value="page">{i18n("byPage", t)}</option>
+                        <option value="image">{i18n("byImage", t)}</option>
+                    </select>
+                </div>
+            {/if}
+        </div>
+    {/snippet}
 
-    <div slot="right-scroll">
-        {#if !$selectedViz}
-            <p class="has-text-grey is-size-7">{i18n("noViz", t)}</p>
-        {:else if needsSelection}
-            <p class="has-text-grey is-size-7">{i18n("noSelection", t)}</p>
-        {:else if layout.right === "matrix"}
-            <DocumentSetMatrix
-                documents={matrixScope === "full" ? fullDocuments : $selectedNodes}
-                scoreData={matrixScope === "full" ? fullScoreData : $matrixScoreData}
-                docStats={matrixScope === "full" ? fullDocStats : $matrixDocStats}
-                imageCountMap={matrixScope === "full" ? $imageCountMap : $matrixImageCount}
-                mode={viewMode}
-                {coverageData}
-                isInStemma={true} {stemmaStore}
-                on:cellselect={e => selectedCell.set(e.detail)}
-            />
-        {:else if layout.right === "frieze"}
-            <SpatialFrieze
-                documents={friezeDocuments}
-                {visiblePairs}
-                {documentNodes}
-                isInStemma={true} {stemmaStore}
-                mode={friezeMode}
-                on:imageselect={e => { selectedFriezeImage.set(e.detail); selectedCluster.set(null); }}
-                on:clusterselect={e => { selectedCluster.set(e.detail); selectedFriezeImage.set(null); }}
-            />
-        {/if}
-    </div>
+    <!-- @migration-task-ok: migrate this slot by hand, `right-scroll` is an invalid identifier -->
+    {#snippet rightScroll()}
+        <div>
+            {#if !$selectedViz}
+                <p class="has-text-grey is-size-7">{i18n("noViz", t)}</p>
+            {:else if needsSelection}
+                <p class="has-text-grey is-size-7">{i18n("noSelection", t)}</p>
+            {:else if layout.right === "matrix"}
+                <DocumentSetMatrix
+                    documents={matrixScope === "full" ? fullDocuments : $selectedNodes}
+                    scoreData={matrixScope === "full" ? fullScoreData : $matrixScoreData}
+                    docStats={matrixScope === "full" ? fullDocStats : $matrixDocStats}
+                    imageCountMap={matrixScope === "full" ? $imageCountMap : $matrixImageCount}
+                    mode={viewMode}
+                    {coverageData}
+                    isInStemma={true} {stemmaStore}
+                    on:cellselect={e => selectedCell.set(e.detail)}
+                />
+            {:else if layout.right === "frieze"}
+                <SpatialFrieze
+                    documents={friezeDocuments}
+                    {visiblePairs}
+                    {documentNodes}
+                    isInStemma={true} {stemmaStore}
+                    mode={friezeMode}
+                    on:imageselect={e => { selectedFriezeImage.set(e.detail); selectedCluster.set(null); }}
+                    on:clusterselect={e => { selectedCluster.set(e.detail); selectedFriezeImage.set(null); }}
+                />
+            {/if}
+        </div>
+    {/snippet}
 
-    <div slot="bottom-right-title" class="is-flex is-justify-content-space-between is-align-items-center">
-        {#if layout.bottomRight === "pair" && pairMatrixData}
-            <div class="is-flex is-align-items-center">
-                <h4 class="title is-6 mb-0 mr-3">
-                    <span class="color-dot" style="background: {pairMatrixData.doc1.color}"/>
-                    <span class="has-text-grey">↔</span>
-                    <span class="color-dot" style="background: {pairMatrixData.doc2.color}"/>
-                </h4>
-                <DownloadPng targetId="doc-pair-matrix" filename="doc-pair-matrix" svgExport={true}/>
-            </div>
+    <!-- @migration-task-ok: migrate this slot by hand, `bottom-right-title` is an invalid identifier -->
+    {#snippet bottomRightTitle()}
+        <div class="is-flex is-justify-content-space-between is-align-items-center">
+            {#if layout.bottomRight === "pair" && pairMatrixData}
+                <div class="is-flex is-align-items-center">
+                    <h4 class="title is-6 mb-0 mr-3">
+                        <span class="color-dot" style="background: {pairMatrixData.doc1.color}"></span>
+                        <span class="has-text-grey">↔</span>
+                        <span class="color-dot" style="background: {pairMatrixData.doc2.color}"></span>
+                    </h4>
+                    <DownloadPng targetId="doc-pair-matrix" filename="doc-pair-matrix" svgExport={true}/>
+                </div>
 
-            <div class="select is-small ml-3">
-                <select bind:value={scatterMode}>
-                    <option value="page">{i18n("byPage", t)}</option>
-                    <option value="image">{i18n("byImage", t)}</option>
-                </select>
-            </div>
-        {:else if layout.bottomRight === "documentStemma"}
-            <h4 class="title is-6 mb-0 mr-3 panel-title">{i18n("title", t)}</h4>
-            <div class="is-flex is-align-items-center">
-                <DownloadPng targetId="doc-stemma" filename="document-stemma"  svgExport={true}/>
-                <span class="tag is-small ml-3">{i18n("hint", t)}</span>
-            </div>
-        {/if}
+                <div class="select is-small ml-3">
+                    <select bind:value={scatterMode}>
+                        <option value="page">{i18n("byPage", t)}</option>
+                        <option value="image">{i18n("byImage", t)}</option>
+                    </select>
+                </div>
+            {:else if layout.bottomRight === "documentStemma"}
+                <h4 class="title is-6 mb-0 mr-3 panel-title">{i18n("title", t)}</h4>
+                <div class="is-flex is-align-items-center">
+                    <DownloadPng targetId="doc-stemma" filename="document-stemma"  svgExport={true}/>
+                    <span class="tag is-small ml-3">{i18n("hint", t)}</span>
+                </div>
+            {/if}
+        </div>
+    {/snippet}
 
-    </div>
-
-    <div slot="bottom-right-scroll">
-        {#if layout.bottomRight === "pair" && pairMatrixData}
-            <DocumentPairMatrix
-                doc1={pairMatrixData.doc1}
-                doc2={pairMatrixData.doc2}
-                pairs={pairMatrixData.pairs}
-                mode={scatterMode}
-                hideEmpty={$hideEmpty}
-                on:cellclick={handleScatterClick}
-            />
-        {:else if layout.bottomRight === "documentStemma"}
-            <DocumentStemmaPanel
-                {stemmaStore}
-                documents={$filteredDocuments}
-                selectedNodes={$selectedNodes}
-                nodeTitles={$nodeTitles}/>
-        {/if}
-    </div>
+    <!-- @migration-task-ok: migrate this slot by hand, `bottom-right-scroll` is an invalid identifier -->
+    {#snippet bottomRightScroll()}
+        <div>
+            {#if layout.bottomRight === "pair" && pairMatrixData}
+                <DocumentPairMatrix
+                    doc1={pairMatrixData.doc1}
+                    doc2={pairMatrixData.doc2}
+                    pairs={pairMatrixData.pairs}
+                    mode={scatterMode}
+                    hideEmpty={$hideEmpty}
+                    on:cellclick={handleScatterClick}
+                />
+            {:else if layout.bottomRight === "documentStemma"}
+                <DocumentStemmaPanel
+                    {stemmaStore}
+                    documents={$filteredDocuments}
+                    selectedNodes={$selectedNodes}
+                    nodeTitles={$nodeTitles}/>
+            {/if}
+        </div>
+    {/snippet}
 </SplitLayout>
 
 <PairDetailModal {documentSetStore}
