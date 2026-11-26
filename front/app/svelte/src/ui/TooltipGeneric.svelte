@@ -11,13 +11,13 @@
         the html ID of the element for which we want to listen to events.
 -->
 <script>
-    import { run } from 'svelte/legacy';
-
 import { onMount, onDestroy } from "svelte";
+
+/** @typedef {import("./tooltipGenericState.svelte").TooltipGenericState} TooltipGenericState */
 
 /**
  * @typedef {Object} Props
- * @property {object<tooltipText: string>} tooltipState
+ * @property {TooltipGenericState} tooltipState
  * @property {any} targetHtmlId
  */
 
