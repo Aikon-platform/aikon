@@ -5,8 +5,13 @@
     import {slide} from "svelte/transition";
     import TooltipGeneric from "./ui/TooltipGeneric.svelte";
     import {appLang} from "./constants.js";
+    import {makeTooltipGenericState} from "./ui/tooltipGenericState.svelte";
+
+    /** @typedef {import("./ui/tooltipGenericState.svelte").TooltipGenericState} TooltipGenericState */
 
     let { expandable = true, toolbarExpanded = false, toolbarHidden, toolbarVisible } = $props();
+
+    let toolbarExpandedState = $state(toolbarExpanded);
 
     const toolbarText = {
         true: {
@@ -18,11 +23,18 @@
             fr: "Ouvrir le menu"
         }
     }
-    const toggleToolbarExpanded = () => toolbarExpanded = !toolbarExpanded;
+
+    const tooltipState = makeTooltipGenericState();
+
+    $effect(() => {
+        tooltipState.tooltipText = toolbarText[toolbarExpandedState][appLang];
+    })
+
+    const toggleToolbarExpanded = () => toolbarExpandedState = !toolbarExpandedState;
 </script>
 
 <div id="toolbar" class="ctrl-wrapper is-flex is-justify-content-center is-align-items-center
-     { toolbarExpanded ? 'toolbar-expanded' : 'toolbar-collapsed' }">
+     { toolbarExpandedState ? 'toolbar-expanded' : 'toolbar-collapsed' }">
 
     <form class="ctrl">
         <div class="ctrl-base">
@@ -33,18 +45,18 @@
             </div>
         </div>
         {#if expandable}
-            {#if toolbarExpanded}
+            {#if toolbarExpandedState}
                 <div transition:slide|global={{axis: "y"}} class="ctrl-extra">
                     {@render toolbarHidden()}
                 </div>
             {/if}
             <div class="ctrl-toggle">
                 <button onclick={preventDefault(toggleToolbarExpanded)} class="button is-link">
-                    <svg style={`transform: rotate(${toolbarExpanded ? "180" : "0"}deg)`} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
+                    <svg style={`transform: rotate(${toolbarExpandedState ? "180" : "0"}deg)`} xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24">
                         <path fill="none" stroke="currentColor" stroke-linecap="round" stroke-linejoin="round"
                               stroke-width="1.5" d="M12 3v18m0 0l8.5-8.5M12 21l-8.5-8.5"></path>
                     </svg>
-                    <TooltipGeneric tooltipText={toolbarText[toolbarExpanded][appLang]}/>
+                    <TooltipGeneric tooltipState={tooltipState}/>
                 </button>
             </div>
         {/if}
