@@ -1,4 +1,6 @@
 <script>
+   import { run } from 'svelte/legacy';
+
     import { onDestroy } from "svelte";
     import { createCanvas } from "./network-canvas.js";
     import { createSvg } from "./network-svg.js";
@@ -6,32 +8,28 @@
     import Matches from "../Matches.svelte";
     import DownloadPng from "../../ui/DownloadPng.svelte";
 
-    export let type = "img";
-    export let documentSetStore;
-    const {
-        imageNetwork, documentNetwork, selectedNodes, updateSelectedNodes,
-        buildMatchesForAnchor, buildNetworkMatches, hideEmpty, pairCat
-    } = documentSetStore;
-    export let clusterStore;
+   /**
+    * @typedef {Object} Props
+    * @property {string} [type]
+    * @property {any} documentSetStore
+    * @property {any} clusterStore
+    */
+
+   /** @type {Props} */
+   let { type = "img", documentSetStore, clusterStore } = $props();
+
+   const {
+       imageNetwork, documentNetwork, selectedNodes, updateSelectedNodes,
+       buildMatchesForAnchor, buildNetworkMatches, hideEmpty, pairCat
+   } = documentSetStore;
 
     let networkInstance;
-    let container;
-    let selectionMode = false;
+    let container = $state();
+    let selectionMode = $state(false);
     const render_threshold = 500;
 
-    $: networkData = type === "img" ? imageNetwork : documentNetwork;
 
-    $: tableData = !$selectedNodes.length
-        ? { matches: [], columns: [] }
-        : type === "doc"
-            ? buildMatchesForAnchor($selectedNodes[0], $selectedNodes.slice(1), null, true)
-            : buildNetworkMatches({
-                baseDocId: $selectedNodes[0].digit,
-                docIds: new Set($selectedNodes.map(n => n.digit)),
-                imageIds: new Set($selectedNodes.map(n => n.id)),
-            });
 
-   $: if ($networkData && container) renderVisualization();
 
     function renderVisualization() {
         if (networkInstance) {
@@ -68,18 +66,31 @@
     onDestroy(() => {
         networkInstance?.destroy();
     });
+    let networkData = $derived(type === "img" ? imageNetwork : documentNetwork);
+    let tableData = $derived(!$selectedNodes.length
+        ? { matches: [], columns: [] }
+        : type === "doc"
+            ? buildMatchesForAnchor($selectedNodes[0], $selectedNodes.slice(1), null, true)
+            : buildNetworkMatches({
+                baseDocId: $selectedNodes[0].digit,
+                docIds: new Set($selectedNodes.map(n => n.digit)),
+                imageIds: new Set($selectedNodes.map(n => n.id)),
+            }));
+   run(() => {
+       if ($networkData && container) renderVisualization();
+   });
 </script>
 
 <div>
     <div class="is-flex is-align-items-center mb-3" style="gap: 0.5rem;">
-        <button class="toggle-button button is-small is-link is-light mb-0" on:click={toggleSelectionMode}>
+        <button class="toggle-button button is-small is-link is-light mb-0" onclick={toggleSelectionMode}>
             {#if selectionMode}
             <span class="icon px-4">
-                <i class="fas fa-hand-pointer"/>
+                <i class="fas fa-hand-pointer"></i>
             </span>
             {:else}
             <span class="icon px-4">
-                <i class="fas fa-crop-alt"/>
+                <i class="fas fa-crop-alt"></i>
             </span>
             {/if}
             Switch to {selectionMode ? "click" : "selection"} mode

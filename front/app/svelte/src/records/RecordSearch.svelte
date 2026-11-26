@@ -3,18 +3,10 @@
     import { appLang } from "../constants";
     import Autocomplete from "./Autocomplete.svelte";
 
-    const { recordSearch, searchParams } = recordsStore;
-
     let { recordsStore, searchFields = [] } = $props();
-    let formData = $state({});
 
-    onMount(() => {
-        // fill search form according to URL search params
-        const params = $searchParams ?? new URLSearchParams(window.location.search);
-        searchFields.forEach(field => {
-            formData[field.name] = params.get(field.name) || field.initial || "";
-        });
-    });
+    const { recordSearch, searchParams } = recordsStore;
+    let formData = $state({});
 
     function handleSearch(event) {
         event.preventDefault();
@@ -30,6 +22,14 @@
     }
 
     const _isMulti = field => field.type.includes("Multiple");
+
+    onMount(() => {
+        // fill search form according to URL search params
+        const params = $searchParams ?? new URLSearchParams(window.location.search);
+        searchFields.forEach(field => {
+            formData[field.name] = params.get(field.name) || field.initial || "";
+        });
+    });
 </script>
 
 {#if searchFields.length > 0}

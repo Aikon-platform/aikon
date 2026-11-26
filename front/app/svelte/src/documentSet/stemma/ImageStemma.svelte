@@ -1,4 +1,4 @@
-<!-- @migration-task Error while migrating Svelte code: can't migrate `$: visibleRegions = stemmaImages.nodes.filter(n => n.img).map(n => new RegionItem(n.img));` to `$derived` because there's a variable named derived.
+<!-- @migration-task-ok Error while migrating Svelte code: can't migrate `$: visibleRegions = stemmaImages.nodes.filter(n => n.img).map(n => new RegionItem(n.img));` to `$derived` because there's a variable named derived.
      Rename the variable and try again or migrate by hand. -->
 <!--
 Propagation logic:
@@ -126,16 +126,6 @@ Propagation logic:
         return c !== 0 ? c < 0 : ia < ib;
     }
 
-    let modalOpen = false;
-    let clickedRegionIdx = 0;
-    let visibleRegions = $derived(stemmaImages.nodes.filter(n => n.img).map(n => new RegionItem(n.img)));
-
-    const openImg = (node) => {
-        if (!node.img) return;
-        clickedRegionIdx = visibleRegions.findIndex(r => r.id === node.imageId);
-        modalOpen = true;
-    };
-
     const handleNavigate = (e) => clickedRegionIdx = e.detail.index ?? 0;
 
     const pairIndex = $derived.by(() => {
@@ -165,6 +155,16 @@ Propagation logic:
             startFromImage
         )
     );
+
+    let modalOpen = false;
+    let clickedRegionIdx = 0;
+    let visibleRegions = $derived(stemmaImages.nodes.filter(n => n.img).map(n => new RegionItem(n.img)));
+
+    const openImg = (node) => {
+        if (!node.img) return;
+        clickedRegionIdx = visibleRegions.findIndex(r => r.id === node.imageId);
+        modalOpen = true;
+    };
 
     function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId, titles, fromImage) {
         if (!startImgId || !baseId) return {nodes: [], edges: []};
