@@ -24,7 +24,7 @@
 
     good to know:
     - about resetting: the ancestor must define a context with `setContext("resetTrigger")` holding a `writable` store. when the store's value changes, resetting is triggered. see `InputSlider.svelte` for more details.
-    - `structuredClone()` MUST be used to deep-copy props and objects passed from a function to another. otherwise, it will cause VERY WEIRD SIDE EFFECTS (modifying data in the parent component that is received as a props in this component...)
+    - `$state.snapshot()` MUST be used to deep-copy props and objects passed from a function to another. otherwise, it will cause VERY WEIRD SIDE EFFECTS (modifying data in the parent component that is received as a props in this component...)
     - the use of global variables/objects are reduced to a strict minimum to simplifiy the flow, but are still necessary
     - this component provides a "selectAll" props. choices.js handles this by adding all `choicesItems` one by one, which creates a lot of intermediate states on this component. to mitigate this, when `selectAll` is clicked, the emitting of events is blocked for a `ispatchLockDuration` ms. `bufferedDispatch` handles the lifecycle.
 -->
@@ -39,6 +39,8 @@
     import { createNewAndOld, equalArrayShallow } from "../utils";
 
     import TooltipGeneric from "./TooltipGeneric.svelte";
+    import { makeTooltipGenericState } from './tooltipGenericState.svelte';
+    /** @typedef {import("./tooltipGenericState.svelte").TooltipGenericState} TooltipGenericState */
 
     /////////////////////////////////////////////////////
 
@@ -66,28 +68,37 @@
      * @type {DropdownChoice[]}
      */
 
-    /** @type {DropdownChoiceArray} */
-    export let choicesItems;
-    /** @type {DropdownChoice.value[]} the items selected by default, represented as an array of DropdownChoice.value */
-    export let start = [];
-    /** @type {Boolean} */
-    export let multiple;
-    /** @type {String} */
-    export let searchable = true;
-    /** @type {Boolean} if true, UI will be lighter */
-    export let lightDisplay = false;
-    /** @type {String} */
-    export let placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value";
-    /** @type {String?} */
-    export let title = undefined;
-    /** @type {Boolean} if True, extra "Select All" and "Unselect All" options will be preprended to `choicesItems`. clicking on them will (un)select all choicesItems. by default, true for multi-choice, false for single-choice */
-    export let selectAll = multiple;
+    /**
+     * @typedef {Object} Props
+     * @property {DropdownChoiceArray} choicesItems
+     * @property {DropdownChoice.value[]} [start]
+     * @property {Boolean} multiple
+     * @property {String} [searchable]
+     * @property {Boolean} [lightDisplay]
+     * @property {String} [placeholder]
+     * @property {String?} [title]
+     * @property {Boolean} [selectAll]
+     */
+
+    /** @type {Props} */
+    let {
+        choicesItems,
+        start = [],
+        multiple,
+        searchable = true,
+        lightDisplay = false,
+        placeholder = appLang === "fr" ? "Sélectionner une valeur" : "Select a value",
+        title = undefined,
+        selectAll = multiple
+    } = $props();
 
     const htmlId = `input-dropdown-select-${window.crypto.randomUUID()}`;
     const counterHtmlId = `input-dropdown-counter-${window.crypto.randomUUID()}`;
     const selectAllValue = `select-all-${window.crypto.randomUUID()}`;  // the value of "(un)select all" option is an UUID to ensure that the value is not a duplicate of an other item in `choices`
     const unSelectAllValue = `unselect-all-${window.crypto.randomUUID()}`;
     const dispatchLockDuration = 250;
+
+    const tooltipState = makeTooltipGenericState();
 
     const dispatch = createEventDispatcher();
 
@@ -103,13 +114,10 @@
     resetTriggerContext?.subscribe(() => resetInputDropdown(choicesObj, choicesItems, start, selectAll));
 
     /** @type {Array} array of DropdownChoiceItem.value */
-    let selectedValues = [];
+    let selectedValues = $state([]);
 
     /** @type {Array} temprarily toggled in `useDispatchLock`. when true, will block all requests */
-    let dispatchLock = false;
-
-    /** dispatching of selected elements to the parent component happens when `selectedValues` is updated and `dispatchLock` is set to false. this avoids intermediate calls to `dispatch` when selecting all elements. */
-    $: bufferedDispatch(selectedValues, dispatchLock);
+    let dispatchLock = $state(false);
 
     /////////////////////////////////////////////////////
 
@@ -168,8 +176,8 @@
      * @param {boolean} _selectedAll
      */
     function initData(_choicesItems, _start, _selectAll) {
-        _choicesItems = structuredClone(_choicesItems);
-        _start = structuredClone(_start);
+        _choicesItems = $state.snapshot(_choicesItems);
+        _start = $state.snapshot(_start);
         // all items in _choicesItems with `selected: true` will be automatically pre-selected.
         _choicesItems = formatChoices(_choicesItems, _selectAll).map(c =>
             _start.includes(c.value)
@@ -217,8 +225,9 @@
      * @returns {any[]} : the updated _selectedValues
      */
     const onAddItem = (e, _choicesObj, _choicesItems, _selectedValues, _selectAllValue, _unSelectAllValue) => {
-        _selectedValues = structuredClone(_selectedValues);
-        _choicesItems = structuredClone(_choicesItems);
+        _selectedValues = $state.snapshot(_selectedValues);
+        _choicesItems = $state.snapshot(_choicesItems);
+        // select all
         if (e.detail.value === _selectAllValue) {
             useDispatchLock();
             // set `selectedValues` + unselect all previous choices and reselect all choices except the Select/Unselect ones.
@@ -237,11 +246,13 @@
                     .filter(c => c.selected===true)
                     .map(c => c.value)
             )];
+        // unselect all
         } else if (e.detail.value === _unSelectAllValue) {
             _choicesObj
                 .removeActiveItems()
                 .hideDropdown();
             _selectedValues = [];
+        // other cases
         } else {
             _selectedValues =
                 multiple===true
@@ -257,7 +268,7 @@
      * @returns {any[]} : the updated _selectedValues
      */
     const onRemoveItem = (e, _selectedValues) =>
-        structuredClone(_selectedValues).filter(s => s !== e.detail.value);
+        $state.snapshot(_selectedValues).filter(s => s !== e.detail.value);
 
     const strip = s => s.replace(/<[^>]*>/g, "").trim();
 
@@ -329,28 +340,36 @@
         plural: appLang === "en" ? "selected values" : "valeurs sélectionnées",
         singular: appLang === "en" ? "selected value" : "valeur sélectionnée",
     }
+    $effect(() => {
+        tooltipState.tooltipText = `${selectedValues.length} ${selected[selectedValues.length > 1 ? 'plural' : 'singular']}`;
+    })
+
+    /** dispatching of selected elements to the parent component happens when `selectedValues` is updated and `dispatchLock` is set to false. this avoids intermediate calls to `dispatch` when selecting all elements. */
+    $effect(() => {
+        bufferedDispatch(selectedValues, dispatchLock);
+    });
 </script>
 
 
 <div class="input-dropdown-select-wrapper">
-    {#if title!==undefined }
+    {#if title!==undefined}
         <label for={htmlId}>{title}</label>
     {/if}
     <div class="input-dropdown-select {multiple ? 'is-multiple' : 'is-single'}
             {multiple && selectedValues.length ? 'is-flex is-justify-content-flex-start is-align-items-center' : ''}"
             class:light-display={lightDisplay}>
         {#if multiple}
-            {#if selectedValues.length }
+            {#if selectedValues.length}
                 <span class="is-relative">
                     <span id={counterHtmlId} class="input-dropdown-count tag m-1">
                         { selectedValues.length }
                     </span>
-                    <TooltipGeneric targetHtmlId={counterHtmlId} tooltipText={selected[selectedValues.length > 1 ? 'plural' : 'singular']}/>
+                    <TooltipGeneric targetHtmlId={counterHtmlId} {tooltipState}/>
                 </span>
             {/if}
-            <select id={htmlId} name={htmlId} aria-label={title} class="m-1" multiple/>
+            <select id={htmlId} name={htmlId} aria-label={title} class="m-1" multiple></select>
         {:else}
-            <select id={htmlId} name={htmlId} aria-label={title} class="m-1"/>
+            <select id={htmlId} name={htmlId} aria-label={title} class="m-1"></select>
         {/if}
     </div>
 

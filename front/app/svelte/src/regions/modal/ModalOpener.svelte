@@ -5,7 +5,7 @@
     import TooltipGeneric from "../../ui/TooltipGeneric.svelte";
     import {makeTooltipGenericState} from "../../ui/tooltipGenericState.svelte";
 
-    /** @typedef {import("./ui/tooltipGenericState.svelte").TooltipGenericState} TooltipGenericState */
+    /** @typedef {import("../../ui/tooltipGenericState.svelte").TooltipGenericState} TooltipGenericState */
 
     const dispatch = createEventDispatcher();
     const htmlId = `modal-opener-${window.crypto.randomUUID()}`;
