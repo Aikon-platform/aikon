@@ -1,5 +1,10 @@
+<!-- @migeation-task-ok -->
+<!-- @migration-task Error while migrating Svelte code: `$:` is not allowed in runes mode, use `$derived` or `$effect` instead
+https://svelte.dev/e/legacy_reactive_statement_invalid -->
 <script>
     import {onDestroy, onMount} from "svelte";
+
+    let { leftTitle, leftScroll, bottomLeftTitle, bottomLeftScroll, rightTitle, rightScroll, bottomRightTitle, bottomRightScroll } = $props();
 
     const MIN_WIDTH = 250;
     const MIN_HEIGHT = 100;
@@ -14,16 +19,16 @@
     let rightPanel;
     let leftPanel;
 
-    $: leftWidth = Math.max(MIN_WIDTH, containerWidth * hRatio - 4);
-    $: rightWidth = Math.max(MIN_WIDTH, containerWidth * (1 - hRatio) - 4);
+    let leftWidth = $state(Math.max(MIN_WIDTH, containerWidth * hRatio - 4));
+    let rightWidth = $state(Math.max(MIN_WIDTH, containerWidth * (1 - hRatio) - 4));
 
-    $: hasBottomLeft = $$slots["bottom-left-title"] || $$slots["bottom-left-scroll"];
-    $: hasBottomRight = $$slots["bottom-right-title"] || $$slots["bottom-right-scroll"];
+    let hasBottomLeft = $derived(!!(bottomLeftTitle || bottomLeftScroll));
+    let hasBottomRight = $derived(!!(bottomRightTitle || bottomRightScroll));
 
-    $: rightTopHeight = Math.max(MIN_HEIGHT, rightPanelHeight * vRatio - 4);
-    $: rightBottomHeight = Math.max(MIN_HEIGHT, rightPanelHeight * (1 - vRatio) - 4);
-    $: leftTopHeight = Math.max(MIN_HEIGHT, leftPanelHeight * vRatio - 4);
-    $: leftBottomHeight = Math.max(MIN_HEIGHT, leftPanelHeight * (1 - vRatio) - 4);
+    let rightTopHeight = $state(Math.max(MIN_HEIGHT, rightPanelHeight * vRatio - 4));
+    let rightBottomHeight = $state(Math.max(MIN_HEIGHT, rightPanelHeight * (1 - vRatio) - 4));
+    let leftTopHeight = $state(Math.max(MIN_HEIGHT, leftPanelHeight * vRatio - 4));
+    let leftBottomHeight = $state(Math.max(MIN_HEIGHT, leftPanelHeight * (1 - vRatio) - 4));
 
     function startDrag(axis) {
         return (e) => {
@@ -105,39 +110,39 @@
     <div class="split-panel" style="width: {leftWidth}px;" use:observeLeftPanel>
          {#if hasBottomLeft}
             <div class="box panel-box mb-0" style="height: {leftTopHeight}px;">
-                <div class="mb-3"><slot name="left-title"/></div>
-                <div class="scroll-area"><slot name="left-scroll"/></div>
+                <div class="mb-3">{@render leftTitle()}</div>
+                <div class="scroll-area">{@render leftScroll()}</div>
             </div>
-            <div class="split-divider v" on:mousedown={startDrag("v")} on:touchstart={startDrag("v")} role="separator" tabindex="-1"/>
+            <div class="split-divider v" onmousedown={startDrag("v")} ontouchstart={startDrag("v")} role="separator" tabindex="-1"></div>
             <div class="box panel-box" style="height: {leftBottomHeight}px;">
-                <div class="mb-3"><slot name="bottom-left-title"/></div>
-                <div class="scroll-area"><slot name="bottom-left-scroll"/></div>
+                <div class="mb-3">{@render bottomLeftTitle()}</div>
+                <div class="scroll-area">{@render bottomLeftScroll()}</div>
             </div>
         {:else}
             <div class="box panel-box">
-                <div class="mb-3"><slot name="left-title"/></div>
-                <div class="scroll-area"><slot name="left-scroll"/></div>
+                <div class="mb-3">{@render leftTitle()}</div>
+                <div class="scroll-area">{@render leftScroll()}</div>
             </div>
         {/if}
     </div>
 
-    <div class="split-divider h" on:mousedown={startDrag("h")} on:touchstart={startDrag("h")} role="separator" tabindex="-1"/>
+    <div class="split-divider h" onmousedown={startDrag("h")} ontouchstart={startDrag("h")} role="separator" tabindex="-1"></div>
 
     <div class="split-panel" style="width: {rightWidth}px;" use:observeRightPanel>
         {#if hasBottomRight}
             <div class="box panel-box mb-0" style="height: {rightTopHeight}px;">
-                <div class="mb-3"><slot name="right-title"/></div>
-                <div class="scroll-area"><slot name="right-scroll"/></div>
+                <div class="mb-3">{@render rightTitle()}</div>
+                <div class="scroll-area">{@render rightScroll()}</div>
             </div>
-            <div class="split-divider v" on:mousedown={startDrag("v")} on:touchstart={startDrag("v")} role="separator" tabindex="-1"/>
+            <div class="split-divider v" onmousedown={startDrag("v")} ontouchstart={startDrag("v")} role="separator" tabindex="-1"></div>
             <div class="box panel-box" style="height: {rightBottomHeight}px;">
-                <div class="mb-3"><slot name="bottom-right-title"/></div>
-                <div class="scroll-area"><slot name="bottom-right-scroll"/></div>
+                <div class="mb-3">{@render bottomRightTitle()}</div>
+                <div class="scroll-area">{@render bottomRightScroll()}</div>
             </div>
         {:else}
             <div class="box panel-box">
-                <div class="mb-3"><slot name="right-title"/></div>
-                <div class="scroll-area"><slot name="right-scroll"/></div>
+                <div class="mb-3">{@render rightTitle()}</div>
+                <div class="scroll-area">{@render rightScroll()}</div>
             </div>
         {/if}
     </div>
