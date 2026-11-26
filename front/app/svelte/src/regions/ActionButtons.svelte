@@ -12,10 +12,8 @@ https://svelte.dev/e/legacy_export_invalid -->
     const { allRegions } = regionsStore;
     import { appName, appLang, regionsType, csrfToken } from "../constants";
 
-    // /** @type {number?} ID of the currently selected region (if there is a currently selected region) */
-    // export let currentRegionId;
-
     let { witnessStore } = $props();
+
     const { selectedManifest } = witnessStore;
     const manifestShortId = $selectedManifest.split("/").at(-2);
     const isValidated = getContext("isValidated");
@@ -23,11 +21,8 @@ https://svelte.dev/e/legacy_export_invalid -->
     let isEditMode = !isValidated;
 
     let selectionLength = $derived($nbSelected);
-    // $selected = {"Regions" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
-    // const selectedRegions = derived(regionsSelection.selected, $sel =>
-    //     Object.assign({}, ...Object.values($sel))
-    // );
     const selectedStore = regionsSelection.selected;
+    // {"Regions" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
     const selectedRegions = $derived.by(() =>
         Object.assign({}, ...Object.values($selectedStore))
     );
