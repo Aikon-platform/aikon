@@ -11,8 +11,8 @@
     import { clusterSelection } from "../../selection/selectionStore.js";
     import Regions from "../../regions/Regions.svelte";
 
-    const { imageNodes, selectedCategories } = documentSetStore;
     let { documentSetStore, clusterStore } = $props();
+    const { imageNodes, selectedCategories } = documentSetStore;
     const {
         clusterNb,
         paginatedClusters,

@@ -1,36 +1,37 @@
 <script>
+    import { preventDefault } from 'svelte/legacy';
+
     import {pageSize} from "./constants.js";
 
-    export let store;
+    let { store, nbOfItems, pageLength = pageSize } = $props();
+
     const { currentPage } = store;
 
-    export let nbOfItems;
-    export let pageLength = pageSize;
-    $: maxPage = pageLength > 0 ? Math.ceil(nbOfItems / pageLength) : 1;
-    $: multiplePages = maxPage > 1 || nbOfItems > pageLength
+    let maxPage = $derived(pageLength > 0 ? Math.ceil(nbOfItems / pageLength) : 1);
+    let multiplePages = $derived(maxPage > 1 || nbOfItems > pageLength)
 </script>
 
 {#if multiplePages}
 <nav class="pagination is-centered mb-2" aria-label="pagination">
     <ul class="pagination-list ml-0">
         {#if $currentPage > 1}
-            <li><a class="pagination-link" on:click|preventDefault={() => store.handlePageUpdate(1)} href={null}>1</a></li>
+            <li><a class="pagination-link" onclick={preventDefault(() => store.handlePageUpdate(1))} href={null}>1</a></li>
             {#if $currentPage - 1 > 1}
                 {#if $currentPage - 1 > 2}
                     <li><span class="pagination-ellipsis">&hellip;</span></li>
                 {/if}
-                <li><a class="pagination-link" on:click|preventDefault={() => store.handlePageUpdate($currentPage - 1)} href={null}>{$currentPage - 1}</a></li>
+                <li><a class="pagination-link" onclick={preventDefault(() => store.handlePageUpdate($currentPage - 1))} href={null}>{$currentPage - 1}</a></li>
             {/if}
         {/if}
-        <li><a class="pagination-link is-current" on:click|preventDefault={() => store.handlePageUpdate($currentPage)} href={null}>{$currentPage}</a></li>
+        <li><a class="pagination-link is-current" onclick={preventDefault(() => store.handlePageUpdate($currentPage))} href={null}>{$currentPage}</a></li>
         {#if $currentPage < maxPage}
             {#if $currentPage + 1 < maxPage}
-                <li><a class="pagination-link" on:click|preventDefault={() => store.handlePageUpdate($currentPage + 1)} href={null}>{$currentPage + 1}</a></li>
+                <li><a class="pagination-link" onclick={preventDefault(() => store.handlePageUpdate($currentPage + 1))} href={null}>{$currentPage + 1}</a></li>
                 {#if $currentPage + 2 < maxPage}
                     <li><span class="pagination-ellipsis">&hellip;</span></li>
                 {/if}
             {/if}
-            <li><a class="pagination-link" on:click|preventDefault={() => store.handlePageUpdate(maxPage)} href={null}>{maxPage}</a></li>
+            <li><a class="pagination-link" onclick={preventDefault(() => store.handlePageUpdate(maxPage))} href={null}>{maxPage}</a></li>
         {/if}
     </ul>
 </nav>

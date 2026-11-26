@@ -1,4 +1,6 @@
 <script>
+    import { run } from 'svelte/legacy';
+
     import {onDestroy, setContext} from "svelte";
     import { activeLayout } from "../ui/tabStore.js";
 
@@ -18,8 +20,10 @@
     import Modal from "../Modal.svelte";
     import {refToIIIF} from "../utils.js";
     import StemmaBuilder from "./stemma/StemmaBuilder.svelte";
+    import {clusterSelection} from "../selection/selectionStore.js";
 
-    export let docSet;
+
+    let { docSet } = $props();
 
     const documentSetStore = createDocumentSetStore(docSet.id);
     const {error, fetchPairs, selectedDocuments, selectedCategories, threshold, topK, mutualTopK, scoreMode, docSort, hideEmpty} = documentSetStore;
@@ -36,10 +40,11 @@
     ].map(([store, ...args]) => store.subscribe(syncStoreWithURL(store, ...args)));
     onDestroy(() => unsubs.forEach(u => u()));
 
-    import {clusterSelection} from "../selection/selectionStore.js";
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
-    $: if ($activeLayout === "sim") documentSetStore.setScoreFilter(true);
+    run(() => {
+        if ($activeLayout === "sim") documentSetStore.setScoreFilter(true);
+    });
 
     const tabList = {
         "sim": appLang === "en" ? "Similarity Chains" : "Chaînes de similarité",
@@ -61,69 +66,75 @@
 </script>
 
 <Layout {tabList}>
-    <div slot="sidebar">
-        <Sidebar {docSet} {documentSetStore} {clusterStore}/>
-    </div>
+    {#snippet sidebar()}
+        <div >
+            <Sidebar {docSet} {documentSetStore} {clusterStore}/>
+        </div>
+    {/snippet}
 
-    <div slot="content">
-        <Modal>
-            <div slot="content" class="fixed-grid has-6-cols">
-                <div class="grid is-gap-2">
-                    {#each $msgImages as meta}
-                        <div class="selection cell">
-                            <figure class="image is-64x64 card">
-                                <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="Extracted region"/>
-                                <div class="overlay is-center">
-                                    <span class="overlay-desc">{meta.title}</span>
+    {#snippet content()}
+        <div >
+            <Modal>
+                {#snippet content()}
+                        <div  class="fixed-grid has-6-cols">
+                        <div class="grid is-gap-2">
+                            {#each $msgImages as meta}
+                                <div class="selection cell">
+                                    <figure class="image is-64x64 card">
+                                        <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="Extracted region"/>
+                                        <div class="overlay is-center">
+                                            <span class="overlay-desc">{meta.title}</span>
+                                        </div>
+                                    </figure>
                                 </div>
-                            </figure>
+                            {/each}
                         </div>
-                    {/each}
-                </div>
-            </div>
-        </Modal>
+                    </div>
+                    {/snippet}
+            </Modal>
 
-        {#if $error}
-            <article class="message is-danger">
-                <div class="message-body">{$error}</div>
-            </article>
-        {:else}
-            {#await $fetchPairs}
-                <progress class="progress is-link" max="100">Loading...</progress>
-            {:then pairCount}
-                {#if pairCount === 0}
-                    <article class="message is-warning">
-                        <div class="message-body">
-                            {#if appLang === "en"}
-                                No regions pairs found for this configuration.
-                                Please adjust your selection criteria in the sidebar
-                                to include more documents or categories.
-                            {:else}
-                                Aucune paires d'images trouvées pour la configuration actuelle.
-                                Merci d'ajuster vos critères de sélection dans la barre latérale
-                                pour inclure davantage de documents ou catégories.
+            {#if $error}
+                <article class="message is-danger">
+                    <div class="message-body">{$error}</div>
+                </article>
+            {:else}
+                {#await $fetchPairs}
+                    <progress class="progress is-link" max="100">Loading...</progress>
+                {:then pairCount}
+                    {#if pairCount === 0}
+                        <article class="message is-warning">
+                            <div class="message-body">
+                                {#if appLang === "en"}
+                                    No regions pairs found for this configuration.
+                                    Please adjust your selection criteria in the sidebar
+                                    to include more documents or categories.
+                                {:else}
+                                    Aucune paires d'images trouvées pour la configuration actuelle.
+                                    Merci d'ajuster vos critères de sélection dans la barre latérale
+                                    pour inclure davantage de documents ou catégories.
+                                {/if}
+                            </div>
+                        </article>
+                    {:else}
+                        <div>
+                            <h2 class="title is-3 has-text-link">{tabList[$activeLayout]}</h2>
+                            {#if $activeLayout === "img" || $activeLayout === "doc"}
+                                <NetworkVisualization {documentSetStore} {clusterStore} type={$activeLayout}/>
+                            {:else if $activeLayout === "sim"}
+                                <Clusters {documentSetStore} {clusterStore}/>
+                            {:else if $activeLayout === "mat"}
+                                <DocumentMatrix {documentSetStore} {clusterStore}/>
+                            {:else if $activeLayout === "ste"}
+                                <StemmaBuilder {documentSetStore} {clusterStore}/>
+                            {:else if $activeLayout === "fri"}
+                                <FriezeView {documentSetStore} {clusterStore}/>
+                            {:else if $activeLayout === "wit"}
+                                <Documents {documentSetStore}/>
                             {/if}
                         </div>
-                    </article>
-                {:else}
-                    <div>
-                        <h2 class="title is-3 has-text-link">{tabList[$activeLayout]}</h2>
-                        {#if $activeLayout === "img" || $activeLayout === "doc"}
-                            <NetworkVisualization {documentSetStore} {clusterStore} type={$activeLayout}/>
-                        {:else if $activeLayout === "sim"}
-                            <Clusters {documentSetStore} {clusterStore}/>
-                        {:else if $activeLayout === "mat"}
-                            <DocumentMatrix {documentSetStore} {clusterStore}/>
-                        {:else if $activeLayout === "ste"}
-                            <StemmaBuilder {documentSetStore} {clusterStore}/>
-                        {:else if $activeLayout === "fri"}
-                            <FriezeView {documentSetStore} {clusterStore}/>
-                        {:else if $activeLayout === "wit"}
-                            <Documents {documentSetStore}/>
-                        {/if}
-                    </div>
-                {/if}
-            {/await}
-        {/if}
-    </div>
+                    {/if}
+                {/await}
+            {/if}
+        </div>
+    {/snippet}
 </Layout>
