@@ -35,9 +35,9 @@
         <Table>
             <tr class="faded is-center">
                 {#if appLang === "en"}
-                    Error when retrieving similarities: {$errorMsg}
+                    <td>Error when retrieving similarities: {$errorMsg}</td>
                 {:else}
-                    Erreur lors de la récupération des similarités : {$errorMsg}
+                    <td>Erreur lors de la récupération des similarités : {$errorMsg}</td>
                 {/if}
             </tr>
         </Table>

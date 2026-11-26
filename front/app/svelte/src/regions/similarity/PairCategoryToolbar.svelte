@@ -2,14 +2,29 @@
     import { userId, csrfToken, appName } from "../../constants";
     import CategoryToolbar from "./CategoryToolbar.svelte";
 
-    export let qImg;
-    export let sImg;
-    export let category = null;
-    export let users = [];
-    export let isSelectedByUser = users.includes(Number(userId));
-    export let similarityType = null;
-    export let similarityHash = null;
-    export let onChange = () => {};
+    /**
+     * @typedef {Object} Props
+     * @property {any} qImg
+     * @property {any} sImg
+     * @property {any} [category]
+     * @property {any} [users]
+     * @property {any} [isSelectedByUser]
+     * @property {any} [similarityType]
+     * @property {any} [similarityHash]
+     * @property {any} [onChange]
+     */
+
+    /** @type {Props} */
+    let {
+        qImg,
+        sImg,
+        category = $bindable(null),
+        users = [],
+        isSelectedByUser = $bindable(users.includes(Number(userId))),
+        similarityType = null,
+        similarityHash = null,
+        onChange = () => {}
+    } = $props();
 
     const post = (endpoint, body) => fetch(`${window.location.origin}/${appName}/${endpoint}`, {
         method: "POST",

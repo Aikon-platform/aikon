@@ -1,13 +1,26 @@
 <script>
     import CategoryButton from "./CategoryButton.svelte";
 
-    export let visibleCategories = [1, 2, 3, 4, 5];
-    export let toggleFct = () => null;
-    export let userToggleFct = () => null;
-    /** @type {number|number[]|null} */
-    export let selectedCategory = null;
-    export let isSelectedByUser = false;
-    export let horizontal = true;
+
+    /**
+     * @typedef {Object} Props
+     * @property {any} [visibleCategories]
+     * @property {any} [toggleFct]
+     * @property {any} [userToggleFct]
+     * @property {number|number[]|null} [selectedCategory]
+     * @property {boolean} [isSelectedByUser]
+     * @property {boolean} [horizontal]
+     */
+
+    /** @type {Props} */
+    let {
+        visibleCategories = [1, 2, 3, 4, 5],
+        toggleFct = () => null,
+        userToggleFct = () => null,
+        selectedCategory = null,
+        isSelectedByUser = false,
+        horizontal = true
+    } = $props();
 
     let paddingStart = horizontal ? "pl-3 pr-2" : "pt-3 pb-2";
     let paddingEnd = horizontal ? "pl-2 pr-3" : "pt-2 pb-3";

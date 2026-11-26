@@ -26,12 +26,12 @@
                 <SimilarityRow {qImg} {witnessStore}/>
             {:else}
                 <tr class="faded is-center">
-                    {appLang === "en" ? "No similarity" : "Pas de similarités"}
+                    <td>{appLang === "en" ? "No similarity" : "Pas de similarités"}</td>
                 </tr>
                 <!--TODO add button for launching new similarities-->
             {/each}
         {:catch error}
-            <tr>Error when retrieving similar regions: {error}</tr>
+            <tr><td>Error when retrieving similar regions: {error}</td></tr>
         {/await}
     </Table>
 

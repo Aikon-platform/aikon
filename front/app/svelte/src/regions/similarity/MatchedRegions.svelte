@@ -1,20 +1,37 @@
 <script>
+    import { run } from 'svelte/legacy';
+
     import { appLang } from "../../constants";
     import SimilarRegion from "./SimilarRegion.svelte";
     import RegionModal from "../modal/RegionModal.svelte";
     import { RegionItem } from "../types.js";
     import RegionTabs from "../modal/RegionTabs.svelte";
 
-    export let items = [];
-    export let loading = false;
-    export let error = null;
-    export let isPropagated = false;
-    export let qImg;
-    export let isInModal = false;
-    export let noRegionsSelected = false;
-    export let downloadable = false;
+    /**
+     * @typedef {Object} Props
+     * @property {any} [items]
+     * @property {boolean} [loading]
+     * @property {any} [error]
+     * @property {boolean} [isPropagated]
+     * @property {any} qImg
+     * @property {boolean} [isInModal]
+     * @property {boolean} [noRegionsSelected]
+     * @property {boolean} [downloadable]
+     */
 
-    $: label = (() => {
+    /** @type {Props} */
+    let {
+        items = [],
+        loading = false,
+        error = null,
+        isPropagated = false,
+        qImg,
+        isInModal = false,
+        noRegionsSelected = false,
+        downloadable = false
+    } = $props();
+
+    let label = $derived((() => {
         const plural = items.length > 1;
         if (isPropagated)
             return appLang === "fr"
@@ -23,26 +40,28 @@
         return appLang === "fr"
             ? (plural ? "images similaires" : "image similaire")
             : (plural ? "similar images" : "similar image");
-    })();
+    })());
 
-    let modalOpen = false;
-    let modalIndex = 0;
+    let modalOpen = $state(false);
+    let modalIndex = $state(0);
 
     const PAGE_SIZE = 10;
-    let visibleCount = PAGE_SIZE;
-    $: visibleItems = items.slice(0, visibleCount);
-    $: hasMore = visibleCount < items.length;
+    let visibleCount = $state(PAGE_SIZE);
+    let visibleItems = $derived(items.slice(0, visibleCount));
+    let hasMore = $derived(visibleCount < items.length);
 
     // Reset when items change
-    $: items, visibleCount = PAGE_SIZE
+    run(() => {
+        items, visibleCount = PAGE_SIZE
+    });
 
     const handleOpenModal = (e) => {
         modalIndex = e.detail.index ?? 0;
         modalOpen = true;
     };
 
-    $: modalItems = items.map(([, , sImg]) => RegionItem.fromImg(sImg));
-    $: comparison = items[modalIndex] && { qImg, sImg: items[modalIndex][2] };
+    let modalItems = $derived(items.map(([, , sImg]) => RegionItem.fromImg(sImg)));
+    let comparison = $derived(items[modalIndex] && { qImg, sImg: items[modalIndex][2] });
 </script>
 
 {#if loading}
@@ -75,7 +94,7 @@
             </div>
             {#if hasMore}
                 <div class="is-center py-3">
-                    <button class="button is-small is-link is-outlined" on:click={() => visibleCount += PAGE_SIZE}>
+                    <button class="button is-small is-link is-outlined" onclick={() => visibleCount += PAGE_SIZE}>
                         {appLang === "en" ? `Load more` : `Charger plus`}
                     </button>
                 </div>
@@ -84,9 +103,11 @@
 
     {#if !isInModal}
         <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
-            <svelte:fragment let:item={currentItem} let:anchored>
-                <RegionTabs item={currentItem} comparison={anchored ? null : comparison} activeTab="similarity"/>
-            </svelte:fragment>
+            {#snippet children({ item: currentItem, anchored })}
+
+                    <RegionTabs item={currentItem} comparison={anchored ? null : comparison} activeTab="similarity"/>
+
+                            {/snippet}
         </RegionModal>
     {/if}
 {/if}

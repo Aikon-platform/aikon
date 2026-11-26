@@ -2,11 +2,23 @@
     import { categoryInfo } from "./similarityCategory.js";
     import {i18n} from "../../utils.js";
 
-    export let selectable = true;
-    export let isSelected = false;
-    export let category;
-    export let toggle = () => {};
-    export let padding = "px-2";
+    /**
+     * @typedef {Object} Props
+     * @property {boolean} [selectable]
+     * @property {boolean} [isSelected]
+     * @property {any} category
+     * @property {any} [toggle]
+     * @property {string} [padding]
+     */
+
+    /** @type {Props} */
+    let {
+        selectable = true,
+        isSelected = false,
+        category,
+        toggle = () => {},
+        padding = "px-2"
+    } = $props();
 
     const categoryTitle = categoryInfo[category].title;
 
@@ -22,6 +34,6 @@
 </script>
 
 <span class="tag py-4 {padding} {selectable ? 'is-hoverable' : ''}" class:is-selected={isSelected}
-      on:click={() => toggle(category)} on:keyup={null} title={catTitle()}>
+      onclick={() => toggle(category)} onkeyup={null} title={catTitle()}>
     {@html categoryInfo[category].svg}
 </span>
