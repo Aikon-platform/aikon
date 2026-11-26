@@ -1,6 +1,4 @@
 <!-- @migeation-task-ok -->
-<!-- @migration-task Error while migrating Svelte code: `$:` is not allowed in runes mode, use `$derived` or `$effect` instead
-https://svelte.dev/e/legacy_reactive_statement_invalid -->
 <script>
     import {onDestroy, onMount} from "svelte";
 
