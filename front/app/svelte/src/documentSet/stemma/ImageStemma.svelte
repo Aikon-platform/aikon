@@ -1,3 +1,5 @@
+<!-- @migration-task Error while migrating Svelte code: can't migrate `$: visibleRegions = stemmaImages.nodes.filter(n => n.img).map(n => new RegionItem(n.img));` to `$derived` because there's a variable named derived.
+     Rename the variable and try again or migrate by hand. -->
 <!--
 Propagation logic:
 1. The startImageId (clicked line in the in the spatial frieze) determines the starting image placed at the base document node
@@ -12,7 +14,6 @@ Propagation logic:
 
 <script>
     import { createEventDispatcher } from "svelte";
-    import { derived } from "svelte/store";
     import {RegionItem} from "../../regions/types.js";
     import RegionModal from "../../regions/modal/RegionModal.svelte";
     import PageView from "../../regions/modal/PageView.svelte";
@@ -26,12 +27,15 @@ Propagation logic:
     import QueryExpansionView from "../../regions/modal/QueryExpansionView.svelte";
     import RegionTabs from "../../regions/modal/RegionTabs.svelte";
 
-    export let stemmaStore;
-    export let visiblePairs;
-    export let imageNodes;
-    export let documents;
-    export let startImageId = null;
-    export let baseDocId = null;
+    let {
+        stemmaStore,
+        visiblePairs,
+        imageNodes,
+        documents,
+        startImageId = null,
+        baseDocId = null,
+    } = $props();
+
     let startFromImage = false;
 
     const dispatch = createEventDispatcher();
@@ -58,7 +62,7 @@ Propagation logic:
     const ADD_TO_STEMMA_K = 1;
 
     const IMG_SIZE = 150;
-    let svgEl, containerEl;
+    let svgEl = $state(), containerEl;
     let width = 800, height = 600;
 
     let editingNode = null;
@@ -95,20 +99,22 @@ Propagation logic:
     }
 
     let attached = false;
-    $: if (svgEl && !attached) {
-        interaction.attach(svgEl);
-        attached = true;
-    }
-    $: if (!stemmaImages.nodes.length) attached = false;
+    $effect(() => {
+        if (svgEl && !attached) {
+            interaction.attach(svgEl);
+            attached = true;
+        }
+    });
+    $effect(() => {if (!stemmaImages.nodes.length) attached = false});
 
     let lastAnchorKey = null;
-    $: {
+    $effect(() => {
         const key = `${startImageId}-${baseDocId}`;
         if (key !== lastAnchorKey && stemmaImages.nodes.length && svgEl) {
             interaction.positionCenter(stemmaImages.nodes, { nodeWidth: IMG_SIZE, nodeHeight: IMG_SIZE });
             lastAnchorKey = key;
         }
-    }
+    })
 
     function orderRank(doc) {
         return [doc?.min_date ?? Infinity, doc?.title ?? "", doc?.id ?? Infinity];
@@ -122,7 +128,7 @@ Propagation logic:
 
     let modalOpen = false;
     let clickedRegionIdx = 0;
-    $: visibleRegions = stemmaImages.nodes.filter(n => n.img).map(n => new RegionItem(n.img));
+    let visibleRegions = $derived(stemmaImages.nodes.filter(n => n.img).map(n => new RegionItem(n.img)));
 
     const openImg = (node) => {
         if (!node.img) return;
@@ -132,9 +138,9 @@ Propagation logic:
 
     const handleNavigate = (e) => clickedRegionIdx = e.detail.index ?? 0;
 
-    const pairIndex = derived(visiblePairs, $pairs => {
+    const pairIndex = $derived.by(() => {
         const idx = new Map();
-        for (const p of $pairs) {
+        for (const p of $visiblePairs) {
             const key1 = `${p.digit_1}-${p.digit_2}`;
             const key2 = `${p.digit_2}-${p.digit_1}`;
             if (!idx.has(key1)) idx.set(key1, []);
@@ -145,8 +151,20 @@ Propagation logic:
         return idx;
     });
 
-    let stemmaImages = { nodes: [], edges: [] };
-    $: stemmaImages = computeStemma($edges, $nodePositions, documents, $pairIndex, $imageNodes, startImageId, baseDocId, $nodeTitles, startFromImage);
+    /** @type {{ nodes: Any[], edges: Any[] }} */
+    let stemmaImages = $derived(
+        computeStemma(
+            $edges,
+            $nodePositions,
+            documents,
+            pairIndex,
+            $imageNodes,
+            startImageId,
+            baseDocId,
+            $nodeTitles,
+            startFromImage
+        )
+    );
 
     function computeStemma(edges, positions, docs, pairIdx, imgNodes, startImgId, baseId, titles, fromImage) {
         if (!startImgId || !baseId) return {nodes: [], edges: []};
@@ -303,8 +321,10 @@ Propagation logic:
 
 <div id="img-stemma" class="stemma-container" bind:this={containerEl} bind:clientWidth={width} bind:clientHeight={height} style={`height: ${stemmaImages.nodes.length ? "60vh" : "50px"}`}>
     {#if stemmaImages.nodes.length}
+        <!-- svelte-ignore a11y_no_static_element_interactions -->
         <svg bind:this={svgEl} class="stemma-svg" viewBox="0 0 {width} {height}"
-             on:pointermove={interaction.onPointerMove} on:pointerup={interaction.onPointerUp}>
+             onpointermove={interaction.onPointerMove} onpointerup={interaction.onPointerUp}
+        >
             <defs>
                 <marker id="arrowhead" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                     <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-body-color)"/>
@@ -319,7 +339,7 @@ Propagation logic:
                     {@const y1 = s.y + edge.source.h}
                     {@const x2 = t2.x + edge.target.w/2}
                     {@const y2 = t2.y}
-                    <g class="edge-group" on:contextmenu={e => edge.extra ? openExtraEdgeMenu(e, edge) : stemmaMenu.openEdgeMenu(e, edge)}>
+                    <g class="edge-group" oncontextmenu={e => edge.extra ? openExtraEdgeMenu(e, edge) : stemmaMenu.openEdgeMenu(e, edge)}>
                         <line class="edge-hit" {x1} {y1} {x2} {y2} stroke-width={10 / $transform.k}/>
                         <line class="edge" {x1} {y1} {x2} {y2}
                               stroke={edge.extra ? "transparent" : "var(--bulma-body-color)"}
@@ -348,8 +368,8 @@ Propagation logic:
                     <g data-node-id={node.docId}
                        transform="translate({p.x},{p.y})"
                        style="cursor: grab"
-                       on:pointerdown={e => interaction.onPointerDown(e, node)}
-                       on:contextmenu={e => openNodeMenu(e, node)}>
+                       onpointerdown={e => interaction.onPointerDown(e, node)}
+                       oncontextmenu={e => openNodeMenu(e, node)}>
                         <rect width={node.w} height={node.h} rx="4"
                               fill={node.color} stroke={node.color}
                               stroke-width={node.imageId === startImageId && node.docId === baseDocId ? 20 : 10}/>
