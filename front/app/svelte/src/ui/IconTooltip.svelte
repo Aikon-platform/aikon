@@ -11,17 +11,20 @@
 
 <script>
     import TooltipGeneric from "./TooltipGeneric.svelte";
+    import {makeTooltipGenericState} from "./tooltipGenericState.svelte";
 
-    export let iconifyIcon,
-        altText,
-        tooltipText;
+    /** @typedef {import("../../ui/tooltipGenericState.svelte").TooltipGenericState} TooltipGenericState */
+
+    let { iconifyIcon, altText, tooltipText } = $props();
+    const tooltipState = makeTooltipGenericState();
+    tooltipState.tooltipText = tooltipText;
 </script>
 
 
 <div class="is-inline-block icon-tooltip">
     <button>
-        <span class="iconify" data-icon={iconifyIcon} title={altText}/>
-        <TooltipGeneric {tooltipText}/>
+        <span class="iconify" data-icon={iconifyIcon} title={altText}></span>
+        <TooltipGeneric {tooltipState}/>
     </button>
 </div>
 
