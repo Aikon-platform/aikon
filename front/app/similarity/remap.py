@@ -278,7 +278,7 @@ def apply_remap(
         "updates": len(to_update),
         "insertions": len(to_insert),
         "deletions": len(to_delete),
-        "orphans_by_category": count_categories(orphaned),
+        "orphans": count_categories(orphaned),
         "lost": [
             {k: r[k] for k in ("id", "img_1", "img_2", "similarity_hash")}
             for r in orphaned

@@ -245,7 +245,7 @@ def build_mapping(
             mapping |= {regions[i].img: canon for i in cl if regions[i].img != canon}
 
     stats = {
-        "distinct_images": len(images),
+        "count": len(images),
         "pages_with_regions": len(canvases),
         "cluster_size_histogram": dict(sorted(sizes.items())),
         "images_mapped": len(mapping),

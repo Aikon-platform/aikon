@@ -10,22 +10,20 @@
         },
         steps: {
             en: [
-                "slightly modified region: the pair is updated and keeps its score",
-                "significantly modified region (remapped): the pair is updated, but its score is no longer reliable and must be checked",
-                "region divided into several (split): the pair is duplicated for each new region",
-                "regions merged into one (merge): their pairs are combined, keeping the assigned category",
-                "region with no match (orphan): its pairs are deleted",
-                "pair now linking a region to itself (self): deleted",
-                "a category assigned to a pair is carried over to the same pair from other similarity computations",
+                "<code>equivalent</code> Slightly modified region: the pair is updated and keeps its score",
+                "<code>remapped</code> Significantly modified region: the pair is updated, but its score is no longer reliable",
+                "<code>split</code> Region divided into several: the pair is duplicated for each new region",
+                "<code>merge</code> Regions merged into one: their pairs are combined, keeping the assigned category",
+                "<code>orphan</code> Region with no match: its pairs are deleted",
+                "<code>self</code> Pair now linking a region to itself: deleted",
             ],
             fr: [
-                "région légèrement modifiée : la paire est mise à jour et garde son score",
-                "région nettement modifiée (remapped) : la paire est mise à jour, mais son score n'est plus fiable et doit être vérifié",
-                "région divisée en plusieurs (split) : la paire est dupliquée pour chaque nouvelle région",
-                "régions fusionnées en une seule (merge) : leurs paires sont réunies, en gardant la catégorie attribuée",
-                "région sans équivalent (orphan) : ses paires sont supprimées",
-                "paire reliant désormais une région à elle-même (self) : supprimée",
-                "une catégorie attribuée à une paire est reportée sur la même paire issue d'autres calculs de similarité",
+                "<code>equivalent</code> Région légèrement modifiée : la paire est mise à jour et garde son score",
+                "<code>remapped</code> Région nettement modifiée : la paire est mise à jour, mais son score n'est plus fiable",
+                "<code>split</code> Région divisée en plusieurs : la paire est dupliquée pour chaque nouvelle région",
+                "<code>merge</code> Régions fusionnées en une seule : leurs paires sont réunies, en gardant la catégorie attribuée",
+                "<code>orphan</code> Région sans équivalent : ses paires sont supprimées",
+                "<code>self</code> Paire reliant désormais une région à elle-même : supprimée",
             ]
         },
         run: {en: "Preview the changes", fr: "Prévisualiser les changements"},
@@ -42,19 +40,19 @@
         rescore: {en: "{relaunch} to recompute the score of remapped pairs", fr: "{relaunch} pour recalculer le score des paires remapped"},
         pairsView: {en: "pairs view", fr: "vue des paires"},
         relaunch: {en: "Relaunch the similarity", fr: "Relancez la similarité"},
-        distinct_images: {en: "distinct regions", fr: "régions distinctes"},
+        skipped: {en: "skipped (whole page or digitization without regions)", fr: "ignorées (page entière ou numérisation sans régions)"},
+        count: {en: "distinct regions", fr: "régions distinctes"},
         unchanged: {en: "unchanged", fr: "inchangées"},
         equivalent: {en: "slightly modified", fr: "légèrement modifiées"},
-        remapped: {en: "significantly modified (remapped)", fr: "nettement modifiées (remapped)"},
-        split: {en: "divided (split)", fr: "divisées (split)"},
-        orphan: {en: "no match (orphan)", fr: "sans équivalent (orphan)"},
-        skipped: {en: "skipped (whole page or digitization without regions)", fr: "ignorées (page entière ou numérisation sans régions)"},
+        remapped: {en: "significantly modified", fr: "nettement modifiées"},
+        split: {en: "divided", fr: "divisées"},
+        orphan: {en: "no match", fr: "sans correspondance"},
         updates: {en: "updated", fr: "mises à jour"},
-        insertions: {en: "created (split)", fr: "créées (split)"},
+        insertions: {en: "created by split", fr: "créées par division"},
         deletions: {en: "deleted (orphan, merge, self)", fr: "supprimées (orphan, merge, self)"},
-        orphans_by_category: {en: "deleted (orphan), by category", fr: "supprimées (orphan), par catégorie"},
-        inherited: {en: "category carried over from another computation", fr: "catégorie reportée depuis un autre calcul"},
-        conflicts: {en: "conflicting categories between computations (left unchanged)", fr: "catégories contradictoires entre calculs (inchangées)"},
+        orphans: {en: "deleted by category", fr: "supprimées par catégorie"},
+        conflicts: {en: "conflicting categories (left as is)", fr: "catégories contradictoires (inchangées)"},
+        merge: {en: "inherited categories", fr: "catégories héritées"},
     };
     const fmt = (key, vars) => Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, v), i18n(key, t));
     const steps = t.steps[appLang] ?? t.steps.en;
@@ -79,13 +77,19 @@
 
 <div class="content">
     <p class="mb-1">{i18n("intro", t)}</p>
-    <ul class="mt-0">{#each steps as step}<li>{step}</li>{/each}</ul>
+    <ul class="mt-0">
+        {#each steps as step}
+            <li>{@html step}</li>
+        {/each}
+    </ul>
 </div>
 
 <button type="button" class="button is-link is-light" on:click={run}>{i18n("run", t)}</button>
 
 {#if error}
-    <article class="message is-danger mt-4"><div class="message-body">{error}</div></article>
+    <article class="message is-danger mt-4">
+        <div class="message-body">{error}</div>
+    </article>
 {/if}
 
 {#if preview}
@@ -99,11 +103,16 @@
                 <table class="table is-narrow is-fullwidth box p-1 pl-2">
                     <thead><tr><th colspan="2">{i18n(key, t)}</th></tr></thead>
                     <tbody>
-                        {#each (key === "images" ? Object.keys(values) : ["updates", "insertions", "deletions", "orphans_by_category", "inherited", "conflicts"]) as k}
+                        {#each (key === "images" ?
+                            Object.keys(values) :
+                            ["updates", "insertions", "deletions", "orphans", "inherited", "conflicts"]) as k}
                             <tr>
-                                <td>{i18n(k, t)}</td>
+                                <td><code>{k}</code> {i18n(k, t)}</td>
                                 <td class="has-text-right">
-                                    {typeof values[k] === "object" ? Object.entries(values[k]).map(([c, n]) => `${c}: ${n}`).join(", ") || "–" : values[k]}
+                                    {typeof values[k] === "object" ?
+                                        Object.entries(values[k]).map(([c, n]) => `${c}: ${n}`).join(", ") || "–"
+                                        : values[k]
+                                    }
                                 </td>
                             </tr>
                         {/each}
