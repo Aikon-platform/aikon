@@ -3,11 +3,10 @@
     import { appLang } from "../constants";
     import Autocomplete from "./Autocomplete.svelte";
 
-    export let recordsStore;
     const { recordSearch, searchParams } = recordsStore;
 
-    export let searchFields = [];
-    let formData = {};
+    let { recordsStore, searchFields = [] } = $props();
+    let formData = $state({});
 
     onMount(() => {
         // fill search form according to URL search params
@@ -30,11 +29,11 @@
         formData[field.name] = event.detail.id;
     }
 
-    const isMulti = field => field.type.includes("Multiple");
+    const _isMulti = field => field.type.includes("Multiple");
 </script>
 
 {#if searchFields.length > 0}
-    <form on:submit={handleSearch} class="is-center pb-3">
+    <form onsubmit={handleSearch} class="is-center pb-3">
         <article class="message fixed-grid">
             <!-- Full-text search -->
             {#each searchFields as field}
@@ -62,7 +61,7 @@
                                             on:select={(event) => handleSelect(field, event)}
                                         />
                                     {:else}
-                                        {@const isMulti = isMulti(field)}
+                                        {@const isMulti = _isMulti(field)}
                                         <div class="select is-small is-wide" class:is-multiple={isMulti}>
                                             <select id={field.name} name={field.name} bind:value={formData[field.name]} class="is-wide"
                                                     {...isMulti ? { size: 3, multiple: true } : {}}>

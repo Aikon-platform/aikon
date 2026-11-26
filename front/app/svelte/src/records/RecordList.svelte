@@ -13,10 +13,18 @@
 
     import { setContext } from "svelte";
 
-    export let modelName = "";
+    /**
+     * @typedef {Object} Props
+     * @property {string} [modelName]
+     * @property {string} [modelTitle]
+     * @property {any} [searchFields]
+     */
+
+    /** @type {Props} */
+    let { modelName = "", modelTitle = "", searchFields = [] } = $props();
+
     setContext("modelName", modelName);
 
-    export let modelTitle = "";
     setContext("modelTitle", modelTitle);
 
     import { createRecordsStore } from "./recordStore.js";
@@ -26,10 +34,9 @@
     const recordsStore = createRecordsStore(modelName);
     const { pageRecords, resultPage, resultNumber } = recordsStore;
 
-    $: selectedRecords = $selected;
-    $: selectionLength = $nbSelected;
+    let selectedRecords = $derived($selected);
+    let selectionLength = $derived($nbSelected);
 
-    export let searchFields = [];
     // TODO make result count appear + filter name
 
     const addUrl = modelName.includes("treatment") ? `/${appName}/${modelName}/add/` : `/${appName}-admin/${webappName}/${modelName}/add/`
@@ -46,13 +53,13 @@
     {#if !modelTitle.includes("set")}
         <a href="{addUrl}" class="button is-rounded is-link mb-4"
            title='{appLang === "en" ? "Add" : "Ajouter"}'>
-            <i class="fa-solid fa-plus"/>
+            <i class="fa-solid fa-plus"></i>
             <span>{appLang === "en" ? "Add" : "Ajouter"}</span>
         </a>
     {/if}
     <a href="{importUrl}" class="button is-rounded is-link mb-4 ml-4 is-dark"
        title='{appLang === "en" ? "Import" : "Importer"}'>
-        <i class="fa-solid fa-file-import"/>
+        <i class="fa-solid fa-file-import"></i>
         <span>{appLang === "en" ? "Import" : "Importer"}</span>
     </a>
 </span>
@@ -102,7 +109,7 @@
                             <a href="{meta.url}" target="_blank">{meta.title}</a>
                         </td>
                         <td class="is-narrow">
-                            <button class="delete" aria-label="close" on:click={() => recordsSelection.remove(id, type)}/>
+                            <button class="delete" aria-label="close" onclick={() => recordsSelection.remove(id, type)}></button>
                         </td>
                     </tr>
                     <!--{:else}-->
