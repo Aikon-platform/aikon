@@ -1,3 +1,5 @@
+<!-- @migration-task-ok Error while migrating Svelte code: Cannot use `export let` in runes mode — use `$props()` instead
+https://svelte.dev/e/legacy_export_invalid -->
 <script>
     import { getContext } from "svelte";
 
@@ -9,26 +11,29 @@
     import { regionsStore } from "./regionsStore.js";
     const { allRegions } = regionsStore;
     import { appName, appLang, regionsType, csrfToken } from "../constants";
-    import {derived} from "svelte/store";
 
     // /** @type {number?} ID of the currently selected region (if there is a currently selected region) */
     // export let currentRegionId;
 
-    export let witnessStore;
+    let { witnessStore } = $props();
     const { selectedManifest } = witnessStore;
     const manifestShortId = $selectedManifest.split("/").at(-2);
     const isValidated = getContext("isValidated");
 
     let isEditMode = !isValidated;
 
-    $: selectionLength = $nbSelected;
+    let selectionLength = $derived($nbSelected);
     // $selected = {"Regions" : [{S}, {E}, {L}, {E}, {C}, {T}, {I}, {O}, {N}]}
-    const selectedRegions = derived(regionsSelection.selected, $sel =>
-        Object.assign({}, ...Object.values($sel))
+    // const selectedRegions = derived(regionsSelection.selected, $sel =>
+    //     Object.assign({}, ...Object.values($sel))
+    // );
+    const selectedStore = regionsSelection.selected;
+    const selectedRegions = $derived.by(() =>
+        Object.assign({}, ...Object.values($selectedStore))
     );
 
     // TODO here when there is not only one document selected, this assertion is erroneous
-    $: areAllSelected = selectionLength >= Object.keys($allRegions).length;
+    let areAllSelected = $derived(selectionLength >= Object.keys($allRegions).length);
 
     function toggleEditMode() {
         isEditMode = !isEditMode;
@@ -93,7 +98,7 @@
 </script>
 
 <div class="is-right mb-3">
-    <button class="button {isEditMode ? 'is-success' : 'is-link'} mr-3" on:click={() => toggleEditMode()}>
+    <button class="button {isEditMode ? 'is-success' : 'is-link'} mr-3" onclick={() => toggleEditMode()}>
         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 384 512" class="pr-3">
             {#if isEditMode}
                 <!--Check icon-->
@@ -109,12 +114,12 @@
             {appLang === "en" ? "Edit" : "Modifier"}
         {/if}
     </button>
-    <button class="button is-link is-light mr-3" on:click={toggleAllSelection}>
-        <i class="fa-solid fa-square-check"/>
+    <button class="button is-link is-light mr-3" onclick={toggleAllSelection}>
+        <i class="fa-solid fa-square-check"></i>
         <span id="all-selection">{appLang === "en" ? "Select all" : "Tout sélectionner"}</span>
     </button>
-    <button class="button is-link is-light" on:click={downloadRegions}>
-        <i class="fa-solid fa-download"/>
+    <button class="button is-link is-light" onclick={downloadRegions}>
+        <i class="fa-solid fa-download"></i>
         {appLang === "en" ? "Download" : "Télécharger"}
     </button>
 </div>
@@ -130,12 +135,12 @@
         -->
         {#if $selectedManifest.length}
             <a class="tag is-link is-rounded mr-3" href="{manifestToMirador($selectedManifest)}" target="_blank">
-                <i class="fa-solid fa-edit"/>
+                <i class="fa-solid fa-edit"></i>
                 {appLang === "en" ? "Go to editor" : "Aller à l'éditeur"}
             </a>
         {/if}
-        <button class="tag is-danger is-rounded" on:click={deleteSelectedRegions}>
-            <i class="fa-solid fa-trash"/>
+        <button class="tag is-danger is-rounded" onclick={deleteSelectedRegions}>
+            <i class="fa-solid fa-trash"></i>
             {appLang === "en" ? "Delete selected regions" : "Supprimer les régions sélectionnées"}
         </button>
     {/if}
