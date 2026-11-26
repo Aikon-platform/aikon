@@ -6,8 +6,7 @@
     import Matches from "../Matches.svelte";
     import DownloadPng from "../../ui/DownloadPng.svelte";
 
-    export let documentSetStore;
-    export let clusterStore;
+    let { documentSetStore, clusterStore } = $props();
 
     const {
         documentNodes, visibleDocuments, visiblePairs, buildFriezeMatches, buildClusterMatches, pairCat
@@ -15,16 +14,16 @@
 
     const friezeStub = { nodeTitles: writable({}) };
 
-    let friezeMode = "image";
-    let selectedFriezeImage = null;
-    let selectedCluster = null;
+    let friezeMode = $state("image");
+    let selectedFriezeImage = $state(null);
+    let selectedCluster = $state(null);
 
-    $: documents = $visibleDocuments;
-    $: matchesData = selectedCluster
+    let documents = $derived($visibleDocuments);
+    let matchesData = $derived(selectedCluster
         ? buildClusterMatches(selectedCluster)
         : selectedFriezeImage
             ? buildFriezeMatches(selectedFriezeImage, $visiblePairs)
-            : { matches: [], columns: [] };
+            : { matches: [], columns: [] });
 
     const t = {
         title: { en: "Spatial Frieze", fr: "Frise spatiale" },
@@ -46,41 +45,52 @@
 </script>
 
 <SplitLayout>
-    <div slot="left-title" class="is-flex is-justify-content-space-between is-align-items-center">
-        <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
-        <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
-            <DownloadPng targetId="spatial-frieze" filename="spatial-frieze" svgExport={true}/>
-            <div class="select is-small">
-                <select bind:value={friezeMode}>
-                    <option value="page">{i18n("byPage", t)}</option>
-                    <option value="image">{i18n("byImage", t)}</option>
-                </select>
+    <!-- @migration-task-ok: migrate this slot by hand, `left-title` is an invalid identifier -->
+    {#snippet leftTitle()}
+        <div class="is-flex is-justify-content-space-between is-align-items-center">
+            <h4 class="title is-6 mb-0">{i18n("title", t)}</h4>
+            <div class="is-flex is-align-items-center" style="gap: 0.5rem;">
+                <DownloadPng targetId="spatial-frieze" filename="spatial-frieze" svgExport={true}/>
+                <div class="select is-small">
+                    <select bind:value={friezeMode}>
+                        <option value="page">{i18n("byPage", t)}</option>
+                        <option value="image">{i18n("byImage", t)}</option>
+                    </select>
+                </div>
             </div>
         </div>
+    {/snippet}
+    <!-- @migration-task-ok: migrate this slot by hand, `left-scroll` is an invalid identifier -->
+    {#snippet leftScroll()}
+        <div>
+            <SpatialFrieze
+                {documents} {visiblePairs} {documentNodes}
+                stemmaStore={friezeStub}
+                mode={friezeMode}
+                on:imageselect={handleImageSelect}
+                on:clusterselect={handleClusterSelect}
+            />
+        </div>
+    {/snippet}
 
-    </div>
-    <div slot="left-scroll">
-        <SpatialFrieze
-            {documents} {visiblePairs} {documentNodes}
-            stemmaStore={friezeStub}
-            mode={friezeMode}
-            on:imageselect={handleImageSelect}
-            on:clusterselect={handleClusterSelect}
-        />
-    </div>
-
-    <div slot="right-title">
-        {#if matchesData.matches.length}
-            <h4 class="title is-6 mb-0">
-                {i18n("matches", t)} ({matchesData.matches.length})
-            </h4>
-        {/if}
-    </div>
-    <div slot="right-scroll">
-        {#if matchesData.matches.length}
-            <Matches matches={matchesData.matches} columns={matchesData.columns} pairCat={$pairCat} {clusterStore}/>
-        {:else}
-            <p class="has-text-grey is-size-7">{i18n("selectImage", t)}</p>
-        {/if}
-    </div>
+    <!-- @migration-task-ok: migrate this slot by hand, `right-title` is an invalid identifier -->
+    {#snippet rightTitle()}
+        <div>
+            {#if matchesData.matches.length}
+                <h4 class="title is-6 mb-0">
+                    {i18n("matches", t)} ({matchesData.matches.length})
+                </h4>
+            {/if}
+        </div>
+    {/snippet}
+    <!-- @migration-task-ok: migrate this slot by hand, `right-scroll` is an invalid identifier -->
+    {#snippet rightScroll()}
+        <div slot="right-scroll">
+            {#if matchesData.matches.length}
+                <Matches matches={matchesData.matches} columns={matchesData.columns} pairCat={$pairCat} {clusterStore}/>
+            {:else}
+                <p class="has-text-grey is-size-7">{i18n("selectImage", t)}</p>
+            {/if}
+        </div>
+    {/snippet}
 </SplitLayout>
