@@ -25,48 +25,90 @@
                 - contrary to resetting using stores, resetting is isolated: several components can set their own `resetTrigger` contexts, and they will affect their descendant components only.`InputSlider` inheriting from other components will not be affected.
                 - the context is just a trigger and is implementation independent. this means that the same trigger can be used to reset different inputs. in fact, `InputSlider`, `InputDropdown` and `InputToggle` all use the sane `resetTrigger`
                 - the only problem will be if 2 ancestor components of a single input both call `setContext("resetTrigger")`. in those cases, the 2 ancestors will trigger a resetting of the same input,
+
+    NOTE if the minVal/maxVal are updated through reactive props
+        after the start value is set AND if the start value is above the maxVal
+        then the start is defaulted to maxVal by noUiSlider
+        if you receive range after initial value,
+        better set min and max first way above expected start value
 -->
 <script>
-    import { onMount, onDestroy, createEventDispatcher, getContext } from "svelte";
-    import noUiSlider from "nouislider";
-    import "nouislider/dist/nouislider.css";
-    import TooltipGeneric from "./TooltipGeneric.svelte";
+    import { run } from 'svelte/legacy';
+    import { onMount, onDestroy, createEventDispatcher, getContext, mount } from "svelte";
 
-    /** @type {number} */
-    export let minVal;
-    /** @type {number} */
-    export let maxVal;
-    /** @type {number|number[]}
-     * default, pre-selected values. if 1 value is provided, then it's a single input slider.
-     * if an array of 2 values is provided, it's a min/max 2 input range slider */
-    export let start;
-    /** @type {number?} */
-    export let step = undefined;
-    /** @type {number?} number of floating points to keep after the decimal */
-    export let roundTo = 2;
-    /** @type {string?} title to give to the slider */
-    export let title = "";
-    /** @type {boolean} if true, emit on set + on update. else, emit only on set */
-    export let emitOnUpdate = false;
+    import "nouislider/dist/nouislider.css";
+    import noUiSlider from "nouislider";
+
+    import TooltipGeneric from "./TooltipGeneric.svelte";
+    import {makeTooltipGenericState} from "./tooltipGenericState.svelte";
+
+    /** @typedef {import("./tooltipGenericState.svelte").TooltipGenericState} TooltipGenericState */
+
+    /**
+     * @typedef {Object} Props
+     * @property {number} minVal
+     * @property {number} maxVal
+     * @property {number|number[]} start
+     * @property {number?} [step]
+     * @property {number?} [roundTo]
+     * @property {string?} [title]
+     * @property {boolean} [emitOnUpdate]
+     */
+
+    /** @type {Props} */
+    let {
+        minVal,
+        maxVal,
+        start,
+        step = undefined,
+        roundTo = 2,
+        title = "",
+        emitOnUpdate = false
+    } = $props();
 
     const dispatch = createEventDispatcher();
     const sliderHtmlId = `slider-${crypto.randomUUID()}`;
     const isRange = Array.isArray(start) && start.length === 2 && start.every(n => !isNaN(parseFloat(n)));  // true if number, number
+
     const handleHtmlIds = isRange
         ? [crypto.randomUUID(), crypto.randomUUID()].map(id => `noUi-handle-${id}`)
         : [`noUi-handle-${crypto.randomUUID()}`];
 
+    // noUiSlider object
+    let slider = $state();
+    // defined in onMount
+    let handleTooltips = $state([]);
+
+    /** @type {number | number[]} if isRange, [min,max] ; otherwise, 1 number*/
+    let selectedVal = $state(start);
+
+    /**
+     * HTML IDs mapped to state, to dynamically update the tooltip's value whenever `selectedVal` changes
+     * @type {{ [x: string]: TooltipGenericState }}
+     */
+    const tooltipStates = Object.fromEntries(
+        handleHtmlIds.map(htmlId => [htmlId, makeTooltipGenericState()])
+    )
+
+    // when `selectedVal` is updated, update `tooltipStates`.
+    $effect(() => {
+        const values = Array.isArray(selectedVal) ? selectedVal : [selectedVal];
+        handleHtmlIds.forEach((htmlId, i) =>
+            tooltipStates[htmlId].tooltipText = values[i]
+        );
+    })
+
+    let prevValue = null;
+    let prevStart = $state(start);
+    let prevRange = $state({ min: minVal, max: maxVal });
+
+    // helpers
+
     /** @type {writable} the `resetTrigger` context stores a writable. we subscribe to the writable,
-     * and when its value is updated, reset InputSlider */
+     * and when its value is updated, reset InputSlider
+     */
     const resetTriggerContext = getContext("resetTrigger");
     resetTriggerContext?.subscribe(() => slider?.noUiSlider?.reset());
-
-    let slider;
-    let handleTooltips = [];
-    let selectedVal = start;
-    let prevValue = null;
-    let prevStart = start;
-    let prevRange = { min: minVal, max: maxVal };
 
     const round = n => Number(n.toFixed(roundTo));
     const roundVal = v => Array.isArray(v) ? v.map(round) : round(v);
@@ -85,27 +127,24 @@
         }
     }
 
+    // handle props being updated by parent
+
     // update range if minVal/maxVal change in the parent component
-    $: if (slider?.noUiSlider && (minVal !== prevRange.min || maxVal !== prevRange.max)) {
-        prevRange = { min: minVal, max: maxVal };
-        slider.noUiSlider.updateOptions({ range: { min: minVal, max: maxVal } }, false);
-        // NOTE if the minVal/maxVal are updated through reactive props
-        // NOTE after the start value is set AND if the start value is above the maxVal
-        // NOTE then the start is defaulted to maxVal by noUiSlider
-        // NOTE if you receive range after initial value,
-        // NOTE better set min and max first way above expected start value
-    }
+    $effect(() => {
+        if (slider?.noUiSlider && (minVal !== prevRange.min || maxVal !== prevRange.max)) {
+            prevRange = { min: minVal, max: maxVal };
+            slider.noUiSlider.updateOptions({ range: { min: minVal, max: maxVal } }, false);
+        }
+    });
 
-    // update start if value passed to props change in the parent component
-    $: if (slider?.noUiSlider && !valuesEqual(roundVal(start), roundVal(prevStart))) {
-        prevStart = start;
-        slider.noUiSlider.set(start, false);
-        selectedVal = roundVal(start);
-    }
-
-    $: handleTooltips.forEach((tooltip, i) =>
-        tooltip.$set({ tooltipText: isRange ? selectedVal[i] : selectedVal })
-    );
+    // update start if the parent changes `start`
+    $effect(() => {
+        if (slider?.noUiSlider && !valuesEqual(roundVal(start), roundVal(prevStart))) {
+            prevStart = start;
+            slider.noUiSlider.set(start, false);
+            selectedVal = roundVal(start);
+        }
+    });
 
     onMount(() => {
         slider = document.getElementById(sliderHtmlId);
@@ -119,9 +158,9 @@
         slider.noUiSlider.on("update", () => handleSliderEvent("update"));
         slider.noUiSlider.on("set", () => handleSliderEvent("set"));
 
-        handleTooltips = handleHtmlIds.map((id, i) => new TooltipGeneric({
+        handleTooltips = handleHtmlIds.map((id, i) => mount(TooltipGeneric, {
             target: document.getElementById(id),
-            props: { tooltipText: isRange ? selectedVal[i] : selectedVal }
+            props: { tooltipState: tooltipStates[id] }
         }));
     });
 
@@ -133,7 +172,7 @@
     <div class="slider-outer-wrapper is-flex flex-direction-row">
         <span class="range-marker">{minVal}</span>
         <div class="slider-wrapper">
-            <div class="slider" id={sliderHtmlId}/>
+            <div class="slider" id={sliderHtmlId}></div>
         </div>
         <span class="range-marker">{maxVal}</span>
     </div>

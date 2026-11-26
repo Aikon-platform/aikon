@@ -11,18 +11,24 @@
         the html ID of the element for which we want to listen to events.
 -->
 <script>
+    import { run } from 'svelte/legacy';
+
 import { onMount, onDestroy } from "svelte";
 
-//////////////////////////////////
+/**
+ * @typedef {Object} Props
+ * @property {object<tooltipText: string>} tooltipState
+ * @property {any} targetHtmlId
+ */
 
-export let tooltipText;
-export let targetHtmlId;
+/** @type {Props} */
+let { tooltipState, targetHtmlId } = $props();
+const tooltipText = $derived(tooltipState?.tooltipText || "");
 
 const htmlId = `tooltip-generic-${window.crypto.randomUUID()}`;
 
 // set the width of a tooltip based on the value of tooltipText
-let tooltipWidthClass;
-$: setTooltipWidthClass(tooltipText);
+let tooltipWidthClass = $state();
 const setTooltipWidthClass = (_tooltipText) =>
     tooltipWidthClass =
         _tooltipText.length > 100 ? "tooltip-wide"
@@ -30,15 +36,15 @@ const setTooltipWidthClass = (_tooltipText) =>
                 : "tooltip-thin";
 
 let targetEl = undefined;
-let displayTooltip = false;
-
-//////////////////////////////////
+let displayTooltip = $state(false);
 
 const onMouseover = () => displayTooltip = true;
 const onMouseout = () => displayTooltip = false;
 const onClick = () => displayTooltip = !displayTooltip;
 
-//////////////////////////////////
+$effect(() => {
+    setTooltipWidthClass(tooltipText);
+});
 
 onMount(() =>  {
     targetEl =
