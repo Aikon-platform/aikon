@@ -132,7 +132,6 @@
         clearSelected();
     }
 
-    $effect(() => console.log(shown.map(r => (r.img.id))));
 </script>
 
 <div class="level mb-4">
