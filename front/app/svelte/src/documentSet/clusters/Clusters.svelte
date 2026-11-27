@@ -1,6 +1,4 @@
 <script>
-    import { preventDefault } from 'svelte/legacy';
-
     import Table from "../../Table.svelte";
     import Row from "../../Row.svelte";
     import Toolbar from "../../Toolbar.svelte";
