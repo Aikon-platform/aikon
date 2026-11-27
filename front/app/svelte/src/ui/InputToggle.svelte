@@ -6,16 +6,24 @@
     - resetting is done by getting the `resetTrigger` context which holds a writable store, subscribing to it, and when it updates, triggering `resetInputCheckbox`
 -->
 <script>
+    import { run } from 'svelte/legacy';
+
     import { createEventDispatcher, getContext } from "svelte";
 
     ///////////////////////////////////////////
 
-    /** @type {String} */
-    export let toggleLabel;
-    /** @type {Boolean} default value */
-    export let start = false;
-    /** @type {Boolean} button-like styling */
-    export let buttonDisplay = false;
+
+
+
+    /**
+     * @typedef {Object} Props
+     * @property {String} toggleLabel
+     * @property {Boolean} [start]
+     * @property {Boolean} [buttonDisplay]
+     */
+
+    /** @type {Props} */
+    let { toggleLabel, start = false, buttonDisplay = false } = $props();
 
     const htmlId = `input-toggle-${window.crypto.randomUUID()}`;
     const dispatch = createEventDispatcher(resetInputCheckbox);
@@ -23,24 +31,29 @@
     const resetTriggerContext = getContext("resetTrigger") || undefined;
     resetTriggerContext?.subscribe(resetInputCheckbox);
 
-    let isChecked = start;
-    $: dispatch("updateChecked", isChecked);
+    let isChecked = $state(start);
+    run(() => {
+        dispatch("updateChecked", isChecked);
+    });
 
     ///////////////////////////////////////////
 
-    const toggleOnClick = () => isChecked = !isChecked;
+    const toggleOnClick = (e) => {
+        e.preventDefault;
+        isChecked = !isChecked;
+    }
 
     function resetInputCheckbox() {
         isChecked = start;
     }
 </script>
 
-<button id={htmlId} name={htmlId} aria-label={toggleLabel} on:click|preventDefault={toggleOnClick}
+<button id={htmlId} name={htmlId} aria-label={toggleLabel} onclick={(e) => toggleOnClick(e)}
         class="input-checkbox-wrapper is-ghost is-flex is-align-items-center is-justify-content-center p-2 pl-3 pr-3"
         class:is-checked={isChecked} class:is-clickable={buttonDisplay} class:button={buttonDisplay}>
     <span class="switch mr-2">
         <span class="switch-control">
-            <span class="switch-spot"/>
+            <span class="switch-spot"></span>
         </span>
     </span>
     <span class="label">{toggleLabel}</span>
