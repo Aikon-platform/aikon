@@ -4,8 +4,7 @@
     import { run } from 'svelte/legacy';
 
     import {onDestroy} from "svelte";
-    import {SvelteSet} from "svelte/reactivity";
-    import {writable} from "svelte/store";
+    import {writable, derived} from "svelte/store";
     import InputDropdown from "../../ui/InputDropdown.svelte";
     import InputToggle from "../../ui/InputToggle.svelte";
     // import LegendItem from "../sidebar/LegendItem.svelte";
@@ -54,14 +53,20 @@
     const view = writable("images");
     onDestroy(view.subscribe(syncStoreWithURL(view, "docView", "string", "images")));
 
-    const selected = new SvelteSet();
+    // NOTE: selected is kept as a `writable` store instead of a Svelte 5 construct because
+    // `RegionCard` excepts `selectionStore` to be an actual store, not a `$state` or reactive object.
+    const selected = writable(new Set());
     const localSelection = {
-        toggle: (item) => {
-            if (selected.has(item.id)) selected.delete(item.id);
-            else selected.add(item.id);
-        },
-        isSelected: (item) => selected.has(item.id),
+        toggle: (item) => selected.update((s) => {
+            if (s.has(item.id)) s.delete(item.id);
+            else s.add(item.id);
+            return s;
+        }),
+        clear: () => selected.set(new Set()),
+        isSelected: derived(selected, ($s) => (item) => $s.has(item.id)),
     };
+    // remove values in `selected`, by reassigning to keep the store reactive.
+    const clearSelected = () => selected.set(new Set());
 
     const toggle = (set, v) => (set.delete(v) || set.add(v), set);
     const link = (m, a, b, digit) => (m.get(a) ?? m.set(a, new Map()).get(a)).set(b, digit);
@@ -89,11 +94,11 @@
             const {title, color} = $documentNodes.get(digit);
             return {id, witness_id: id, title, color};
         }));
-    run(() => {
+    $effect(() => {
         witId = witnesses.some(w => w.id === witId) ? witId : witnesses[0]?.id;
     });
-    run(() => {
-        witId, reset(), selected.clear();
+    $effect(() => {
+        witId, reset(), clearSelected();
     });
 
     let pairs = $derived(scoreFilter ? $visiblePairs : ($allPairs, pairsOfDocuments($selectedDocuments)));
@@ -119,13 +124,15 @@
         .reduce((c, p) => (pairCats(p).forEach(k => c[k] = (c[k] ?? 0) + 1), c), {}));
 
     async function deletePairs() {
-        const ids = [...selected];
+        const ids = [...$selected];
         const images = ids.map(img => ({img, title: $imageNodes.get(img)?.title}));
         if (!ids.length || !await showMessage(`${ids.length} ${i18n("confirmDelete", t)}`, i18n("confirm"), true, images)) return;
         if (!await sendTo(`${appName}/similarity/delete-matches`, {q_imgs: ids})) return;
         removeImages(ids);
-        selected.clear();
+        clearSelected();
     }
+
+    $effect(() => console.log(shown.map(r => (r.img.id))));
 </script>
 
 <div class="level mb-4">
@@ -161,9 +168,9 @@
                 <p class="title is-6">{shown.length} / {base.length}</p>
             </div>
             {#if isSuperuser}
-                <span title={i18n(selected.size ? "deletePairs" : "selectToDelete", t)}>
+                <span title={i18n($selected.size ? "deletePairs" : "selectToDelete", t)}>
                     <button class="button is-small tag is-danger is-center mx-4 m-0 has-text-light"
-                            disabled={!selected.size} onclick={deletePairs}>
+                            disabled={!$selected.size} onclick={deletePairs}>
                         <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 448 512">
                             <path fill="currentColor" d="M135.2 17.7L128 32 32 32C14.3 32 0 46.3 0 64S14.3 96 32 96l384 0c17.7 0 32-14.3 32-32s-14.3-32-32-32l-96 0-7.2-14.3C307.4 6.8 296.3 0 284.2 0L163.8 0c-12.1 0-23.2 6.8-28.6 17.7zM416 128L32 128 53.2 467c1.6 25.3 22.6 45 47.9 45l245.8 0c25.3 0 46.3-19.7 47.9-45L416 128z"/>
                         </svg>
