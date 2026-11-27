@@ -11,6 +11,11 @@ const baseRules = {
     "no-undef": "error",
     "quotes": "off",
     "@stylistic/indent": ["warn", 4],
+    "no-use-before-define": ["error", {
+        functions: false,  // function declarations are hoisted, so they're safe
+        classes: true,
+        variables: false   // only flag direct use, not use inside closures
+    }]
 };
 
 /** https://eslint.org/docs/latest/use/configure/rules */
@@ -42,7 +47,9 @@ export default defineConfig([
         rules: {
             ...baseRules,
             "svelte/require-each-key": "off",
-            "svelte/no-at-html-tags": "warn"
+            "svelte/no-at-html-tags": "warn",
+            "svelte/prefer-svelte-reactivity": "warn",
+            "svelte/prefer-writable-derived": "warn"
         },
     },
     {
