@@ -16,7 +16,7 @@
             <ul>
                 {#each tabs as {id, label}}
                     <li class:is-active={activeTab === id}>
-                        <a href={null} onclick={(e) => { preventDefault(); activeTab = id }}>{label}</a>
+                        <a href={null} onclick={(e) => { e.preventDefault(); activeTab = id }}>{label}</a>
                     </li>
                 {/each}
             </ul>
