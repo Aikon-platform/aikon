@@ -1,4 +1,4 @@
-<script context="module">
+<script module>
     export const viewModes = {
         matches: {en: "By matches", fr: "Par correspondances"},
         score: {en: "By score", fr: "Par score"},
@@ -6,22 +6,41 @@
     };
 </script>
 <script>
+    import { run } from 'svelte/legacy';
+
     import * as d3 from "d3";
     import {createEventDispatcher} from "svelte";
     import {i18n} from "../../utils.js";
     import RightClick from "../../ui/RightClick.svelte";
 
-    export let documents = [];
-    export let scoreData = new Map();
-    export let docStats = new Map();
-    export let imageCountMap = new Map();
-    export let normalize = true;
-    export let cellSize = 30;
-    export let mode = "matches";
-    export let coverageData = new Map();
 
-    export let isInStemma = false;
-    export let stemmaStore = null;
+    /**
+     * @typedef {Object} Props
+     * @property {any} [documents]
+     * @property {any} [scoreData]
+     * @property {any} [docStats]
+     * @property {any} [imageCountMap]
+     * @property {boolean} [normalize]
+     * @property {number} [cellSize]
+     * @property {string} [mode]
+     * @property {any} [coverageData]
+     * @property {boolean} [isInStemma]
+     * @property {any} [stemmaStore]
+     */
+
+    /** @type {Props} */
+    let {
+        documents = [],
+        scoreData = new Map(),
+        docStats = new Map(),
+        imageCountMap = new Map(),
+        normalize = true,
+        cellSize = 30,
+        mode = "matches",
+        coverageData = new Map(),
+        isInStemma = false,
+        stemmaStore = null
+    } = $props();
 
     const matchLevel = d3.scaleThreshold([1, 11, 26, 51], [0, 0, 1 / 3, 2 / 3, 1]);
     const cellLabel = {
@@ -30,11 +49,6 @@
         percentage: d => `${Math.round(d.pct * 100)}%`,
     };
 
-    $: edges = stemmaStore?.edges;
-    $: edgeKeys = isInStemma && $edges
-        ? new Set($edges.map(e => e.source < e.target ? `${e.source}-${e.target}` : `${e.target}-${e.source}`))
-        : new Set();
-    $: if (container && matrixData.docs.length) { edgeKeys; render(); }
 
     const dispatch = createEventDispatcher();
 
@@ -51,10 +65,9 @@
         },
     };
 
-    let container;
+    let container = $state();
     let selectedCell = null;
 
-    $: matrixData = buildMatrix(documents, scoreData, docStats, normalize, imageCountMap, mode, $coverageData);
 
     function buildMatrix(docs, scoreCount, docStatsMap, doNormalize, imgCount, mode, coverage) {
         if (!docs.length) return {docs: [], matrix: [], maxScore: 0};
@@ -241,9 +254,8 @@
         updateSelection();
     }
 
-    $: if (container && matrixData.docs.length) render();
 
-    let menuOpen = false, menuX = 0, menuY = 0, menuItems = [];
+    let menuOpen = $state(false), menuX = $state(0), menuY = $state(0), menuItems = $state([]);
 
     function docDate(d) {
         return d.min_date ?? d.max_date ?? null;
@@ -269,6 +281,17 @@
         menuY = event.clientY;
         menuOpen = true;
     }
+    let edges = $derived(stemmaStore?.edges);
+    let edgeKeys = $derived(isInStemma && $edges
+        ? new Set($edges.map(e => e.source < e.target ? `${e.source}-${e.target}` : `${e.target}-${e.source}`))
+        : new Set());
+    let matrixData = $derived(buildMatrix(documents, scoreData, docStats, normalize, imageCountMap, mode, $coverageData));
+    run(() => {
+        if (container && matrixData.docs.length) { edgeKeys; render(); }
+    });
+    run(() => {
+        if (container && matrixData.docs.length) render();
+    });
 </script>
 
 <div id="doc-set-matrix" class="matrix-grid" style="--cell-size: {cellSize}px;">

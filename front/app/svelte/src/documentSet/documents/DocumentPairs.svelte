@@ -1,4 +1,6 @@
 <script>
+    import { run } from 'svelte/legacy';
+
     import {onDestroy} from "svelte";
     import {writable, get} from "svelte/store";
     import InputDropdown from "../../ui/InputDropdown.svelte";
@@ -14,13 +16,24 @@
     import {colorDot, i18n, initPagination, pageUpdate, shorten, syncStoreWithURL} from "../../utils.js";
     import {pageSize} from "../../constants.js";
 
-    export let documentSetStore;
-    /** pairs already filtered by selected documents (and score if enabled) */
-    export let pairs;
-    /** [{id, title, color}] */
-    export let witnesses;
-    /** Map<digitId, witnessId> */
-    export let witOfDigit;
+
+
+
+    /**
+     * @typedef {Object} Props
+     * @property {any} documentSetStore
+     * @property {any} pairs - pairs already filtered by selected documents (and score if enabled)
+     * @property {any} witnesses - [{id, title, color}]
+     * @property {any} witOfDigit - Map<digitId, witnessId>
+     */
+
+    /** @type {Props} */
+    let {
+        documentSetStore,
+        pairs,
+        witnesses,
+        witOfDigit
+    } = $props();
 
     const {imageNodes, sortedDocumentNodes, patchPairs} = documentSetStore;
 
@@ -57,32 +70,34 @@
     const position = (rank, img) => [rank.get(img.digit), img.canvas, +img.xywh?.[1] || 0];
 
     /** `swapped`: the modal was opened from the right image, which is the query until the next navigation */
-    let modalOpen = false, modalIndex = 0, swapped = false;
+    let modalOpen = $state(false), modalIndex = $state(0), swapped = $state(false);
     const openModal = (i, right) => [modalIndex, swapped, modalOpen] = [offset + i, right, true];
     const onNavigate = ({detail}) => (swapped = false, pager.handlePageUpdate(Math.floor(detail.index / pageSize) + 1));
 
-    $: scopeCats = $wits.size === 2 ? [UNCAT, ...CATS] : CATS;
-    $: if (!scopeCats.includes(UNCAT) && $cats.has(UNCAT)) toggle(cats, UNCAT);
-    $: inScope = pairs.filter(p => pairCats(p).some(c => scopeCats.includes(c))
-        && (!$wits.size || ($wits.has(witOfDigit.get(p.digit_1)) && $wits.has(witOfDigit.get(p.digit_2)))));
-    $: catCounts = count(inScope, pairCats);
-    $: inCat = inScope.filter(p => !$cats.size || pairCats(p).some(c => $cats.has(c)));
-    $: inCatCounts = count(inCat, p => [p.similarityType]);
-    $: bars = Object.entries(count(inScope, p => [p.similarityType])).map(([type, total]) => ({
+    let scopeCats = $derived($wits.size === 2 ? [UNCAT, ...CATS] : CATS);
+    run(() => {
+        if (!scopeCats.includes(UNCAT) && $cats.has(UNCAT)) toggle(cats, UNCAT);
+    });
+    let inScope = $derived(pairs.filter(p => pairCats(p).some(c => scopeCats.includes(c))
+        && (!$wits.size || ($wits.has(witOfDigit.get(p.digit_1)) && $wits.has(witOfDigit.get(p.digit_2))))));
+    let catCounts = $derived(count(inScope, pairCats));
+    let inCat = $derived(inScope.filter(p => !$cats.size || pairCats(p).some(c => $cats.has(c))));
+    let inCatCounts = $derived(count(inCat, p => [p.similarityType]));
+    let bars = $derived(Object.entries(count(inScope, p => [p.similarityType])).map(([type, total]) => ({
         key: +type, total, part: inCatCounts[type] ?? 0, label: typeIcon(type), title: barTitle(total, inCatCounts[type] ?? 0, type)
-    }));
-    $: filtered = inCat.filter(p => !$types.size || $types.has(p.similarityType));
+    })));
+    let filtered = $derived(inCat.filter(p => !$types.size || $types.has(p.similarityType)));
 
-    $: rank = new Map($sortedDocumentNodes.map(([id], i) => [id, i]));
-    $: sorted = filtered
+    let rank = $derived(new Map($sortedDocumentNodes.map(([id], i) => [id, i])));
+    let sorted = $derived(filtered
         .map(p => {
             const [l, r] = [p.id_1, p.id_2].map(id => $imageNodes.get(id)).map(img => ({img, pos: position(rank, img)}))
                 .sort((a, b) => compare(a.pos, b.pos));
             return {p, l: l.img, r: r.img, key: [...l.pos, ...r.pos]};
         })
-        .sort((a, b) => compare(a.key, b.key));
-    $: offset = ($currentPage - 1) * pageSize;
-    $: pagePairs = sorted.slice(offset, offset + pageSize);
+        .sort((a, b) => compare(a.key, b.key)));
+    let offset = $derived(($currentPage - 1) * pageSize);
+    let pagePairs = $derived(sorted.slice(offset, offset + pageSize));
 </script>
 
 <div class="level-left is-flex is-justify-content-space-between">
@@ -128,8 +143,10 @@
 
 <RegionModal items={sorted.map(({l, r}, i) => swapped && i === modalIndex ? r : l)} bind:currentIndex={modalIndex} bind:open={modalOpen}
              on:navigate={onNavigate}>
-    <svelte:fragment let:item let:index>
-        {@const {l, r} = sorted[index] ?? {}}
-        <RegionTabs {item} comparison={l && {qImg: (swapped ? r : l).id, sImg: (swapped ? l : r).id}} activeTab="similarity"/>
-    </svelte:fragment>
+    {#snippet children({ item, index })}
+
+            {@const {l, r} = sorted[index] ?? {}}
+            <RegionTabs {item} comparison={l && {qImg: (swapped ? r : l).id, sImg: (swapped ? l : r).id}} activeTab="similarity"/>
+
+    {/snippet}
 </RegionModal>
