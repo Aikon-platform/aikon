@@ -42,7 +42,7 @@
 
     const clusterStore = createClusterStore(documentSetStore, clusterSelection);
 
-    run(() => {
+    $effect(() => {
         if ($activeLayout === "sim") documentSetStore.setScoreFilter(true);
     });
 
@@ -76,9 +76,9 @@
         <div >
             <Modal>
                 {#snippet content()}
-                        <div  class="fixed-grid has-6-cols">
+                    <div  class="fixed-grid has-6-cols">
                         <div class="grid is-gap-2">
-                            {#each msgImages as meta}
+                            {#each $msgImages as meta}
                                 <div class="selection cell">
                                     <figure class="image is-64x64 card">
                                         <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="Extracted region"/>
@@ -90,7 +90,7 @@
                             {/each}
                         </div>
                     </div>
-                    {/snippet}
+                {/snippet}
             </Modal>
 
             {#if $error}

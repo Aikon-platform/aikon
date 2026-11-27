@@ -4,7 +4,7 @@ import {miradorUrl, cantaloupeUrl, appName, appLang, aiiinotateUrl, model2title,
 export const loading = writable(false);
 export const errorMsg = writable("");
 /** images ({img, xywh, title}) displayed under the message of `showMessage` */
-export const msgImages = writable([]);
+export let msgImages = writable([]);
 
 const isString = (x) => typeof x === "string" || x instanceof String;
 

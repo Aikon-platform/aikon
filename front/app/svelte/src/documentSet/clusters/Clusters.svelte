@@ -83,14 +83,15 @@
                      </button>
                 </p>
                 <p class="control">
-                    <button class="button py-3" onclick={preventDefault(onlyExactMatches ? newCluster : categorizeSelection(1))}
+                    <button class="button py-3"
+                            onclick={(e) => { e.preventDefault(); onlyExactMatches ? newCluster() : categorizeSelection(1); }}
                             title={onlyExactMatches ? actionLabels.create.title : categoryInfo[1].action}>
                         {@html categoryInfo[1].svg}
                     </button>
                 </p>
                 {#each [2, 3] as cat}
                     <p class="control">
-                        <button class="button py-3" onclick={preventDefault(() => categorizeSelection(cat))}
+                        <button class="button py-3" onclick={(e) => { e.preventDefault(); categorizeSelection(cat) }}
                                 title={categoryInfo[cat].action}>
                             {@html categoryInfo[cat].svg}
                         </button>
@@ -100,7 +101,7 @@
                     <!-- Skip "remove" action if more than one category is selected -->
                     <!-- Because it makes no sense to uncategorize pairs that have different or no category -->
                     <p class="control">
-                        <button class="button py-3" onclick={preventDefault(removeFromClusters)}
+                        <button class="button py-3" onclick={(e) => { e.preventDefault(); removeFromClusters()}}
                                 title={actionLabels.remove.title}>
                             {@html categoryInfo[0].svg}
                         </button>
