@@ -7,8 +7,8 @@
     import RegionModal from "../modal/RegionModal.svelte";
     import ModalOpener from "../modal/ModalOpener.svelte";
 
-    let modalOpen = false;
-    let modalIndex = 0;
+    let modalOpen = $state(false);
+    let modalIndex = $state(0);
     const openModal = (i) => { modalIndex = i; modalOpen = true; };
 </script>
 
@@ -22,7 +22,9 @@
     {:then _}
         {#each $pageVectImgs as vectImg, i (vectImg.id)}
             <VectorizedRegions svgPath={vectImg}>
-                <ModalOpener slot="actions" on:open={() => openModal(i)}/>
+                {#snippet actions()}
+                                <ModalOpener  on:open={() => openModal(i)}/>
+                            {/snippet}
             </VectorizedRegions>
         {:else}
             <div class="faded is-center">
@@ -31,9 +33,11 @@
             <!--TODO add button for launching vectorization-->
         {/each}
         <RegionModal items={$pageVectImgs} bind:currentIndex={modalIndex} bind:open={modalOpen}>
-            <svelte:fragment let:item={currentItem}>
-                <VectorizedRegions svgPath={currentItem} fullWidth={true}/>
-            </svelte:fragment>
+            {#snippet children({ item: currentItem })}
+
+                    <VectorizedRegions svgPath={currentItem} fullWidth={true}/>
+
+                    {/snippet}
         </RegionModal>
     {:catch error}
         <div class="faded is-center">

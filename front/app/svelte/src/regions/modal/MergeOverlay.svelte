@@ -6,13 +6,26 @@
     import RegionCard from "../RegionCard.svelte";
     import CategoryToolbar from "../similarity/CategoryToolbar.svelte";
 
-    export let q;
-    export let s;
-    export let keep;
-    // export let indexed;
-    export let iou = null;
-    export let deletion = null;
-    export let conflicts = [];
+
+    /**
+     * @typedef {Object} Props
+     * @property {any} q
+     * @property {any} s
+     * @property {any} keep
+     * @property {any} [iou] - export let indexed;
+     * @property {any} [deletion]
+     * @property {any} [conflicts]
+     */
+
+    /** @type {Props} */
+    let {
+        q,
+        s,
+        keep = $bindable(),
+        iou = null,
+        deletion = null,
+        conflicts = []
+    } = $props();
 
     const dispatch = createEventDispatcher();
     const t = {
@@ -38,10 +51,10 @@
         networkPb: { en: "Problem with network", fr: "Problème de réseau" },
     };
 
-    let step = "bbox";
-    let categories = Object.fromEntries(conflicts.map(c => [c.img, Math.min(...c.categories)]));
-    $: drop = keep === q ? s : q;
-    $: next = step === "bbox" && conflicts.length > 0;
+    let step = $state("bbox");
+    let categories = $state(Object.fromEntries(conflicts.map(c => [c.img, Math.min(...c.categories)])));
+    let drop = $derived(keep === q ? s : q);
+    let next = $derived(step === "bbox" && conflicts.length > 0);
 
     const toggle = (img) => (cat) => categories[img] = categories[img] === cat ? null : cat;
 
@@ -63,7 +76,7 @@
         <div class="is-flex is-gap-4">
             {#each [q, s] as img (img)}
                 <div class="is-clickable has-text-centered" style:opacity={img === keep ? 1 : 0.5}
-                     on:click={() => keep = img} on:keyup={null}>
+                     onclick={() => keep = img} onkeyup={null}>
                     <RegionCard item={RegionItem.fromImg(img)} height={250} isInModal={true} selectable={false} downloadable={false}
                                 borderColor={img === keep ? "var(--bulma-link)" : null}/>
                     <!--<span class="tag is-light" class:is-link={indexed[img]}>{i18n(indexed[img] ? "indexed" : "notIndexed", t)}</span>-->
@@ -82,7 +95,7 @@
         </div>
     {/if}
     <div class="buttons mt-4">
-        <button class="button is-link" on:click={merge}>{i18n(next ? "next" : "merge", t)}</button>
-        <button class="button" on:click={() => dispatch("cancel")}>{i18n("cancel", t)}</button>
+        <button class="button is-link" onclick={merge}>{i18n(next ? "next" : "merge", t)}</button>
+        <button class="button" onclick={() => dispatch("cancel")}>{i18n("cancel", t)}</button>
     </div>
 </div>

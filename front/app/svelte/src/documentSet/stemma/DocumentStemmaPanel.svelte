@@ -2,10 +2,12 @@
     import DocumentStemma from "./DocumentStemma.svelte";
     import { i18n } from "../../utils.js";
 
-    export let stemmaStore;
-    export let documents;
-    export let selectedNodes;
-    export let nodeTitles;
+    let {
+        stemmaStore,
+        documents,
+        selectedNodes,
+        nodeTitles
+    } = $props();
 
     const t = { order: { en: "Order", fr: "Ordre" } };
 </script>

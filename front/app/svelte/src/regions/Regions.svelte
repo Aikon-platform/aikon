@@ -5,17 +5,29 @@
     import RegionTabs from "./modal/RegionTabs.svelte";
 
     import {regionsSelection} from "../selection/selectionStore.js";
-    export let selectionStore = regionsSelection;
 
-    /** @type {RegionItemType[]} */
-    export let items = [];
-     /** @type {number|"full"} */
-    export let height = 96;
-    export let selectable = true;
-    export let copyable = true;
 
-    let modalOpen = false;
-    let modalIndex = 0;
+
+    /**
+     * @typedef {Object} Props
+     * @property {any} [selectionStore]
+     * @property {RegionItemType[]} [items]
+     * @property {number|"full"} [height]
+     * @property {boolean} [selectable]
+     * @property {boolean} [copyable]
+     */
+
+    /** @type {Props} */
+    let {
+        selectionStore = regionsSelection,
+        items = [],
+        height = 96,
+        selectable = true,
+        copyable = true
+    } = $props();
+
+    let modalOpen = $state(false);
+    let modalIndex = $state(0);
 
     const handleOpenModal = (e) => {
         modalIndex = e.detail.index ?? 0;
@@ -34,7 +46,9 @@
 {/each}
 
 <RegionModal {items} bind:currentIndex={modalIndex} bind:open={modalOpen} on:navigate={handleNavigate}>
-    <svelte:fragment let:item={currentItem}>
-        <RegionTabs item={currentItem} {copyable}/>
-    </svelte:fragment>
+    {#snippet children({ item: currentItem })}
+
+            <RegionTabs item={currentItem} {copyable}/>
+
+    {/snippet}
 </RegionModal>

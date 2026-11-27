@@ -1,3 +1,4 @@
+<!-- @migration-task-ok -->
 <script>
     import { createEventDispatcher } from "svelte";
     import { i18n } from "../../utils.js";

@@ -11,17 +11,29 @@
     import CategoryToolbar from "../regions/similarity/CategoryToolbar.svelte";
     import RegionTabs from "../regions/modal/RegionTabs.svelte";
 
-    export let matches = [];
-    export let columns = [];
-    export let cardHeight = 96;
-    export let isInStemma = false;
-    export let hideEmpty = false;
-    export let clusterStore;
-    /** (img1, img2) => category of current pair categories, for selection state */
-    export let pairCat = () => null;
 
-    // anchor image is the first of the list
-    $: anchorImageId = isInStemma ? displayMatches[0]?.[0]?.images?.[0]?.id ?? null : null;
+    /**
+     * @typedef {Object} Props
+     * @property {any} [matches]
+     * @property {any} [columns]
+     * @property {number} [cardHeight]
+     * @property {boolean} [isInStemma]
+     * @property {boolean} [hideEmpty]
+     * @property {any} clusterStore
+     * @property {any} [pairCat] - (img1, img2) => category of current pair categories, for selection state
+     */
+
+    /** @type {Props} */
+    let {
+        matches = [],
+        columns = [],
+        cardHeight = 96,
+        isInStemma = false,
+        hideEmpty = false,
+        clusterStore,
+        pairCat = () => null
+    } = $props();
+
 
     const dispatch = createEventDispatcher();
     const baseUrl = window.location.origin;
@@ -70,15 +82,11 @@
         { id: "matches", label: i18n("matchesView") },
     ];
 
-    let modalOpen = false;
-    let modalIndex = 0;
-    let menu = { open: false, x: 0, y: 0, items: [] };
+    let modalOpen = $state(false);
+    let modalIndex = $state(0);
+    let menu = $state({ open: false, x: 0, y: 0, items: [] });
 
-    $: displayMatches = hideEmpty && matches.length > 1
-        ? matches.filter(row => row.slice(1).some(c => c))
-        : matches;
 
-    $: modalItems = displayMatches.flatMap(row => row.flatMap(c => c?.images ?? []));
 
     const handleOpenModal = (e) => {
         modalIndex = e.detail.index ?? 0;
@@ -100,6 +108,12 @@
         setAnchor: { en: "Set as anchor", fr: "Définir comme ancre" },
         anchor:    { en: "Current anchor", fr: "Ancre courante" },
     };
+    let displayMatches = $derived(hideEmpty && matches.length > 1
+        ? matches.filter(row => row.slice(1).some(c => c))
+        : matches);
+    // anchor image is the first of the list
+    let anchorImageId = $derived(isInStemma ? displayMatches[0]?.[0]?.images?.[0]?.id ?? null : null);
+    let modalItems = $derived(displayMatches.flatMap(row => row.flatMap(c => c?.images ?? [])));
 </script>
 
 <div class="matches-scroll">
@@ -117,18 +131,20 @@
                 {#if cell}
                     {#each cell.images as img, k}
                         <div class="is-flex is-flex-wrap-wrap is-flex-direction-column is-align-content-center"
-                             on:contextmenu={e => onCardContextMenu(e, img, cell.doc)}>
+                             oncontextmenu={e => onCardContextMenu(e, img, cell.doc)}>
                             <RegionCard item={img} height={cardHeight} borderColor={cell.doc.color}
                                         borderWidth={img.id === cell.bestImageId ? 7 : 4}
                                         index={cell.indices[k]} selectable={false} copyable={false}
                                         on:openModal={handleOpenModal}>
-                                <svelte:fragment slot="actions">
-                                    {#if img.id === anchorImageId}
-                                        <span class="tag button is-unclickable p-0" title={i18n("anchor", t)}>
-                                            <i class="fa-solid fa-anchor"/>
-                                        </span>
-                                    {/if}
-                                </svelte:fragment>
+                                {#snippet actions()}
+
+                                        {#if img.id === anchorImageId}
+                                            <span class="tag button is-unclickable p-0" title={i18n("anchor", t)}>
+                                                <i class="fa-solid fa-anchor"></i>
+                                            </span>
+                                        {/if}
+
+                                                                    {/snippet}
                             </RegionCard>
                             {#if img.canvas}
                                 <div class="is-size-7 has-text-grey has-text-centered">
@@ -147,12 +163,12 @@
                 <tr>
                     {#each columns as col}
                         <th>
-                            <span class="color-dot" style="background:{col.doc.color}"/>
+                            <span class="color-dot" style="background:{col.doc.color}"></span>
                             {col.label ?? col.doc.title}
                         </th>
                     {/each}
                     {#if columns.length !== 1}
-                        <th style="width: 4em;"/>
+                        <th style="width: 4em;"></th>
                     {/if}
                 </tr>
             </thead>
@@ -164,7 +180,7 @@
                                 {#if cell}
                                     <div class="is-flex is-flex-wrap-wrap is-flex-direction-column is-align-content-center pt-2">
                                         {#each cell.images as img, k}
-                                            <div on:contextmenu={e => onCardContextMenu(e, img, cell.doc)}>
+                                            <div oncontextmenu={e => onCardContextMenu(e, img, cell.doc)}>
                                                 <RegionCard item={img} height={cardHeight} index={cell.indices[k]}
                                                             selectable={false} copyable={false}
                                                             on:openModal={handleOpenModal}/>
@@ -197,9 +213,11 @@
 <RightClick bind:open={menu.open} x={menu.x} y={menu.y} items={menu.items}/>
 
 <RegionModal items={modalItems} bind:currentIndex={modalIndex} bind:open={modalOpen}>
-    <svelte:fragment let:item={currentItem}>
-        <RegionTabs item={currentItem}/>
-    </svelte:fragment>
+    {#snippet children({ item: currentItem })}
+
+            <RegionTabs item={currentItem}/>
+
+    {/snippet}
 </RegionModal>
 
 <style>

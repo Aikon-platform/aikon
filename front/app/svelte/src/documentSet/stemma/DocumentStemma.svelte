@@ -1,12 +1,13 @@
 <script>
+    import { run } from 'svelte/legacy';
+
     import { onMount, tick } from "svelte";
     import RightClick from "../../ui/RightClick.svelte";
     import StemmaModalEditor from "./StemmaModalEditor.svelte";
     import { i18n } from "../../utils.js";
     import { createStemmaInteraction, createStemmaMenu } from "./stemmaInteraction.js";
 
-    export let documents = [];
-    export let stemmaStore;
+    let { documents = [], stemmaStore } = $props();
 
     const {
         selectedNodes, edges, nodePositions, nodeTitles,
@@ -17,8 +18,8 @@
     const { transform, dragOverride, drawingEdge } = interaction;
     interaction.enableEdgeDraw({ getNodeId: n => n.id, documents });
 
-    let editingNode = null;
-    let editingEdge = null;
+    let editingNode = $state(null);
+    let editingEdge = $state(null);
 
     const stemmaMenu = createStemmaMenu(stemmaStore, {
         onRename: node => editingNode = { id: node.id, title: node.title, color: node.color },
@@ -29,14 +30,14 @@
     const NODE_W = 120;
     const NODE_H = 40;
 
-    let svgEl;
-    let width = 800, height = 600;
+    let svgEl = $state();
+    let width = $state(800), height = $state(600);
 
     const t = {
         reset:  { en: "Reset stemma", fr: "Réinitialiser le stemma" },
     };
 
-    $: nodes = documents.map((doc, i) => {
+    let nodes = $derived(documents.map((doc, i) => {
         const cols = Math.ceil(Math.sqrt(documents.length));
         const saved = $nodePositions[doc.id];
         return {
@@ -46,22 +47,24 @@
             x: saved?.x ?? (i % cols) * (NODE_W + 60) + 100,
             y: saved?.y ?? Math.floor(i / cols) * (NODE_H + 80) + 100,
         };
-    });
+    }));
 
-    $: nodeMap = new Map(nodes.map(n => [n.id, n]));
-    $: visibleEdges = $edges
+    let nodeMap = $derived(new Map(nodes.map(n => [n.id, n])));
+    let visibleEdges = $derived($edges
         .map(e => ({ ...e, source: nodeMap.get(e.source), target: nodeMap.get(e.target) }))
-        .filter(e => e.source && e.target);
+        .filter(e => e.source && e.target));
 
-    let mounted = false;
+    let mounted = $state(false);
     onMount(() => {
         interaction.attach(svgEl);
         mounted = true;
     });
 
-    $: if (mounted && width && height && nodes.length) {
-        interaction.positionCenter(nodes, { nodeWidth: NODE_W, nodeHeight: NODE_H });
-    }
+    run(() => {
+        if (mounted && width && height && nodes.length) {
+            interaction.positionCenter(nodes, { nodeWidth: NODE_W, nodeHeight: NODE_H });
+        }
+    });
 
     function posOf(node, override) {
         return override?.docId === node.id ? { x: override.x, y: override.y } : { x: node.x, y: node.y };
@@ -83,12 +86,12 @@
         if (e.key === "Escape") editingEdge = null;
     }
 
-    $: selectedIds = new Set($selectedNodes.map(n => n.id));
+    let selectedIds = $derived(new Set($selectedNodes.map(n => n.id)));
 </script>
 
 <div id="doc-stemma" class="stemma-container" bind:clientWidth={width} bind:clientHeight={height}>
     <svg bind:this={svgEl} class="stemma-svg" viewBox="0 0 {width} {height}"
-         on:pointermove={interaction.onPointerMove} on:pointerup={interaction.onPointerUp}>
+         onpointermove={interaction.onPointerMove} onpointerup={interaction.onPointerUp}>
         <defs>
             <marker id="doc-arrow" markerWidth="10" markerHeight="7" refX="9" refY="3.5" orient="auto">
                 <polygon points="0 0, 10 3.5, 0 7" fill="var(--bulma-body-color)"/>
@@ -99,7 +102,7 @@
             {#each visibleEdges as edge}
                 {@const s = posOf(edge.source, $dragOverride)}
                 {@const tg = posOf(edge.target, $dragOverride)}
-                <g class="edge-group" on:contextmenu={e => stemmaMenu.openEdgeMenu(e, edge)}>
+                <g class="edge-group" oncontextmenu={e => stemmaMenu.openEdgeMenu(e, edge)}>
                     <line class="edge-hit"
                           x1={s.x + NODE_W/2} y1={s.y + NODE_H}
                           x2={tg.x + NODE_W/2} y2={tg.y}
@@ -135,8 +138,8 @@
                 <g data-node-id={node.id}
                    transform="translate({p.x},{p.y})"
                    style="cursor: grab"
-                   on:pointerdown={e => interaction.onPointerDown(e, node)}
-                   on:contextmenu={e => stemmaMenu.openNodeMenu(e, node)}>
+                   onpointerdown={e => interaction.onPointerDown(e, node)}
+                   oncontextmenu={e => stemmaMenu.openNodeMenu(e, node)}>
                     <rect width={NODE_W} height={NODE_H} rx="4"
                           fill={node.color}
                           stroke={sel ? "var(--bulma-link)" : node.color}
@@ -153,7 +156,7 @@
         </g>
     </svg>
 
-    <button class="tag reset-btn" on:click={() => clearGraph()} title={i18n("reset", t)}>
+    <button class="tag reset-btn" onclick={() => clearGraph()} title={i18n("reset", t)}>
         <span class="icon is-small p-0"><i class="fas fa-undo"></i></span>
     </button>
 </div>

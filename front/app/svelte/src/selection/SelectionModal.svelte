@@ -6,17 +6,24 @@
     import { appLang, userId, isSuperuser } from "../constants.js";
     const { selected } = recordsSelection;
 
-    export let selectionStore;
-    export let selectionLength = false;
+    /**
+     * @typedef {Object} Props
+     * @property {any} selectionStore
+     * @property {boolean} [selectionLength]
+     * @property {import('svelte').Snippet} [children]
+     */
+
+    /** @type {Props} */
+    let { selectionStore, selectionLength = false, children } = $props();
 
     const { selectionTitle, updateTitle, updatePublic, save } = selectionStore;
 
-    $: ownerId = $selected?.owner_id;
-    $: isOwner = isSuperuser || ownerId === userId;
+    let ownerId = $derived($selected?.owner_id);
+    let isOwner = $derived(isSuperuser || ownerId === userId);
 
-    let isEditing = false;
-    let titleInput;
-    let currentTitle;
+    let isEditing = $state(false);
+    let titleInput = $state();
+    let currentTitle = $state();
 
     function startEditing() {
         isEditing = true;
@@ -34,14 +41,14 @@
         save();
     }
 
-    $: selectedUsers = Object.entries($selected?.User || {})
+    let selectedUsers = $derived(Object.entries($selected?.User || {})
         .map(([id, meta]) => ({
             id: Number(id),
             username: meta.title
-        }));
+        })));
 
-    let userQuery = "";
-    let userResults = [];
+    let userQuery = $state("");
+    let userResults = $state([]);
 
     async function searchUsers() {
         if (userQuery.trim().length < 1) {
@@ -76,26 +83,26 @@
 <!--TODO if isSaved, and documentSet add link to view-->
 
 <div id="selection-modal" class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
-    <div class="modal-background"/>
+    <div class="modal-background"></div>
 
     <div class="modal-content">
         <div class="modal-card-head media mb-0 is-middle">
             <div class="title is-4 mb-0 media-content">
-                <i class="fa-solid fa-book-bookmark"/>
+                <i class="fa-solid fa-book-bookmark"></i>
 
                 {#if isEditing}
                     <input
                         bind:this={titleInput}
                         bind:value={currentTitle}
-                        on:keydown={handleKeydown}
-                        on:blur={finishEditing}
+                        onkeydown={handleKeydown}
+                        onblur={finishEditing}
                         class="input selection-title"
                     />
                 {:else}
-                    <span on:click={startEditing} on:keyup={null}>
+                    <span onclick={startEditing} onkeyup={null}>
                         {$selectionTitle}
                         <span class="pl-3 smaller has-text-link">
-                            <i class="fas fa-edit"/>
+                            <i class="fas fa-edit"></i>
                         </span>
                     </span>
                 {/if}
@@ -103,11 +110,11 @@
                 ({selectionLength})
             </div>
 
-            <button class="delete media-left" aria-label="close" />
+            <button class="delete media-left" aria-label="close"></button>
         </div>
 
         <section class="modal-card-body">
-            <slot/>
+            {@render children?.()}
 
             <hr>
 
@@ -119,7 +126,7 @@
                     <div class="tags has-addons">
                         <span class="tag">{user.username}</span>
                         {#if isOwner}
-                            <button class="tag is-delete is-link ml-0" on:click={() => removeUser(user.id)}/>
+                            <button class="tag is-delete is-link ml-0" onclick={() => removeUser(user.id)}></button>
                         {/if}
                     </div>
                 {/each}
@@ -134,10 +141,10 @@
                                 <input class="input is-small"
                                     placeholder="Search users…"
                                     bind:value={userQuery}
-                                    on:input={searchUsers}
+                                    oninput={searchUsers}
                                 />
                                 <span class="icon is-small is-right">
-                                    <i class="fas fa-search"/>
+                                    <i class="fas fa-search"></i>
                                 </span>
                             </p>
                         </div>
@@ -147,7 +154,7 @@
                             <div class="dropdown-content">
                                 {#each userResults as user}
                                     <div class="dropdown-item"
-                                        on:click={() => addUser(user)} on:keydown={null}>
+                                        onclick={() => addUser(user)} onkeydown={null}>
                                         {user.username}
                                     </div>
                                 {/each}
@@ -159,7 +166,7 @@
                     <label class="checkbox is-size-7 is-flex is-align-items-center">
                         <input type="checkbox"
                             checked={$selected?.is_public}
-                            on:change={(e) => updatePublic(e.target.checked) && save()}
+                            onchange={(e) => updatePublic(e.target.checked) && save()}
                         />
                         <span class="pl-1">
                             {appLang === "en" ? "Make public" : "Rendre public"}
