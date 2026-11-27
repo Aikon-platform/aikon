@@ -6,7 +6,7 @@
     import Table from "../../Table.svelte";
     import SimilarityRow from "./SimilarityRow.svelte";
 
-    export let witnessStore;
+    let {witnessStore} = $props();
 </script>
 
 
@@ -22,7 +22,11 @@
                 }</td>
             </tr>
         {:then _}
-            {#each $pageQImgs as qImg (qImg.id)}
+            <!-- `(i)` makes it a keyed each block, which allows dynamic
+             updates when toolbar query parameters are updated (notably "Hidden categories").
+             https://svelte.dev/docs/svelte/each#Keyed-each-blocks
+            -->
+            {#each $pageQImgs as qImg, i (i)}
                 <SimilarityRow {qImg} {witnessStore}/>
             {:else}
                 <tr class="faded is-center">
