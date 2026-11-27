@@ -108,18 +108,18 @@
     <div class="split-panel" style="width: {leftWidth}px;" use:observeLeftPanel>
          {#if hasBottomLeft}
             <div class="box panel-box mb-0" style="height: {leftTopHeight}px;">
-                <div class="mb-3">{@render leftTitle()}</div>
-                <div class="scroll-area">{@render leftScroll()}</div>
+                <div class="mb-3">{@render leftTitle?.()}</div>
+                <div class="scroll-area">{@render leftScroll?.()}</div>
             </div>
             <div class="split-divider v" onmousedown={startDrag("v")} ontouchstart={startDrag("v")} role="separator" tabindex="-1"></div>
             <div class="box panel-box" style="height: {leftBottomHeight}px;">
-                <div class="mb-3">{@render bottomLeftTitle()}</div>
-                <div class="scroll-area">{@render bottomLeftScroll()}</div>
+                <div class="mb-3">{@render bottomLeftTitle?.()}</div>
+                <div class="scroll-area">{@render bottomLeftScroll?.()}</div>
             </div>
         {:else}
             <div class="box panel-box">
-                <div class="mb-3">{@render leftTitle()}</div>
-                <div class="scroll-area">{@render leftScroll()}</div>
+                <div class="mb-3">{@render leftTitle?.()}</div>
+                <div class="scroll-area">{@render leftScroll?.()}</div>
             </div>
         {/if}
     </div>
@@ -129,18 +129,18 @@
     <div class="split-panel" style="width: {rightWidth}px;" use:observeRightPanel>
         {#if hasBottomRight}
             <div class="box panel-box mb-0" style="height: {rightTopHeight}px;">
-                <div class="mb-3">{@render rightTitle()}</div>
-                <div class="scroll-area">{@render rightScroll()}</div>
+                <div class="mb-3">{@render rightTitle?.()}</div>
+                <div class="scroll-area">{@render rightScroll?.()}</div>
             </div>
             <div class="split-divider v" onmousedown={startDrag("v")} ontouchstart={startDrag("v")} role="separator" tabindex="-1"></div>
             <div class="box panel-box" style="height: {rightBottomHeight}px;">
-                <div class="mb-3">{@render bottomRightTitle()}</div>
-                <div class="scroll-area">{@render bottomRightScroll()}</div>
+                <div class="mb-3">{@render bottomRightTitle?.()}</div>
+                <div class="scroll-area">{@render bottomRightScroll?.()}</div>
             </div>
         {:else}
             <div class="box panel-box">
-                <div class="mb-3">{@render rightTitle()}</div>
-                <div class="scroll-area">{@render rightScroll()}</div>
+                <div class="mb-3">{@render rightTitle?.()}</div>
+                <div class="scroll-area">{@render rightScroll?.()}</div>
             </div>
         {/if}
     </div>

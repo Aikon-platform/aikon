@@ -41,14 +41,14 @@
         <div class="ctrl-base">
             <div class="ctrl-block-wrapper">
                 <div class="ctrl-block">
-                    {@render toolbarVisible()}
+                    {@render toolbarVisible?.()}
                 </div>
             </div>
         </div>
         {#if expandable}
             {#if toolbarExpandedState}
                 <div transition:slide|global={{axis: "y"}} class="ctrl-extra">
-                    {@render toolbarHidden()}
+                    {@render toolbarHidden?.()}
                 </div>
             {/if}
             <div class="ctrl-toggle">
