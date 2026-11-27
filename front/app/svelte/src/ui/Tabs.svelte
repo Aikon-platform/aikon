@@ -1,7 +1,13 @@
 <script>
-    /** @type {{ id: string, label: string }[]} */
-    export let tabs = [];
-    export let activeTab = tabs[0]?.id ?? "";
+    /**
+     * @typedef {Object} Props
+     * @property {{ id: string, label: string }[]} [tabs]
+     * @property {any} [activeTab]
+     * @property {import('svelte').Snippet<[any]>} [children]
+     */
+
+    /** @type {Props} */
+    let { tabs = [], activeTab = $bindable(tabs[0]?.id ?? ""), children } = $props();
 </script>
 
 {#if tabs.length > 1}
@@ -10,7 +16,7 @@
             <ul>
                 {#each tabs as {id, label}}
                     <li class:is-active={activeTab === id}>
-                        <a href={null} on:click|preventDefault={() => activeTab = id}>{label}</a>
+                        <a href={null} onclick={(e) => { preventDefault(); activeTab = id }}>{label}</a>
                     </li>
                 {/each}
             </ul>
@@ -19,7 +25,7 @@
 {/if}
 
 <div class="tab-content">
-    <slot {activeTab}/>
+    {@render children?.({ activeTab, })}
 </div>
 
 <style>
