@@ -1,26 +1,44 @@
 <script>
+    import { run, createBubbler } from 'svelte/legacy';
+
+    const bubble = createBubbler();
     import { fade } from "svelte/transition";
     import { onMount, onDestroy } from "svelte";
     import { appLang, mediaPrefix } from "../../constants.js";
-    import { refToIIIF } from "../../utils.js";
+    import { refToIIIF } from "../../utils.svelte.js";
 
-    export let svgPath;
-    export let width = 200;
-    export let fullWidth = false;
-    export let selected = false;
+    /**
+     * @typedef {Object} Props
+     * @property {any} svgPath
+     * @property {number} [width]
+     * @property {boolean} [fullWidth]
+     * @property {boolean} [selected]
+     * @property {import('svelte').Snippet} [actions]
+     */
+
+    /** @type {Props} */
+    let {
+        svgPath,
+        width = 200,
+        fullWidth = false,
+        selected = false,
+        actions
+    } = $props();
 
     const [wit, digit, canvas, xywh] = svgPath.replace(".svg", "").split("_");
     const img = refToIIIF(`${wit}_${digit}_${canvas}`, xywh, `${width},`);
 
-    let isHovered = false;
-    let svgContent = "";
-    let svgViewBox = "";
-    let downloadUrl = "";
+    let isHovered = $state(false);
+    let svgContent = $state("");
+    let svgViewBox = $state("");
+    let downloadUrl = $state("");
 
-    $: if (svgContent) {
-        const blob = new Blob([svgContent], { type: "image/svg+xml" });
-        downloadUrl = URL.createObjectURL(blob);
-    }
+    run(() => {
+        if (svgContent) {
+            const blob = new Blob([svgContent], { type: "image/svg+xml" });
+            downloadUrl = URL.createObjectURL(blob);
+        }
+    });
 
     onDestroy(() => {
         if (downloadUrl) URL.revokeObjectURL(downloadUrl);
@@ -48,7 +66,7 @@
 
 <div class="region is-center" class:checked={selected} transition:fade|global={{ duration: 300 }}>
     <figure class="image card region-image" style="width: {fullWidth ? '50%' : `${width}px`}; aspect-ratio:{svgViewBox ? svgViewBox.split(' ')[2] / svgViewBox.split(' ')[3] : 1};"
-            on:click on:keyup on:mouseenter={() => isHovered = true} on:mouseleave={() => isHovered = false}>
+            onclick={bubble('click')} onkeyup={bubble('keyup')} onmouseenter={() => isHovered = true} onmouseleave={() => isHovered = false}>
         <div class="svg-container">
             {#if !isHovered && svgContent}
                 {@html svgContent}
@@ -59,10 +77,10 @@
 
     <div class="region-btn ml-1">
         <a class="button tag" href={downloadUrl} download={svgPath}>
-            <i class="fa-solid fa-download"/>
+            <i class="fa-solid fa-download"></i>
             <span class="tooltip">{appLang === "en" ? "Download SVG" : "Télécharger le SVG"}</span>
         </a>
-        <slot name="actions"/>
+        {@render actions?.()}
     </div>
 </div>
 

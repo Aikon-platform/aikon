@@ -13,7 +13,7 @@
     import HistogramFilter from "./HistogramFilter.svelte";
     import {typeInfo} from "../../regions/similarity/similarityType.js";
     import {pairCats} from "../documentSetStore.js";
-    import {colorDot, i18n, initPagination, pageUpdate, shorten, syncStoreWithURL} from "../../utils.js";
+    import {colorDot, i18n, initPagination, pageUpdate, shorten, syncStoreWithURL} from "../../utils.svelte.js";
     import {pageSize} from "../../constants.js";
 
 

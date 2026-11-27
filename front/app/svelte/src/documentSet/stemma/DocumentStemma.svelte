@@ -4,7 +4,7 @@
     import { onMount, tick } from "svelte";
     import RightClick from "../../ui/RightClick.svelte";
     import StemmaModalEditor from "./StemmaModalEditor.svelte";
-    import { i18n } from "../../utils.js";
+    import { i18n } from "../../utils.svelte.js";
     import { createStemmaInteraction, createStemmaMenu } from "./stemmaInteraction.js";
 
     let { documents = [], stemmaStore } = $props();

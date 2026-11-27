@@ -1,6 +1,8 @@
 <script>
+    import { run } from 'svelte/legacy';
+
     import {onMount, onDestroy, createEventDispatcher} from "svelte";
-    import {closeModal, refToIIIF, i18n, sendTo} from "../../utils.js";
+    import {closeModal, refToIIIF, i18n, sendTo} from "../../utils.svelte.js";
     import {appName} from "../../constants.js";
     import NavigationArrow from "../../ui/NavigationArrow.svelte";
     import {RegionItem} from "../../regions/types.js";
@@ -8,13 +10,24 @@
     import InputToggle from "../../ui/InputToggle.svelte";
     import PageView from "../../regions/modal/PageView.svelte";
 
-    export let documentSetStore;
-    export let active = false;
-    export let scatterData = null;
-    export let navState = null; // {idx1, idx2}
-    export let pairCat = () => null;
-    let fullPage = false;
-    $: if (scatterData?.mode !== 'image') fullPage = false;
+    /**
+     * @typedef {Object} Props
+     * @property {any} documentSetStore
+     * @property {boolean} [active]
+     * @property {any} [scatterData]
+     * @property {any} [navState] - {idx1, idx2}
+     * @property {any} [pairCat]
+     */
+
+    /** @type {Props} */
+    let {
+        documentSetStore,
+        active = false,
+        scatterData = null,
+        navState = $bindable(null),
+        pairCat = () => null
+    } = $props();
+    let fullPage = $state(false);
 
     const dispatch = createEventDispatcher();
 
@@ -38,10 +51,8 @@
         documentSetStore.patchPairs([{ img_1: modalData.img1, img_2: modalData.img2, category: newCat }]);
     }
 
-    let modalElement;
+    let modalElement = $state();
 
-    $: navLimits = scatterData ? getNavLimits(scatterData) : {max1: 0, max2: 0};
-    $: modalData = navState && scatterData && navLimits ? buildModalData(navState, scatterData, navLimits, pairCat) : null;
 
     function getNavLimits(data) {
         if (data.mode === "image") return {max1: data.images1.length, max2: data.images2.length};
@@ -133,11 +144,18 @@
     onMount(() => window.addEventListener("keydown", handleKeydown));
     onDestroy(() => window.removeEventListener("keydown", handleKeydown));
 
-    $: if (modalElement) active ? modalElement.classList.add("is-active") : modalElement.classList.remove("is-active");
+    run(() => {
+        if (scatterData?.mode !== 'image') fullPage = false;
+    });
+    let navLimits = $derived(scatterData ? getNavLimits(scatterData) : {max1: 0, max2: 0});
+    let modalData = $derived(navState && scatterData && navLimits ? buildModalData(navState, scatterData, navLimits, pairCat) : null);
+    run(() => {
+        if (modalElement) active ? modalElement.classList.add("is-active") : modalElement.classList.remove("is-active");
+    });
 </script>
 
-<div class="modal" bind:this={modalElement} use:closeModal on:close={handleClose}>
-    <div class="modal-background" on:click={handleClose} on:keyup={null}></div>
+<div class="modal" bind:this={modalElement} use:closeModal onclose={handleClose}>
+    <div class="modal-background" onclick={handleClose} onkeyup={null}></div>
     <div class="modal-content" style="width: auto; max-width: 70vw;">
         <div class="box p-5">
             {#if modalData}
@@ -201,7 +219,7 @@
             {/if}
         </div>
     </div>
-    <button class="modal-close is-large" aria-label="close" on:click={handleClose}></button>
+    <button class="modal-close is-large" aria-label="close" onclick={handleClose}></button>
 </div>
 
 <style>

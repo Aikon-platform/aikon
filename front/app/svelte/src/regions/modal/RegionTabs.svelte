@@ -1,11 +1,13 @@
 <script>
+    import { run } from 'svelte/legacy';
+
     import Tabs from "../../ui/Tabs.svelte";
     import RegionCard from "../RegionCard.svelte";
     import PageView from "./PageView.svelte";
     import ComparisonView from "./ComparisonView.svelte";
     import QueryExpansionView from "./QueryExpansionView.svelte";
     import DuplicatesView from "./DuplicatesView.svelte";
-    import { i18n } from "../../utils.js";
+    import { i18n } from "../../utils.svelte.js";
     import { setContext } from "svelte";
     import { RegionItem } from "../types.js";
 
@@ -17,28 +19,45 @@
         { id: "matches", label: i18n("matchesView") },
     ];
 
-    /** @type {import("../types.js").RegionItemType} */
-    export let item;
-    /** @type {{qImg?: string, sImg: string}|null} without qImg, the current item is the query */
-    export let comparison = null;
-    export let activeTab = "region";
-    export let copyable = true;
-    export let showNav = true;
-    export let tabs = allTabs.map(({ id }) => id);
 
-    let compared = null;
+
+    /**
+     * @typedef {Object} Props
+     * @property {import("../types.js").RegionItemType} item
+     * @property {{qImg?: string, sImg: string}|null} [comparison]
+     * @property {string} [activeTab]
+     * @property {boolean} [copyable]
+     * @property {boolean} [showNav]
+     * @property {any} [tabs]
+     */
+
+    /** @type {Props} */
+    let {
+        item,
+        comparison = null,
+        activeTab = $bindable("region"),
+        copyable = true,
+        showNav = true,
+        tabs = allTabs.map(({ id }) => id)
+    } = $props();
+
+    let compared = $state(null);
     setContext("compareWith", (sImg) => {
         compared = { sImg };
         activeTab = "similarity";
     });
 
-    $: regionItem = new RegionItem(item);
-    $: img = regionItem.fullImg;
-    $: img, compared = null;
-    $: active = compared ?? comparison;
-    $: pair = active && { qImg: active.qImg ?? img, sImg: active.sImg };
-    $: visibleTabs = allTabs.filter(({ id }) => tabs.includes(id) && (id !== "similarity" || pair));
-    $: if (activeTab === "similarity" && !pair) activeTab = "region";
+    let regionItem = $derived(new RegionItem(item));
+    let img = $derived(regionItem.fullImg);
+    run(() => {
+        img, compared = null;
+    });
+    let active = $derived(compared ?? comparison);
+    let pair = $derived(active && { qImg: active.qImg ?? img, sImg: active.sImg });
+    let visibleTabs = $derived(allTabs.filter(({ id }) => tabs.includes(id) && (id !== "similarity" || pair)));
+    run(() => {
+        if (activeTab === "similarity" && !pair) activeTab = "region";
+    });
 </script>
 
 <Tabs tabs={visibleTabs} bind:activeTab>

@@ -1,5 +1,5 @@
 import { writable, derived, get } from "svelte/store";
-import {initPagination, pageUpdate} from "../utils.js";
+import {initPagination, pageUpdate} from "../utils.svelte.js";
 
 function createRegionsStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;

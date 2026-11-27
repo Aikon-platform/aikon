@@ -4,14 +4,20 @@
     import {getContext} from "svelte";
     import Legend from "./Legend.svelte";
     import InputSlider from "../../ui/InputSlider.svelte";
-    import {i18n, showMessage, withLoading} from "../../utils.js";
+    import {i18n, showMessage, withLoading} from "../../utils.svelte.js";
     import {appName, csrfToken, isSuperuser} from "../../constants.js";
     import InputToggle from "../../ui/InputToggle.svelte";
     import CategoryFilter from "./CategoryFilter.svelte";
 
-    export let docSet = null;
-    export let documentSetStore;
-    export let clusterStore;
+    /**
+     * @typedef {Object} Props
+     * @property {any} [docSet]
+     * @property {any} documentSetStore
+     * @property {any} clusterStore
+     */
+
+    /** @type {Props} */
+    let { docSet = null, documentSetStore, clusterStore } = $props();
     const {
         docSetNumber,
         sortedDocumentNodes,
@@ -40,7 +46,7 @@
     const selectedDocs = getContext("selectedDocs");
 
     const allCategories = [0, 1, 2, 3, 5];
-    let filterMode = "filtered";
+    let filterMode = $state("filtered");
 
     function setFilterMode(mode) {
         filterMode = mode;
@@ -170,7 +176,7 @@
                         <button class="button is-small is-flex-grow-1"
                             class:is-link={filterMode === mode}
                             class:is-contrasted={filterMode !== mode}
-                            on:click={() => setFilterMode(mode)}>
+                            onclick={() => setFilterMode(mode)}>
                             {mode === "all" ? i18n("allPairs", t) : i18n("filterByCategory", t)}
                         </button>
                     {/each}
@@ -181,7 +187,7 @@
 
                 {#if isSuperuser}
                     <div class="is-center">
-                        <button on:click={resetCategories} class="tag mt-3 is-danger">
+                        <button onclick={resetCategories} class="tag mt-3 is-danger">
                             {i18n("resetCat", t)}
                         </button>
                     </div>
@@ -202,7 +208,7 @@
                     <div class="level-right">
                         <div class="level-item">
                             <label class="checkbox mt-1 is-flex is-align-items-center">
-                                <input on:change={() => setScoreFilter(!$scoreFilter)} checked={!$scoreFilter} type="checkbox" class="mr-2"/>
+                                <input onchange={() => setScoreFilter(!$scoreFilter)} checked={!$scoreFilter} type="checkbox" class="mr-2"/>
                                 <span class="is-size-7">
                                     {i18n("disable", t)}
                                 </span>
@@ -217,7 +223,7 @@
                             <button class="button is-small is-flex-grow-1"
                                     class:is-link={$scoreMode === mode}
                                     class:is-contrasted={$scoreMode !== mode}
-                                    on:click={() => handleSetScoreMode(mode)}>
+                                    onclick={() => handleSetScoreMode(mode)}>
                                 {i18n(mode, t)}
                             </button>
                         {/each}
@@ -235,7 +241,7 @@
                             </div>
                             <div class="column mt-2">
                                 <label class="checkbox mt-3 is-flex is-align-items-center">
-                                    <input on:change={() => setMutualTopK(!$mutualTopK)} checked={$mutualTopK}
+                                    <input onchange={() => setMutualTopK(!$mutualTopK)} checked={$mutualTopK}
                                            type="checkbox" class="mr-2"/>
                                     <span class="is-size-7">{i18n("mutualTopK", t)}</span>
                                 </label>

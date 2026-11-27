@@ -1,11 +1,15 @@
 <script>
     import { fade } from "svelte/transition";
-    import {deleteRecord, refToIIIF, showMessage} from "../utils.js";
+    import {deleteRecord, refToIIIF, showMessage} from "../utils.svelte.js";
     import { appLang, userId, isSuperuser } from "../constants";
 
-    export let recordsStore;
 
-    export let item;
+    let {
+        recordsStore,
+        item,
+        buttons,
+        body
+    } = $props();
     const hasViewUrl = item.hasOwnProperty("view_url") && item.view_url !== "";
     const hasEditUrl = item.hasOwnProperty("edit_url") && item.edit_url !== "";
 
@@ -68,7 +72,7 @@
                         {#if hasEditUrl && item.can_edit}
                             <a href={hasEditUrl ? item.edit_url : null} class="edit-btn button is-small is-rounded is-link px-2"
                                title='{appLang === "en" ? "Edit" : "Éditer"}'>
-                                <span class="iconify" data-icon="entypo:edit"/>
+                                <span class="iconify" data-icon="entypo:edit"></span>
                                 <span class="ml-2">
                                     {appLang === "en" ? "Edit" : "Éditer"}
                                 </span>
@@ -84,16 +88,16 @@
                     </p>
                 </div>
                 <div class="media-right">
-                    <slot name="buttons"/>
+                    {@render buttons?.()}
                 </div>
                 <!--{#if item.class === "Treatment" || item.class === "DocumentSet"}{/if}-->
                 {#if item.user_id === parseInt(userId) || isSuperuser}
-                    <button class="delete is-medium" title="{appLang === 'en' ? 'Delete' : 'Supprimer'}" on:click={deleteItem}/>
+                    <button class="delete is-medium" title="{appLang === 'en' ? 'Delete' : 'Supprimer'}" onclick={deleteItem}></button>
                 {/if}
             </div>
 
             <div class="content fixed-grid px-5">
-                <slot name="body"/>
+                {@render body?.()}
             </div>
         </div>
     </div>

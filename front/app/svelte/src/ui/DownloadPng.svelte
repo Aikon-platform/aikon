@@ -1,12 +1,23 @@
 <script>
     import {toPng, toSvg} from "html-to-image";
-    import {showMessage, withLoading} from "../utils.js";
+    import {showMessage, withLoading} from "../utils.svelte.js";
     import {appLang} from "../constants.js";
 
-    export let targetId;
-    export let filename = "export";
-    export let pixelRatio = 4;
-    export let svgExport = false;
+    /**
+     * @typedef {Object} Props
+     * @property {any} targetId
+     * @property {string} [filename]
+     * @property {number} [pixelRatio]
+     * @property {boolean} [svgExport]
+     */
+
+    /** @type {Props} */
+    let {
+        targetId,
+        filename = "export",
+        pixelRatio = 4,
+        svgExport = false
+    } = $props();
 
     const options = (el) => ({
         width: el.scrollWidth,
@@ -42,8 +53,8 @@
     }
 </script>
 
-<button class="tag is-link" on:click={download} title="{appLang === 'en' ? 'Download' : 'Télécharger'}">
+<button class="tag is-link" onclick={download} title="{appLang === 'en' ? 'Download' : 'Télécharger'}">
     <span class="icon is-small p-0">
-        <i class="fas fa-download"/>
+        <i class="fas fa-download"></i>
     </span>
 </button>

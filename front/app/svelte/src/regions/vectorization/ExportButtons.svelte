@@ -1,5 +1,5 @@
 <script>
-    import { downloadBlob, withLoading } from "../../utils.js";
+    import { downloadBlob, withLoading } from "../../utils.svelte.js";
     import { appName, appLang, csrfToken } from "../../constants";
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
@@ -41,8 +41,8 @@
 </script>
 
 <div class="is-right mb-3">
-    <button class="button is-link is-light" on:click={downloadVectorizations}>
-        <i class="fa-solid fa-download"/>
+    <button class="button is-link is-light" onclick={downloadVectorizations}>
+        <i class="fa-solid fa-download"></i>
         {appLang === "en" ? "Download All" : "Tout Télécharger"}
     </button>
 </div>

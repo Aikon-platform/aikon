@@ -6,7 +6,7 @@
     import PairCategoryToolbar from "./PairCategoryToolbar.svelte";
     import { getContext } from "svelte";
 
-    import {i18n, shorten, showMessage} from "../../utils.js";
+    import {i18n, shorten, showMessage} from "../../utils.svelte.js";
     import {similarityStore} from "./similarityStore.js";
     import RegionCard from "../RegionCard.svelte";
 

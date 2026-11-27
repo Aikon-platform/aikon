@@ -1,6 +1,6 @@
 <script>
     import { setContext } from "svelte";
-    import { refToIIIF, loading } from "../utils.js";
+    import { refToIIIF, loading } from "../utils.svelte.js";
     import { appLang, regionsType, modules } from "../constants";
 
     import { createWitnessStore } from "./witnessStore.js";
@@ -24,28 +24,39 @@
     import Regions from "../regions/Regions.svelte";
     import { activeLayout } from "../ui/tabStore.js";
 
-    export let isValidated = false;
-    export let witness = {};
-    export let editUrl = "";
-    export let viewTitle = "";
+    /**
+     * @typedef {Object} Props
+     * @property {boolean} [isValidated]
+     * @property {any} [witness]
+     * @property {string} [editUrl]
+     * @property {string} [viewTitle]
+     */
+
+    /** @type {Props} */
+    let {
+        isValidated = false,
+        witness = {},
+        editUrl = "",
+        viewTitle = ""
+    } = $props();
 
     const witnessStore = createWitnessStore(witness.digits);
 
     setContext("witness", witness);
     setContext("isValidated", isValidated);
 
-    $: selectedRegions = $selected;
-    $: selectionLength = $nbSelected;
-    $: areSelectedRegions = selectionLength > 0;
+    let selectedRegions = $derived($selected);
+    let selectionLength = $derived($nbSelected);
+    let areSelectedRegions = $derived(selectionLength > 0);
 
     const baseUrl = `${window.location.origin}${window.location.pathname}`;
     const currentRegionId = parseInt(baseUrl.split("regions/")[1].replace("/", ""));
 
-    const tabList = {
+    const tabList = $state({
         viewer: appLang === "en" ? "Viewer" : "Visionneuse",
         all: appLang === "en" ? "All regions" : "Toutes les régions",
         page: appLang === "en" ? "Per page" : "Par page",
-    };
+    });
 
     if (modules.includes("similarity")) {
         tabList.similarity = appLang === "en" ? "Similarity" : "Similarité";
@@ -60,61 +71,65 @@
 <SelectionBtn {selectionLength}/>
 
 <Layout {tabList}>
-    <div slot="sidebar">
-        <WitnessPanel {witness} {editUrl} {viewTitle}/>
-    </div>
+    {#snippet sidebar()}
+        <div >
+            <WitnessPanel {witness} {editUrl} {viewTitle}/>
+        </div>
+    {/snippet}
 
-    <div slot="content">
-        {#if !witnessStore.hasDigit()}
-            <article class="message is-warning">
-                <div class="message-body">
-                    {appLang === "en" ? "This witness has no digitization." : "Ce témoin n'a pas de numérisation."}
-                </div>
-            </article>
-        {:else}
-            <div id="nav-actions">
-                <div class="actions grid">
-                    <div class="cell">
-                        {#if $activeLayout === "all" || $activeLayout === "page" }
-                            <ActionButtons {witnessStore}/>
-                        {:else if $activeLayout === "vectorization"}
-                            <ExportButtons/>
-                        {/if}
+    {#snippet content()}
+        <div >
+            {#if !witnessStore.hasDigit()}
+                <article class="message is-warning">
+                    <div class="message-body">
+                        {appLang === "en" ? "This witness has no digitization." : "Ce témoin n'a pas de numérisation."}
+                    </div>
+                </article>
+            {:else}
+                <div id="nav-actions">
+                    <div class="actions grid">
+                        <div class="cell">
+                            {#if $activeLayout === "all" || $activeLayout === "page"}
+                                <ActionButtons {witnessStore}/>
+                            {:else if $activeLayout === "vectorization"}
+                                <ExportButtons/>
+                            {/if}
+                        </div>
                     </div>
                 </div>
-            </div>
 
-            {#if $activeLayout === "viewer"}
-                <Viewer {witnessStore}/>
+                {#if $activeLayout === "viewer"}
+                    <Viewer {witnessStore}/>
 
-            {:else if $activeLayout === "all"}
-                <div class="grid is-gap-2 mt-5">
-                    {#await fetchAll}
-                        <div class="faded is-center">
-                            {appLang === "en" ? "Retrieving regions..." : "Récupération des régions..."}
-                        </div>
-                    {:then _}
-                        {#if Object.values($allRegions).length}
-                            <Regions items={Object.values($allRegions)}/>
-                        {:else}
-                            <ExtractionButtons {currentRegionId} {baseUrl}/>
-                        {/if}
-                    {:catch error}
-                        <div>Error when retrieving regions: {error}</div>
-                    {/await}
-                </div>
+                {:else if $activeLayout === "all"}
+                    <div class="grid is-gap-2 mt-5">
+                        {#await fetchAll}
+                            <div class="faded is-center">
+                                {appLang === "en" ? "Retrieving regions..." : "Récupération des régions..."}
+                            </div>
+                        {:then _}
+                            {#if Object.values($allRegions).length}
+                                <Regions items={Object.values($allRegions)}/>
+                            {:else}
+                                <ExtractionButtons {currentRegionId} {baseUrl}/>
+                            {/if}
+                        {:catch error}
+                            <div>Error when retrieving regions: {error}</div>
+                        {/await}
+                    </div>
 
-            {:else if $activeLayout === "page"}
-                <PageRegions {witnessStore}/>
+                {:else if $activeLayout === "page"}
+                    <PageRegions {witnessStore}/>
 
-            {:else if $activeLayout === "similarity"}
-                <Similarity {witnessStore}/>
+                {:else if $activeLayout === "similarity"}
+                    <Similarity {witnessStore}/>
 
-            {:else if $activeLayout === "vectorization"}
-                <Vectorization/>
+                {:else if $activeLayout === "vectorization"}
+                    <Vectorization/>
+                {/if}
             {/if}
-        {/if}
-    </div>
+        </div>
+    {/snippet}
 </Layout>
 
 <SelectionModal {selectionLength} selectionStore={regionsSelection}>
@@ -131,7 +146,7 @@
                                 </div>
                             </figure>
                             <button class="delete region-btn"
-                                on:click={() => remove(id, regionsType)}/>
+                                onclick={() => remove(id, regionsType)}></button>
                         </div>
                     {/each}
                 {/each}

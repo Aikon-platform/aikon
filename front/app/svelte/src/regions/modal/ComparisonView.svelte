@@ -1,6 +1,6 @@
 <script>
     import { appName } from "../../constants.js";
-    import { i18n } from "../../utils.js";
+    import { i18n } from "../../utils.svelte.js";
     import { RegionItem } from "../types.js";
     import InputToggle from "../../ui/InputToggle.svelte";
     import RegionCard from "../RegionCard.svelte";
@@ -8,8 +8,7 @@
     import PageView from "./PageView.svelte";
     import PairCategoryToolbar from "../similarity/PairCategoryToolbar.svelte";
 
-    export let qImg;
-    export let sImg;
+    let { qImg, sImg } = $props();
 
     const t = {
         query: {en: "Query image", fr: "Image requête"},
@@ -18,14 +17,14 @@
         toPageView: {en: "Full page view", fr: "Afficher la page entière"}
     }
 
-    $: queryItem = RegionItem.fromImg(qImg);
-    $: similarItem = RegionItem.fromImg(sImg);
-    $: pairInfo = fetch(`${window.location.origin}/${appName}/similarity/pair?${new URLSearchParams({ q_img: qImg, s_img: sImg })}`)
+    let queryItem = $derived(RegionItem.fromImg(qImg));
+    let similarItem = $derived(RegionItem.fromImg(sImg));
+    let pairInfo = $derived(fetch(`${window.location.origin}/${appName}/similarity/pair?${new URLSearchParams({ q_img: qImg, s_img: sImg })}`)
         .then(r => r.ok ? r.json() : [])
-        .catch(() => []);
+        .catch(() => []));
 
-    let overlay = false;
-    let fullPage = false;
+    let overlay = $state(false);
+    let fullPage = $state(false);
 </script>
 
 <div class="modal-similarity">

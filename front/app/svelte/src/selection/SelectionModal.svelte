@@ -1,5 +1,5 @@
 <script>
-    import {closeModal, i18n} from "../utils.js";
+    import {closeModal, i18n} from "../utils.svelte.js";
     import SelectionFooter from "./SelectionFooter.svelte";
 
     import { recordsSelection } from "./selectionStore.js";

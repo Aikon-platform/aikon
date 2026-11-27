@@ -1,6 +1,6 @@
 <script>
     import { categoryInfo } from "./similarityCategory.js";
-    import {i18n} from "../../utils.js";
+    import {i18n} from "../../utils.svelte.js";
 
     /**
      * @typedef {Object} Props

@@ -1,5 +1,5 @@
 import {derived, writable, get} from "svelte/store";
-import {i18n, initPagination, pageUpdate, showMessage, sendTo} from "../../utils.js";
+import {i18n, initPagination, pageUpdate, showMessage, sendTo} from "../../utils.svelte.js";
 import {appLang, appName} from "../../constants.js";
 import {categoryInfo} from "../../regions/similarity/similarityCategory.js";
 

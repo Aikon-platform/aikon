@@ -1,11 +1,11 @@
 <script>
-    import {i18n, manifestToMirador} from "../utils.js";
+    import {i18n, manifestToMirador} from "../utils.svelte.js";
     import {appLang} from "../constants.js";
 
-    export let witnessStore;
+    let { witnessStore } = $props();
     const { manifests, selectedManifest } = witnessStore;
 
-    $: iframeSrc = manifestToMirador($selectedManifest);
+    let iframeSrc = $derived(manifestToMirador($selectedManifest));
 
     function manifestLabel(url) {
         const manifest = url.match(/(?:man|img|pdf)(\d+)/);
@@ -20,7 +20,7 @@
     </label>
     <div id="digit" class="control pl-3">
         <div class="select is-small">
-            <select on:change={(event) => witnessStore.selectManifest(event.target.value)}>
+            <select onchange={(event) => witnessStore.selectManifest(event.target.value)}>
                 {#each $manifests as man}
                     <option value={man}>{manifestLabel(man)}</option>
                 {/each}
@@ -29,4 +29,4 @@
     </div>
 </div>
 
-<iframe src={iframeSrc} style="width: 100%; height: 75vh; border: none;" title="Mirador viewer" allowfullscreen/>
+<iframe src={iframeSrc} style="width: 100%; height: 75vh; border: none;" title="Mirador viewer" allowfullscreen></iframe>

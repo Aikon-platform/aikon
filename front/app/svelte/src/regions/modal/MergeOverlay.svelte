@@ -1,7 +1,7 @@
 <script>
     import { createEventDispatcher } from "svelte";
     import { appName } from "../../constants.js";
-    import { i18n, sendTo, showMessage } from "../../utils.js";
+    import { i18n, sendTo, showMessage } from "../../utils.svelte.js";
     import { RegionItem } from "../types.js";
     import RegionCard from "../RegionCard.svelte";
     import CategoryToolbar from "../similarity/CategoryToolbar.svelte";

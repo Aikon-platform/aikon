@@ -3,7 +3,7 @@
 
     import { getContext } from "svelte";
     import { appName } from "../../constants.js";
-    import { i18n, sendTo } from "../../utils.js";
+    import { i18n, sendTo } from "../../utils.svelte.js";
     import { RegionItem } from "../types.js";
     import { similarityStore } from "../similarity/similarityStore.js";
     import RegionCard from "../RegionCard.svelte";

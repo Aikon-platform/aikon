@@ -1,10 +1,9 @@
 <script>
-    import { showMessage, withLoading } from "../utils.js";
+    import { showMessage, withLoading } from "../utils.svelte.js";
     import { appLang, appName, modules, csrfToken } from "../constants";
     import { getContext } from "svelte";
     const witness = getContext("witness");
-    export let currentRegionId;
-    export let baseUrl;
+    let { currentRegionId, baseUrl } = $props();
 
     async function manualRegions() {
         const wlo = `${window.location.origin}/${appName}`
@@ -72,7 +71,7 @@
 <!--TODO handle multiple digitization for a single witness-->
 
 <div class="is-center buttons is-centered pt-5">
-    <button class="button is-link" on:click={manualRegions}>
+    <button class="button is-link" onclick={manualRegions}>
         {appLang === "en" ? "Manually annotate" : "Annoter manuellement"}
     </button>
     <!--TODO make it work-->
@@ -81,7 +80,7 @@
     <!--    </button>-->
     {#if modules.includes("region_extraction")}
         <!--TODO make this button disappear if a task is already triggered for this witness ?-->
-        <button class="button is-link is-light" on:click={automaticRegions}>
+        <button class="button is-link is-light" onclick={automaticRegions}>
             {appLang === "en" ? "Automatic region extraction" : "Extraction automatique des régions"}
         </button>
     {/if}

@@ -1,6 +1,6 @@
 <script>
     import Loading from "../Loading.svelte";
-    import {i18n, refToIIIF, withLoading} from "../utils.js";
+    import {i18n, refToIIIF, withLoading} from "../utils.svelte.js";
     import {appLang, appName} from "../constants.js";
 
     const t = {
@@ -55,7 +55,7 @@
     const fmt = (key, vars) => Object.entries(vars).reduce((s, [k, v]) => s.replace(`{${k}}`, v), i18n(key, t));
     const steps = t.steps[appLang] ?? t.steps.en;
 
-    let preview = null, error = "";
+    let preview = $state(null), error = $state("");
 
     async function run() {
         const dsid = document.getElementById("id_document_set")?.value;
@@ -65,10 +65,10 @@
         [preview, error] = response.ok ? [{...data, id: dsid}, ""] : [null, data.error];
     }
 
-    $: advised = preview?.hashes.find(h => h.parameters)?.hash;
+    let advised = $derived(preview?.hashes.find(h => h.parameters)?.hash);
     const link = (href, label) => href ? `<a href="${href}" target="_blank">${label}</a>` : label;
-    $: pairsLink = preview && link(preview.links.pairs, i18n("pairsView", t));
-    $: relaunchLink = preview && link(preview.links.similarity[advised], i18n("relaunch", t));
+    let pairsLink = $derived(preview && link(preview.links.pairs, i18n("pairsView", t)));
+    let relaunchLink = $derived(preview && link(preview.links.similarity[advised], i18n("relaunch", t)));
 </script>
 
 <Loading/>
@@ -78,7 +78,7 @@
     <ul class="mt-0">{#each steps as step}<li>{step}</li>{/each}</ul>
 </div>
 
-<button type="button" class="button is-link is-light" on:click={run}>{i18n("run", t)}</button>
+<button type="button" class="button is-link is-light" onclick={run}>{i18n("run", t)}</button>
 
 {#if error}
     <article class="message is-danger mt-4"><div class="message-body">{error}</div></article>

@@ -1,7 +1,7 @@
 <!-- @migration-task-ok -->
 <script>
     import { createEventDispatcher } from "svelte";
-    import { i18n } from "../../utils.js";
+    import { i18n } from "../../utils.svelte.js";
     import RightClick from "../../ui/RightClick.svelte";
     import NavigationArrow from "../../ui/NavigationArrow.svelte";
 

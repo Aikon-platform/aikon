@@ -30,7 +30,7 @@
     import { createRecordsStore } from "./recordStore.js";
     import Set from "./Set.svelte";
     import Treatment from "./Treatment.svelte";
-    import {i18n} from "../utils.js";
+    import {i18n} from "../utils.svelte.js";
     const recordsStore = createRecordsStore(modelName);
     const { pageRecords, resultPage, resultNumber } = recordsStore;
 

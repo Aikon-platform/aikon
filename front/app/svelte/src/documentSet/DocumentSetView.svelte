@@ -5,7 +5,7 @@
     import { activeLayout } from "../ui/tabStore.js";
 
     import {appLang} from "../constants";
-    import {syncStoreWithURL, msgImages} from "../utils";
+    import {syncStoreWithURL, msgImages} from "../utils.svelte.js";
 
     import Layout from "../Layout.svelte";
     import Sidebar from "./sidebar/Sidebar.svelte";
@@ -18,7 +18,7 @@
     import {createClusterStore} from "./clusters/clusterStore.js";
 
     import Modal from "../Modal.svelte";
-    import {refToIIIF} from "../utils.js";
+    import {refToIIIF} from "../utils.svelte.js";
     import StemmaBuilder from "./stemma/StemmaBuilder.svelte";
     import {clusterSelection} from "../selection/selectionStore.js";
 
@@ -78,7 +78,7 @@
                 {#snippet content()}
                         <div  class="fixed-grid has-6-cols">
                         <div class="grid is-gap-2">
-                            {#each $msgImages as meta}
+                            {#each msgImages as meta}
                                 <div class="selection cell">
                                     <figure class="image is-64x64 card">
                                         <img src="{refToIIIF(meta.img, meta.xywh, '96,')}" alt="Extracted region"/>

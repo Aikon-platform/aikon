@@ -1,7 +1,7 @@
 <script>
     import { getContext, onMount } from "svelte";
 
-    import {showMessage, withLoading} from "../utils.js";
+    import {showMessage, withLoading} from "../utils.svelte.js";
     import {appLang, appName, csrfToken, model2title} from "../constants";
     import { activeLayout } from "../ui/tabStore.js";
 
@@ -25,7 +25,7 @@
     // we can't listen to changes on window.location.search.
     // instead, we need to listen to `activeLayout`
     // that emits an update with the new tab value every time it is updated.
-    let searchParamsString = window.location.search;
+    let searchParamsString = $state(window.location.search);
     activeLayout.subscribe((newTab) => {
         const searchParams = new URLSearchParams(window.location.search);
         searchParams.set("tab", newTab);
@@ -86,9 +86,9 @@
         }
     }
 
-    $: resultName = regionExtractionTabs.includes($activeLayout)
+    let resultName = $derived(regionExtractionTabs.includes($activeLayout)
         ? regionExtractionName(true)
-        : similarityName;
+        : similarityName);
 </script>
 
 <div>
@@ -97,7 +97,7 @@
             {appLang === "en" ? "Back to all witness view" : "Retour à la vue complète du témoin"}
         </a>
         {#if regionExtractionTabs.concat(similarityTabs).includes($activeLayout)}
-            <button on:click={deleteResults} class="tag mr-3 mb-3 is-danger">
+            <button onclick={deleteResults} class="tag mr-3 mb-3 is-danger">
                 {appLang === "en" ? `Delete displayed ${resultName}` : `Supprimer les ${resultName} affichées`}
             </button>
         {/if}

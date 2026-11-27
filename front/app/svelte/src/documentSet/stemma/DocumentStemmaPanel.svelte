@@ -1,6 +1,6 @@
 <script>
     import DocumentStemma from "./DocumentStemma.svelte";
-    import { i18n } from "../../utils.js";
+    import { i18n } from "../../utils.svelte.js";
 
     let {
         stemmaStore,

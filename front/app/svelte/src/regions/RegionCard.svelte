@@ -6,7 +6,7 @@
     import { regionsStore } from "./regionsStore.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     import ModalOpener from "./modal/ModalOpener.svelte";
-    import {i18n, loadWitnessTitle, witnessTitles} from "../utils.js";
+    import {i18n, loadWitnessTitle, witnessTitles} from "../utils.svelte.js";
     const { clipBoard } = regionsStore;
 
     /** @typedef {import("./types.js").RegionItemType} RegionItemType */

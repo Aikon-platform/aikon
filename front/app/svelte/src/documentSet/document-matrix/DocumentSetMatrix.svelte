@@ -10,7 +10,7 @@
 
     import * as d3 from "d3";
     import {createEventDispatcher} from "svelte";
-    import {i18n} from "../../utils.js";
+    import {i18n} from "../../utils.svelte.js";
     import RightClick from "../../ui/RightClick.svelte";
 
 

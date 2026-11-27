@@ -36,7 +36,7 @@
     import "choices.js/public/assets/styles/choices.css";
 
     import { appLang } from "../constants";
-    import { createNewAndOld, equalArrayShallow } from "../utils";
+    import { createNewAndOld, equalArrayShallow } from "../utils.svelte.js";
 
     import TooltipGeneric from "./TooltipGeneric.svelte";
     import { makeTooltipGenericState } from './tooltipGenericState.svelte';
@@ -44,7 +44,7 @@
 
     /////////////////////////////////////////////////////
 
-    /** @typedef {import("../utils").NewAndOldType} NewAndOldType */
+    /** @typedef {import("../utils.svelte.js").NewAndOldType} NewAndOldType */
 
     /**
      * @typedef DropdownChoice

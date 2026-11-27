@@ -22,7 +22,7 @@ Propagation logic:
     import InputToggle from "../../ui/InputToggle.svelte";
     import StemmaModalEditor from "./StemmaModalEditor.svelte";
     import Tabs from "../../ui/Tabs.svelte";
-    import { i18n } from "../../utils.js";
+    import { i18n } from "../../utils.svelte.js";
     import { createStemmaInteraction, createStemmaMenu } from "./stemmaInteraction.js";
     import QueryExpansionView from "../../regions/modal/QueryExpansionView.svelte";
     import RegionTabs from "../../regions/modal/RegionTabs.svelte";

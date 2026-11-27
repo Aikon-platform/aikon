@@ -2,7 +2,7 @@
     import { onMount } from "svelte";
     import {appLang, modules} from "../../constants";
     import { similarityStore } from "./similarityStore.js";
-    import {errorMsg} from "../../utils.js";
+    import {errorMsg} from "../../utils.svelte.js";
 
     import Table from "../../Table.svelte";
     import SimilarityPage from "./SimilarityPage.svelte";

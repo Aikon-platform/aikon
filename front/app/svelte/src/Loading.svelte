@@ -1,11 +1,11 @@
 <script>
     import { fade } from "svelte/transition";
-    import {loading} from "./utils.js";
+    import {loading} from "./utils.svelte.js";
 </script>
 
 {#if $loading}
     <div class="bkg-shade" transition:fade|global="{{ duration: 150 }}">
-        <div class="loader"/>
+        <div class="loader"></div>
     </div>
 {/if}
 

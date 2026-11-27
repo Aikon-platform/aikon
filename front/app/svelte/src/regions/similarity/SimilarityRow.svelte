@@ -3,7 +3,7 @@
     import InputToggle from "../../ui/InputToggle.svelte";
     import { similarityStore } from "./similarityStore.js";
     import {appName} from "../../constants";
-    import {i18n, manifestToMirador, showMessage, sendTo} from "../../utils.js";
+    import {i18n, manifestToMirador, showMessage, sendTo} from "../../utils.svelte.js";
     import { RegionItem } from "../types.js";
 
     import MatchedRegions from "./MatchedRegions.svelte";

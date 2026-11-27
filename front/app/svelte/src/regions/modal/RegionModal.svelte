@@ -1,22 +1,37 @@
 <script>
+    import { createBubbler } from 'svelte/legacy';
+
+    const bubble = createBubbler();
     import { createEventDispatcher, onMount, onDestroy, setContext } from "svelte";
-    import { appendToDom} from "../../utils.js";
+    import { appendToDom } from "../../utils.svelte.js";
     import NavigationArrow from "../../ui/NavigationArrow.svelte";
 
-    export let open = false;
-    /** @type {any[]} */
-    export let items = [];
-    export let currentIndex = 0;
+
+    /**
+     * @typedef {Object} Props
+     * @property {boolean} [open]
+     * @property {any[]} [items]
+     * @property {number} [currentIndex]
+     * @property {import('svelte').Snippet<[any]>} [children]
+     */
+
+    /** @type {Props} */
+    let {
+        open = $bindable(false),
+        items = [],
+        currentIndex = $bindable(0),
+        children
+    } = $props();
 
     const dispatch = createEventDispatcher();
 
     /** @type {any|null} when set, overrides items with a single region */
-    let anchor = null;
+    let anchor = $state(null);
     setContext("setModalAnchor", (item) => { anchor = item; currentIndex = 0; });
 
-    $: activeItems = anchor ? [anchor] : items;
-    $: canNavigate = activeItems.length > 1;
-    $: currentItem = activeItems[currentIndex] ?? null;
+    let activeItems = $derived(anchor ? [anchor] : items);
+    let canNavigate = $derived(activeItems.length > 1);
+    let currentItem = $derived(activeItems[currentIndex] ?? null);
 
     const close = () => {
         open = false;
@@ -43,7 +58,7 @@
 
 {#if open}
     <div class="modal is-active" use:appendToDom>
-        <div class="modal-background" on:click={close} on:keyup/>
+        <div class="modal-background" onclick={close} onkeyup={bubble('keyup')}></div>
         <div class="modal-content">
             {#if canNavigate}
                 <NavigationArrow direction="left" delta={-1} navigationFct={navigate} css="position: initial;"/>
@@ -53,14 +68,14 @@
                 <!--<a class="button is-small is-link is-light m-2 is-align-self-flex-end" href={new RegionItem(currentItem).viewUrl} target="_blank">
                     <i class="fa-solid fa-up-right-from-square"/>
                 </a>-->
-                <slot item={currentItem} index={currentIndex} anchored={!!anchor} {close}/>
+                {@render children?.({ item: currentItem, index: currentIndex, anchored: !!anchor, close, })}
             </div>
 
             {#if canNavigate}
                 <NavigationArrow direction="right" delta={1} navigationFct={navigate} css="position: initial;"/>
             {/if}
         </div>
-        <button class="modal-close is-large" on:click={close} aria-label="close"/>
+        <button class="modal-close is-large" onclick={close} aria-label="close"></button>
     </div>
 {/if}
 

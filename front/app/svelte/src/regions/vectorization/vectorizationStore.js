@@ -1,5 +1,5 @@
 import {derived, get, writable} from "svelte/store";
-import {initPagination, pageUpdate} from "../../utils.js";
+import {initPagination, pageUpdate} from "../../utils.svelte.js";
 
 function createVectorizationStore() {
     const baseUrl = `${window.location.origin}${window.location.pathname}`;

@@ -1,15 +1,17 @@
 <script>
     import LegendItem from "./LegendItem.svelte";
-    import {i18n} from "../../utils.js";
+    import {i18n} from "../../utils.svelte.js";
 
-    export let sortedDocs;
-    export let docSort;
-    export let selectedDocuments;
-    export let toggleDoc;
-    export let toggleAllDocuments;
-    export let regionCounts;
+    let {
+        sortedDocs,
+        docSort,
+        selectedDocuments,
+        toggleDoc,
+        toggleAllDocuments,
+        regionCounts
+    } = $props();
 
-    let isExpanded = true;
+    let isExpanded = $state(true);
 
     const t = {
         visibleDocs: {en: "Visible documents", fr: "Documents visibles"},
@@ -18,9 +20,9 @@
         unselectAll: {en: "Unselect all", fr: "Tout désélectionner"},
     };
 
-    $: selectedDocs = sortedDocs.filter(([id]) => selectedDocuments.has(parseInt(id)));
-    $: allSelected = selectedDocs.length === sortedDocs.length;
-    $: selectLabel = i18n(allSelected ? "unselectAll" : "selectAll", t);
+    let selectedDocs = $derived(sortedDocs.filter(([id]) => selectedDocuments.has(parseInt(id))));
+    let allSelected = $derived(selectedDocs.length === sortedDocs.length);
+    let selectLabel = $derived(i18n(allSelected ? "unselectAll" : "selectAll", t));
 </script>
 
 <div>
@@ -42,10 +44,10 @@
                         </span>
                     </p>
                     <p class="control" title={selectLabel}>
-                        <button class="button is-small is-shadowless" on:click={() => toggleAllDocuments(!allSelected)}>
+                        <button class="button is-small is-shadowless" onclick={() => toggleAllDocuments(!allSelected)}>
                             {selectLabel}
                             <span class="icon is-small has-text-link pl-5 pr-1">
-                                <i class="fas fa-{allSelected ? 'times' : 'check'}"/>
+                                <i class="fas fa-{allSelected ? 'times' : 'check'}"></i>
                             </span>
                         </button>
                     </p>
@@ -54,15 +56,15 @@
         </div>
         <div class="level-right">
             <div class="level-item" title={isExpanded ? "Minify legend" : "Expand legend"}>
-                <button class="button is-small is-ghost" on:click={() => isExpanded = !isExpanded}
+                <button class="button is-small is-ghost" onclick={() => isExpanded = !isExpanded}
                         aria-label={isExpanded ? "Minify legend" : "Expand legend"}>
                     {#if isExpanded}
                         <span class="icon is-small">
-                            <i class="fas fa-chevron-up"/>
+                            <i class="fas fa-chevron-up"></i>
                         </span>
                     {:else}
                         <span class="icon is-small">
-                            <i class="fas fa-chevron-down"/>
+                            <i class="fas fa-chevron-down"></i>
                         </span>
                     {/if}
                 </button>

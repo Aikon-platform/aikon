@@ -1,23 +1,30 @@
 <script>
     import { appLang } from "./constants";
-    import { closeModal, openModal } from "./utils.js";
+    import { closeModal, openModal } from "./utils.svelte.js";
+    /**
+     * @typedef {Object} Props
+     * @property {import('svelte').Snippet} [content]
+     */
+
+    /** @type {Props} */
+    let { content } = $props();
 </script>
 
-<button id="hidden-msg-btn" use:openModal data-target="msg-modal" hidden/>
+<button id="hidden-msg-btn" use:openModal data-target="msg-modal" hidden></button>
 
 <div id="msg-modal" class="modal fade" use:closeModal tabindex="-1" aria-labelledby="selection-modal-label" aria-hidden="true">
-    <div id="modal-bkg" class="modal-background"/>
+    <div id="modal-bkg" class="modal-background"></div>
     <div class="modal-content">
         <div class="modal-card-head media mb-0">
             <div class="title is-4 mb-0 media-content">
-                <span id="modal-title" class="mb-0"/>
+                <span id="modal-title" class="mb-0"></span>
             </div>
-            <button class="delete media-left" aria-label="close"/>
+            <button class="delete media-left" aria-label="close"></button>
         </div>
         <section id="modal-body" class="modal-card-body">
             <div id="modal-msg"></div>
             <div class="py-3">
-                <slot name="content"/>
+                {@render content?.()}
             </div>
         </section>
 

@@ -1,7 +1,7 @@
 <script>
     import { run } from 'svelte/legacy';
 
-    import {i18n} from "../../utils.js";
+    import {i18n} from "../../utils.svelte.js";
     import DownloadPng from "../../ui/DownloadPng.svelte";
     import SplitLayout from "../../ui/SplitLayout.svelte";
     import DocumentSetMatrix, {viewModes} from "./DocumentSetMatrix.svelte";

@@ -1,5 +1,5 @@
 import { writable, get } from "svelte/store";
-import {initPagination, pageUpdate} from "../utils.js";
+import {initPagination, pageUpdate} from "../utils.svelte.js";
 
 export function createRecordsStore(modelName) {
     const model = modelName;

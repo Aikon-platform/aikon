@@ -10,7 +10,7 @@
  */
 
 import {appLang, appName, regionsType} from "../constants.js";
-import {extractNb, getCantaloupeUrl, getMiradorUrl, i18n} from "../utils.js";
+import {extractNb, getCantaloupeUrl, getMiradorUrl, i18n} from "../utils.svelte.js";
 
 const IMG_REF_REGEX = /^(?:(\d+)_)?wit(\d+)_([a-z]{3})(\d+)(?:_anno(\d+))?_(\d+)(?:_([\d.,]+))?(?:\.jpg)?$/;
 

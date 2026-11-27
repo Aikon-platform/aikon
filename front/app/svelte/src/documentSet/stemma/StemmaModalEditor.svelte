@@ -1,11 +1,17 @@
 <script>
     import { createEventDispatcher } from "svelte";
-    import { i18n } from "../../utils.js";
+    import { i18n } from "../../utils.svelte.js";
 
-    export let type;        // "node" | "edge"
-    export let target = null;
+    /**
+     * @typedef {Object} Props
+     * @property {any} type - "node" | "edge"
+     * @property {any} [target]
+     */
 
-    let value = type === "node" ? (target?.title ?? "") : (target?.label ?? "");
+    /** @type {Props} */
+    let { type, target = null } = $props();
+
+    let value = $state(type === "node" ? (target?.title ?? "") : (target?.label ?? ""));
 
     const dispatch = createEventDispatcher();
     const close = () => dispatch("close");
@@ -22,7 +28,7 @@
 
 {#if target}
     <div class="modal is-active">
-        <div class="modal-background" on:click={close} on:keydown={null}/>
+        <div class="modal-background" onclick={close} onkeydown={null}></div>
         <div class="modal-content" style="max-width: 300px;">
             <div class="box">
                 <h4 class="title is-6 mb-4">{i18n(type, t)}</h4>
@@ -35,12 +41,12 @@
                         <span class="color-dot" style="background: {target.target.color}"></span>
                     {/if}
                     <div class="control is-flex-grow-1">
-                        <input class="input is-small" type="text" bind:value on:keydown={onKey}/>
+                        <input class="input is-small" type="text" bind:value onkeydown={onKey}/>
                     </div>
                 </div>
                 <div class="buttons is-right mt-3">
-                    <button class="button is-small" on:click={close}>{i18n("cancel", t)}</button>
-                    <button class="button is-small is-link" on:click={save}>{i18n("save", t)}</button>
+                    <button class="button is-small" onclick={close}>{i18n("cancel", t)}</button>
+                    <button class="button is-small is-link" onclick={save}>{i18n("save", t)}</button>
                 </div>
             </div>
         </div>

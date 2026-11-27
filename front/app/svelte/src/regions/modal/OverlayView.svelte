@@ -1,15 +1,21 @@
 <script>
     import { appLang } from "../../constants.js";
-    import { refToIIIF } from "../../utils.js";
+    import { refToIIIF } from "../../utils.svelte.js";
     import InputSlider from "../../ui/InputSlider.svelte";
     import InputDropdown from "../../ui/InputDropdown.svelte";
 
     /** @typedef {import("./types.js").RegionItemType} RegionItemType */
 
-    /** @type {RegionItemType} */
-    export let queryItem;
-    /** @type {RegionItemType} */
-    export let similarItem;
+
+
+    /**
+     * @typedef {Object} Props
+     * @property {RegionItemType} queryItem
+     * @property {RegionItemType} similarItem
+     */
+
+    /** @type {Props} */
+    let { queryItem, similarItem } = $props();
 
     const flipChoices = [
         { value: "h", label: appLang === "fr" ? "Basculer horizontalement" : "Flip horizontally" },
@@ -17,19 +23,19 @@
         { value: "hv", label: appLang === "fr" ? "Basculer H+V" : "Flip H+V" }
     ];
 
-    let overlayOpacity = 0.5;
-    let overlayRotation = 0;
-    let overlayScale = 100;
-    let overlayFlip = [1, 1];
-    let overlayTranslate = [0, 0];
-    let currentlyResetting = false;
+    let overlayOpacity = $state(0.5);
+    let overlayRotation = $state(0);
+    let overlayScale = $state(100);
+    let overlayFlip = $state([1, 1]);
+    let overlayTranslate = $state([0, 0]);
+    let currentlyResetting = $state(false);
 
-    $: queryUrl = refToIIIF(queryItem.img, queryItem.xywh?.join(",") || "full", "full");
-    $: similarUrl = refToIIIF(similarItem.img, similarItem.xywh?.join(",") || "full", "full");
+    let queryUrl = $derived(refToIIIF(queryItem.img, queryItem.xywh?.join(",") || "full", "full"));
+    let similarUrl = $derived(refToIIIF(similarItem.img, similarItem.xywh?.join(",") || "full", "full"));
 
-    $: cssTransforms = `translate(${overlayTranslate[0] - 50}%, ${overlayTranslate[1]}%)
+    let cssTransforms = $derived(`translate(${overlayTranslate[0] - 50}%, ${overlayTranslate[1]}%)
                         rotate(${overlayRotation}deg)
-                        scale(${overlayFlip.map(x => x * (overlayScale / 100)).join()})`;
+                        scale(${overlayFlip.map(x => x * (overlayScale / 100)).join()})`);
 
     const updateFlip = (e) => {
         const flip = e.detail[0];
@@ -80,7 +86,7 @@
                                on:updateValues={updateFlip}/>
 
                 <div class="mt-2 is-flex is-flex-direction-column is-justify-content-center is-align-items-flex-end">
-                    <button class="button is-link" on:click={reset}>
+                    <button class="button is-link" onclick={reset}>
                         {appLang === "fr" ? "Réinitialiser" : "Reset"}
                     </button>
                 </div>

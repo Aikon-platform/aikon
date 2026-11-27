@@ -11,7 +11,7 @@ import { derived } from "svelte/store";
 import { similarityStore } from "./similarityStore.js";
 import * as cat from "./similarityCategory";
 import { appLang } from "../../constants.js";
-import { colorDot, shorten } from "../../utils.js";
+import { colorDot, shorten } from "../../utils.svelte.js";
 
 import InputSlider from "../../ui/InputSlider.svelte";
 import InputToggle from "../../ui/InputToggle.svelte";

@@ -1,6 +1,6 @@
 <script>
     import { writable } from "svelte/store";
-    import { i18n } from "../../utils.js";
+    import { i18n } from "../../utils.svelte.js";
     import SplitLayout from "../../ui/SplitLayout.svelte";
     import SpatialFrieze from "./SpatialFrieze.svelte";
     import Matches from "../Matches.svelte";

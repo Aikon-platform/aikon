@@ -1,16 +1,16 @@
 <script>
-    import {refToIIIF} from "../utils.js";
+    import {refToIIIF} from "../utils.svelte.js";
     import {appLang} from "../constants.js";
     import SelectionModal from "../selection/SelectionModal.svelte";
     import SelectionBtn from "../selection/SelectionBtn.svelte";
 
-    export let selectionStore;
+    let { selectionStore } = $props();
     const { selected } = selectionStore;
 
     // $selected = {"Regions"/"Cluster" : {id: {S}, id: {E}, id: {L}, id: {E}, id: {C}, id: {T}}}
-    $: selectedRegions = Object.values($selected)[0] || {};
-    $: selectionLength = Object.keys(selectedRegions).length;
-    $: areSelectedRegions = selectionLength > 0;
+    let selectedRegions = $derived(Object.values($selected)[0] || {});
+    let selectionLength = $derived(Object.keys(selectedRegions).length);
+    let areSelectedRegions = $derived(selectionLength > 0);
 </script>
 
 <SelectionBtn {selectionLength}/>
@@ -28,7 +28,7 @@
                             </div>
                         </figure>
                         <button class="delete region-btn" aria-label="remove from selection"
-                                on:click={() => selectionStore.remove(id, Object.keys($selected)[0])}/>
+                                onclick={() => selectionStore.remove(id, Object.keys($selected)[0])}></button>
                     </div>
                 {/each}
             </div>

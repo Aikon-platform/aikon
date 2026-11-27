@@ -15,7 +15,7 @@
     import HistogramFilter from "./HistogramFilter.svelte";
     import DocumentPairs from "./DocumentPairs.svelte";
     import {pairCats} from "../documentSetStore.js";
-    import {i18n, sendTo, shorten, showMessage, syncStoreWithURL} from "../../utils.js";
+    import {i18n, sendTo, shorten, showMessage, syncStoreWithURL} from "../../utils.svelte.js";
     import {appName, isSuperuser} from "../../constants.js";
 
     let { documentSetStore } = $props();

@@ -1,14 +1,29 @@
 <script>
+    import { run } from 'svelte/legacy';
+
     import * as d3 from "d3";
     import {createEventDispatcher} from "svelte";
-    import {i18n} from "../../utils.js";
+    import {i18n} from "../../utils.svelte.js";
 
-    export let doc1 = null;
-    export let doc2 = null;
-    export let pairs = [];
-    export let mode = "image"; // 'page' | 'image'
-    export let cellSize = 5;
-    export let hideEmpty = false;
+    /**
+     * @typedef {Object} Props
+     * @property {any} [doc1]
+     * @property {any} [doc2]
+     * @property {any} [pairs]
+     * @property {string} [mode] - 'page' | 'image'
+     * @property {number} [cellSize]
+     * @property {boolean} [hideEmpty]
+     */
+
+    /** @type {Props} */
+    let {
+        doc1 = null,
+        doc2 = null,
+        pairs = [],
+        mode = "image",
+        cellSize = 5,
+        hideEmpty = false
+    } = $props();
 
     const dispatch = createEventDispatcher();
 
@@ -18,10 +33,8 @@
         score: {en: "Score", fr: "Score"},
     };
 
-    let container;
+    let container = $state();
 
-    $: scatterData = doc1 && doc2 && pairs.length ? buildScatter(doc1, doc2, pairs, mode, hideEmpty) : null;
-    $: if (container && scatterData) render();
 
     function buildScatter(d1, d2, pairList, m, hide) {
         return m === "image" ? buildImageScatter(d1, d2, pairList, hide) : buildPageScatter(d1, d2, pairList, hide);
@@ -321,6 +334,10 @@
         label.append("text").attr("x", -size / 2 + 14).attr("text-anchor", "start").attr("dominant-baseline", "middle")
             .attr("font-size", "11px").attr("fill", "var(--bulma-text)").text(truncate(`${doc.title} (${suffix})`, size - 20));
     }
+    let scatterData = $derived(doc1 && doc2 && pairs.length ? buildScatter(doc1, doc2, pairs, mode, hideEmpty) : null);
+    run(() => {
+        if (container && scatterData) render();
+    });
 </script>
 
 <div id="doc-pair-matrix" class="scatter-container" bind:this={container}></div>

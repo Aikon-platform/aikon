@@ -5,7 +5,7 @@
     import PageView from "../regions/modal/PageView.svelte";
     import RightClick from "../ui/RightClick.svelte";
     import Tabs from "../ui/Tabs.svelte";
-    import { i18n, withLoading, showMessage } from "../utils.js";
+    import { i18n, withLoading, showMessage } from "../utils.svelte.js";
     import { appName, csrfToken } from "../constants.js";
     import QueryExpansionView from "../regions/modal/QueryExpansionView.svelte";
     import CategoryToolbar from "../regions/similarity/CategoryToolbar.svelte";

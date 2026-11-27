@@ -4,7 +4,7 @@ https://svelte.dev/e/legacy_export_invalid -->
     import { getContext } from "svelte";
 
     import { aiiinotateUrl } from "../constants.js";
-    import { manifestToMirador, showMessage, downloadBlob, withLoading, toAiiinotationUrl } from "../utils.js";
+    import { manifestToMirador, showMessage, downloadBlob, withLoading, toAiiinotationUrl } from "../utils.svelte.js";
     import { regionsSelection } from "../selection/selectionStore.js";
     const { selected, nbSelected } = regionsSelection;
 

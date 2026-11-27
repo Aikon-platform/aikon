@@ -5,7 +5,7 @@
     import Table from "../Table.svelte";
     import ExtractionButtons from "./ExtractionButtons.svelte";
     import { appLang } from "../constants";
-    import { manifestToMirador, refToIIIF } from "../utils.js";
+    import { manifestToMirador, refToIIIF } from "../utils.svelte.js";
     import Row from "../Row.svelte";
     import Regions from "./Regions.svelte";
 
